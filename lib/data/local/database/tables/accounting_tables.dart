@@ -42,6 +42,14 @@ abstract final class TransactionsTable {
   static const String invoiceNo = 'invoice_no';
   static const String notes = 'notes';
   static const String totalAmount = 'total_amount';
+  static const String paymentMode = 'payment_mode';
+  static const String gstType = 'gst_type';
+  static const String subtotal = 'subtotal';
+  static const String discountTotal = 'discount_total';
+  static const String taxableTotal = 'taxable_total';
+  static const String cgstTotal = 'cgst_total';
+  static const String sgstTotal = 'sgst_total';
+  static const String igstTotal = 'igst_total';
   static const String createdAt = 'created_at';
   static const String updatedAt = 'updated_at';
 }
@@ -69,8 +77,32 @@ abstract final class ItemsTable {
   static const String qtyOnHand = 'qty_on_hand';
   static const String purchaseRate = 'purchase_rate';
   static const String saleRate = 'sale_rate';
+  static const String gstRate = 'gst_rate';
+  static const String hsnSac = 'hsn_sac';
+  static const String isActive = 'is_active';
   static const String createdAt = 'created_at';
   static const String updatedAt = 'updated_at';
+}
+
+/// SQLite column names for the [transaction_lines] table.
+abstract final class TransactionLinesTable {
+  static const String tableName = 'transaction_lines';
+
+  static const String id = 'id';
+  static const String transactionId = 'transaction_id';
+  static const String itemId = 'item_id';
+  static const String itemName = 'item_name';
+  static const String hsnSac = 'hsn_sac';
+  static const String qty = 'qty';
+  static const String rate = 'rate';
+  static const String discountAmount = 'discount_amount';
+  static const String gstRate = 'gst_rate';
+  static const String taxableAmount = 'taxable_amount';
+  static const String cgstAmount = 'cgst_amount';
+  static const String sgstAmount = 'sgst_amount';
+  static const String igstAmount = 'igst_amount';
+  static const String lineTotal = 'line_total';
+  static const String sortOrder = 'sort_order';
 }
 
 /// SQLite column names for the [stock_movements] table.

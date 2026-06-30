@@ -9,4 +9,8 @@ abstract final class AccountTypes {
   static const String stock = 'stock';
   static const String expense = 'expense';
   static const String equity = 'equity';
+  static const String cgstPayable = 'cgst_payable';
+  static const String sgstPayable = 'sgst_payable';
+  static const String igstPayable = 'igst_payable';
+  static const String cogs = 'cogs';
 }

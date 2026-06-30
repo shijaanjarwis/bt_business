@@ -9,6 +9,9 @@ import '../../shared/widgets/navigation/main_shell.dart';
 import '../../shared/widgets/scaffold/tab_placeholder_page.dart';
 import '../../features/ledger/presentation/pages/ledger_page.dart';
 import '../../features/ledger/presentation/pages/party_form_page.dart';
+import '../../features/sales/presentation/pages/sale_form_page.dart';
+import '../../features/sales/presentation/pages/sale_list_page.dart';
+import '../../features/sales/presentation/pages/sale_print_page.dart';
 import 'router_error_page.dart';
 import 'router_refresh_notifier.dart';
 import 'route_names.dart';
@@ -38,6 +41,36 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               : BusinessProfileMode.setup;
           return BusinessProfilePage(mode: mode);
         },
+      ),
+      GoRoute(
+        path: RouteNames.sales,
+        name: RouteNames.salesName,
+        builder: (context, state) => const SaleListPage(),
+        routes: [
+          GoRoute(
+            path: 'new',
+            name: RouteNames.salesNewName,
+            builder: (context, state) => SaleFormPage(
+              mode: SaleFormMode.create,
+              initialPartyId: state.uri.queryParameters['partyId'],
+            ),
+          ),
+          GoRoute(
+            path: ':id/edit',
+            name: RouteNames.salesEditName,
+            builder: (context, state) => SaleFormPage(
+              mode: SaleFormMode.edit,
+              saleId: state.pathParameters['id'],
+            ),
+          ),
+          GoRoute(
+            path: ':id/print',
+            name: RouteNames.salesPrintName,
+            builder: (context, state) => SalePrintPage(
+              saleId: state.pathParameters['id']!,
+            ),
+          ),
+        ],
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

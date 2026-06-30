@@ -11,7 +11,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 Future<Database> createTestDatabase() async {
   return openDatabase(
     inMemoryDatabasePath,
-    version: 4,
+    version: 5,
     singleInstance: false,
     onConfigure: (db) async {
       await db.execute('PRAGMA foreign_keys = ON');
@@ -102,25 +102,63 @@ Future<void> insertPartyBalance({
   });
 }
 
-Future<void> insertStockItem({
+Future<String> insertStockItem({
   required Database db,
   required String businessId,
   required String name,
   required double qty,
   required double purchaseRate,
+  double saleRate = 0,
+  double gstRate = 18,
+  String? hsnSac,
 }) async {
   final now = DateTime.now().toIso8601String();
-  await db.insert(ItemsTable.tableName, {
+  return db.insert(ItemsTable.tableName, {
     ItemsTable.id: IdGenerator.newId(),
     ItemsTable.businessId: businessId,
     ItemsTable.name: name,
     ItemsTable.unit: 'pcs',
     ItemsTable.qtyOnHand: qty,
     ItemsTable.purchaseRate: purchaseRate,
-    ItemsTable.saleRate: purchaseRate * 1.2,
+    ItemsTable.saleRate: saleRate > 0 ? saleRate : purchaseRate * 1.2,
+    ItemsTable.gstRate: gstRate,
+    ItemsTable.hsnSac: hsnSac,
+    ItemsTable.isActive: 1,
     ItemsTable.createdAt: now,
     ItemsTable.updatedAt: now,
+  }).then((_) async {
+    final rows = await db.query(
+      ItemsTable.tableName,
+      where: '${ItemsTable.name} = ?',
+      whereArgs: [name],
+      limit: 1,
+    );
+    return rows.first[ItemsTable.id]! as String;
   });
+}
+
+Future<String> insertCustomer({
+  required Database db,
+  required String businessId,
+  required String name,
+  String phone = '9876543210',
+}) async {
+  final id = IdGenerator.newId();
+  final now = DateTime.now().toIso8601String();
+  await db.insert(PartiesTable.tableName, {
+    PartiesTable.id: id,
+    PartiesTable.businessId: businessId,
+    PartiesTable.name: name,
+    PartiesTable.type: 'customer',
+    PartiesTable.phone: phone,
+    PartiesTable.address: '',
+    PartiesTable.openingBalance: 0,
+    PartiesTable.isActive: 1,
+    PartiesTable.balance: 0,
+    PartiesTable.createdAt: now,
+    PartiesTable.updatedAt: now,
+  });
+  return id;
 }
 
 Future<String> _accountId(

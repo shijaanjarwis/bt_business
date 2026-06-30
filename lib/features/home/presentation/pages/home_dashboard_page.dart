@@ -36,6 +36,8 @@ class HomeDashboardPage extends ConsumerWidget {
         data: (summary) => _DashboardContent(
           metrics: DashboardMetricsBuilder.fromSummary(summary),
           onRefresh: () => ref.read(dashboardProvider.notifier).refresh(),
+          onSalesTap: () => context.push(RouteNames.sales),
+          onNewSaleTap: () => context.push(RouteNames.salesNew),
         ),
       ),
     );
@@ -46,10 +48,14 @@ class _DashboardContent extends StatelessWidget {
   const _DashboardContent({
     required this.metrics,
     required this.onRefresh,
+    required this.onSalesTap,
+    required this.onNewSaleTap,
   });
 
   final List<DashboardMetric> metrics;
   final Future<void> Function() onRefresh;
+  final VoidCallback onSalesTap;
+  final VoidCallback onNewSaleTap;
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +133,11 @@ class _DashboardContent extends StatelessWidget {
                   ),
                   FadeSlideIn(
                     index: 4,
-                    child: _MetricPairRow(left: today[0], right: today[1]),
+                    child: _MetricPairRow(
+                      left: today[0],
+                      right: today[1],
+                      onLeftTap: onSalesTap,
+                    ),
                   ),
                   const SizedBox(height: 22),
                   const FadeSlideIn(
@@ -188,17 +198,24 @@ class _MetricPairRow extends StatelessWidget {
   const _MetricPairRow({
     required this.left,
     required this.right,
+    this.onLeftTap,
   });
 
   final DashboardMetric left;
   final DashboardMetric right;
+  final VoidCallback? onLeftTap;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: DashboardMetricCard(metric: left)),
+        Expanded(
+          child: DashboardMetricCard(
+            metric: left,
+            onTap: onLeftTap,
+          ),
+        ),
         const SizedBox(width: 12),
         Expanded(child: DashboardMetricCard(metric: right)),
       ],

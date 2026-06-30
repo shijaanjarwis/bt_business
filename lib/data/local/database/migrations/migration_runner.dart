@@ -7,6 +7,7 @@ import 'v1_initial.dart';
 import 'v2_business.dart';
 import 'v3_accounting.dart';
 import 'v4_party_ledger.dart';
+import 'v5_sales.dart';
 
 /// Applies versioned schema migrations on create and upgrade.
 abstract final class MigrationRunner {
@@ -17,6 +18,7 @@ abstract final class MigrationRunner {
     V2BusinessMigration(),
     V3AccountingMigration(),
     V4PartyLedgerMigration(),
+    V5SalesMigration(),
   ];
 
   static Future<void> onCreate(Database db, int version) async {

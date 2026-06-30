@@ -28,6 +28,10 @@ abstract final class AccountSeeder {
       (AccountTypes.stock, 'Stock'),
       (AccountTypes.expense, 'General Expenses'),
       (AccountTypes.equity, 'Opening Balance Equity'),
+      (AccountTypes.cgstPayable, 'CGST Payable'),
+      (AccountTypes.sgstPayable, 'SGST Payable'),
+      (AccountTypes.igstPayable, 'IGST Payable'),
+      (AccountTypes.cogs, 'Cost of Goods Sold'),
     ];
 
     final batch = db.batch();

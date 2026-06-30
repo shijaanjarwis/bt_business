@@ -12,17 +12,29 @@ class DashboardMetricCard extends StatelessWidget {
     super.key,
     required this.metric,
     this.animate = true,
+    this.onTap,
   });
 
   final DashboardMetric metric;
   final bool animate;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    if (metric.isHero) {
-      return _HeroCard(metric: metric, animate: animate);
-    }
-    return _StandardCard(metric: metric, animate: animate);
+    final card = metric.isHero
+        ? _HeroCard(metric: metric, animate: animate)
+        : _StandardCard(metric: metric, animate: animate);
+
+    if (onTap == null) return card;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(metric.isHero ? 22 : 18),
+        child: card,
+      ),
+    );
   }
 }
 
