@@ -1,0 +1,72 @@
+---
+description: Digital register for India's smallest shopkeepers — never accounting software
+alwaysApply: true
+---
+
+# BT Business — Paper Register, Not Tally
+
+## Target user
+A shopkeeper who **writes everything in a notebook** today: pan shop, tea stall, kirana, hardware, mobile shop, dairy, bakery, small wholesaler.
+
+**Zero accounting knowledge.** Must be **easier than Tally**.
+
+## Golden rule
+If a feature feels like **Tally or accounting software**, remove it or hide it from the user.
+The app must always feel like **writing in a paper register**.
+
+## Design principles (permanent)
+
+1. **2–3 taps** — every common task should finish in 2–3 taps when possible.
+2. **5–6 fields max** — every form has at most 5–6 fields. Never ask for unnecessary information.
+3. **Instant search** — search everywhere by typing a few letters of a name. No IDs, no item codes.
+4. **Reports are read-only** — users never edit data from reports/history screens.
+5. **History is complete** — never delete old years automatically. Keep unlimited years unless the user manually deletes an entry.
+6. **Performance at scale** — stay fast with 100,000+ transactions. Use pagination, lazy loading, and indexed queries.
+
+## UI vocabulary
+
+| Never say | Say instead |
+|-----------|-------------|
+| Ledger | **Hisaab** |
+| Customer / Supplier | **Party** (one party can be both) |
+| Inventory tab label | **Items** / **Maal** |
+| Sale Invoice / Voucher | **Sale** / **Bikri** |
+| Purchase Invoice | **Purchase** / **Kharid** |
+| Credit | **Udhaar** |
+| Payment received | **Jama** / **Paisa mila** |
+| Payment paid | **Paisa diya** |
+| Expense | **Kharch** |
+| Receivable / Payable | **Lena Hai** / **Dena Hai** |
+| Journal, Voucher, Debit, Credit, HSN, GSTIN, Stock Group, Item Code | **Never show in UI** |
+
+Code may use `ledger`, `journal`, `debit` internally — **never expose to users**.
+
+## Item creation (instant — 2 fields only)
+- **Item Name** (required)
+- **Unit** — Piece, Kg, Gram, Litre, Packet, Box, Meter, Dozen, etc. (required)
+
+Nothing else in the create flow: no category, item code, HSN, GST, opening stock, stock group, purchase/sale price on create.
+Stock updates **automatically** after every Sale and Purchase.
+
+## Party creation (instant — up to 3 fields)
+- **Name** (required)
+- **Mobile** (optional)
+- **Previous Balance** (optional — Lena hai / Dena hai)
+
+Nothing else: no GSTIN, credit limit, address, customer/supplier type picker, active/inactive.
+
+## Entry forms (max fields)
+- **Jama / Paisa diya**: Party, Amount, Date, Note (optional)
+- **Kharch**: Expense Name, Amount, Date, Note (optional)
+- **Sale / Purchase**: Party, Date, payment mode, line items (qty + rate) — register style, not invoice
+
+Pick or **instant-create** Party and Item inline from entry screens. No separate master-data detours.
+
+## Automatic (hidden from user)
+Stock, hisaab balances, dashboard totals, and history update automatically when entries are saved.
+No invoice printing, no bills/PDF/e-way.
+
+## When building new features
+- Prefer **simple over powerful** every time.
+- Paginate lists; index `date`, `party_id`, `type`, and name search columns.
+- History and reports: filter and display only — no inline edit.
