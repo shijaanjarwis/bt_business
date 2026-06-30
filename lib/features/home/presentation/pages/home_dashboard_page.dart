@@ -11,6 +11,7 @@ import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../models/dashboard_metrics_builder.dart';
 import '../models/dashboard_metric.dart';
 import '../providers/dashboard_provider.dart';
+import '../../../ledger/presentation/providers/party_providers.dart';
 import '../widgets/bt_business_logo.dart';
 import '../widgets/dashboard_metric_card.dart';
 import '../widgets/dashboard_quick_actions.dart';
@@ -40,8 +41,16 @@ class HomeDashboardPage extends ConsumerWidget {
           onSalesTap: () => context.go(RouteNames.sales),
           onPurchasesTap: () => context.go(RouteNames.purchases),
           onExpenseTap: () => context.push(RouteNames.paymentsExpense),
-          onLenaTap: () => context.go(RouteNames.ledger),
-          onDenaTap: () => context.go(RouteNames.ledger),
+          onLenaTap: () {
+            ref.read(partyBalanceFilterProvider.notifier).state =
+                PartyBalanceFilter.lena;
+            context.go(RouteNames.ledger);
+          },
+          onDenaTap: () {
+            ref.read(partyBalanceFilterProvider.notifier).state =
+                PartyBalanceFilter.dena;
+            context.go(RouteNames.ledger);
+          },
           onHistoryTap: () => context.push(RouteNames.history),
         ),
       ),

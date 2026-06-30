@@ -74,6 +74,12 @@ final recordPaymentPaidUseCaseProvider = Provider<RecordPaymentPaidUseCase>((ref
   return RecordPaymentPaidUseCase(ref.watch(partyRepositoryProvider));
 });
 
+/// Which parties to show on the Hisaab list.
+enum PartyBalanceFilter { all, lena, dena }
+
+final partyBalanceFilterProvider =
+    StateProvider<PartyBalanceFilter>((ref) => PartyBalanceFilter.all);
+
 final partySearchQueryProvider = StateProvider<String>((ref) => '');
 
 final partyListProvider = FutureProvider<List<Party>>((ref) async {
