@@ -7,6 +7,8 @@ import '../../features/business/presentation/providers/business_providers.dart';
 import '../../features/home/presentation/pages/home_dashboard_page.dart';
 import '../../shared/widgets/navigation/main_shell.dart';
 import '../../shared/widgets/scaffold/tab_placeholder_page.dart';
+import '../../features/ledger/presentation/pages/ledger_page.dart';
+import '../../features/ledger/presentation/pages/party_form_page.dart';
 import 'router_error_page.dart';
 import 'router_refresh_notifier.dart';
 import 'route_names.dart';
@@ -59,12 +61,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: RouteNames.ledger,
                 name: RouteNames.ledgerName,
                 pageBuilder: (context, state) => const NoTransitionPage(
-                  child: TabPlaceholderPage(
-                    title: 'Ledger',
-                    subtitle: 'Apna hisaab yahan dikhega — jald aa raha hai',
-                    icon: Icons.menu_book_rounded,
-                  ),
+                  child: LedgerPage(),
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'party/new',
+                    name: RouteNames.ledgerPartyNewName,
+                    builder: (context, state) => const PartyFormPage(
+                      mode: PartyFormMode.create,
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'party/:id/edit',
+                    name: RouteNames.ledgerPartyEditName,
+                    builder: (context, state) => PartyFormPage(
+                      mode: PartyFormMode.edit,
+                      partyId: state.pathParameters['id'],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

@@ -68,4 +68,25 @@ abstract final class Validators {
     }
     return null;
   }
+
+  static String? nonNegativeAmount(String? value, {String fieldName = 'Amount'}) {
+    if (value == null || value.trim().isEmpty) return null;
+
+    final amount = double.tryParse(value.replaceAll(',', '').trim());
+    if (amount == null || amount < 0) {
+      return 'Enter a valid $fieldName';
+    }
+    return null;
+  }
+
+  static String? optionalIndianPhone(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    return indianPhone(value);
+  }
+
+  static String? requiredIndianPhone(String? value) {
+    final requiredError = requiredText(value, fieldName: 'Mobile number');
+    if (requiredError != null) return requiredError;
+    return indianPhone(value);
+  }
 }

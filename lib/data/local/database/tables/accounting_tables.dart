@@ -19,6 +19,12 @@ abstract final class PartiesTable {
   static const String name = 'name';
   static const String type = 'type';
   static const String phone = 'phone';
+  static const String address = 'address';
+  static const String gstin = 'gstin';
+  static const String creditLimit = 'credit_limit';
+  static const String openingBalance = 'opening_balance';
+  static const String isActive = 'is_active';
+  static const String openingTransactionId = 'opening_transaction_id';
   static const String balance = 'balance';
   static const String createdAt = 'created_at';
   static const String updatedAt = 'updated_at';

@@ -11,7 +11,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 Future<Database> createTestDatabase() async {
   return openDatabase(
     inMemoryDatabasePath,
-    version: 3,
+    version: 4,
+    singleInstance: false,
     onConfigure: (db) async {
       await db.execute('PRAGMA foreign_keys = ON');
     },
@@ -91,6 +92,10 @@ Future<void> insertPartyBalance({
     PartiesTable.businessId: businessId,
     PartiesTable.name: name,
     PartiesTable.type: balance >= 0 ? 'customer' : 'supplier',
+    PartiesTable.phone: '',
+    PartiesTable.address: '',
+    PartiesTable.openingBalance: balance,
+    PartiesTable.isActive: 1,
     PartiesTable.balance: balance,
     PartiesTable.createdAt: now,
     PartiesTable.updatedAt: now,

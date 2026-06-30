@@ -157,6 +157,7 @@ final class DashboardLocalDataSource {
         FROM ${PartiesTable.tableName}
         WHERE ${PartiesTable.businessId} = ?
           AND ${PartiesTable.balance} $operator 0
+          AND ${PartiesTable.isActive} = 1
         ''',
       [businessId],
     );
@@ -167,6 +168,7 @@ final class DashboardLocalDataSource {
         FROM ${PartiesTable.tableName}
         WHERE ${PartiesTable.businessId} = ?
           AND ${PartiesTable.balance} $operator 0
+          AND ${PartiesTable.isActive} = 1
         ''',
         [businessId],
       ),
