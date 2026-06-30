@@ -6,11 +6,14 @@ import '../../../../core/errors/result.dart';
 import '../../data/datasources/party_local_datasource.dart';
 import '../../data/repositories/party_repository_impl.dart';
 import '../../data/services/opening_balance_posting_service.dart';
+import '../../data/services/payment_posting_service.dart';
 import '../../domain/entities/party.dart';
+import '../../domain/entities/party_history_entry.dart';
 import '../../domain/repositories/party_repository.dart';
 import '../../domain/usecases/delete_party.dart';
 import '../../domain/usecases/get_parties.dart';
 import '../../domain/usecases/get_party.dart';
+import '../../domain/usecases/party_hisaab_usecases.dart';
 import '../../domain/usecases/save_party.dart';
 import '../../domain/usecases/search_parties.dart';
 
@@ -25,10 +28,16 @@ final openingBalancePostingServiceProvider =
   return OpeningBalancePostingService(database);
 });
 
+final paymentPostingServiceProvider = Provider<PaymentPostingService>((ref) {
+  final database = ref.watch(appDatabaseProvider).requireValue;
+  return PaymentPostingService(database);
+});
+
 final partyRepositoryProvider = Provider<PartyRepository>((ref) {
   return PartyRepositoryImpl(
     ref.watch(partyLocalDataSourceProvider),
     ref.watch(openingBalancePostingServiceProvider),
+    ref.watch(paymentPostingServiceProvider),
   );
 });
 
@@ -52,27 +61,34 @@ final deletePartyUseCaseProvider = Provider<DeletePartyUseCase>((ref) {
   return DeletePartyUseCase(ref.watch(partyRepositoryProvider));
 });
 
-/// Search text for the ledger list.
-final partySearchQueryProvider = StateProvider<String>((ref) => '');
+final getPartyHistoryUseCaseProvider = Provider<GetPartyHistoryUseCase>((ref) {
+  return GetPartyHistoryUseCase(ref.watch(partyRepositoryProvider));
+});
 
-/// `null` = all, `true` = active only, `false` = inactive only.
-final partyStatusFilterProvider = StateProvider<bool?>((ref) => null);
+final recordPaymentReceivedUseCaseProvider =
+    Provider<RecordPaymentReceivedUseCase>((ref) {
+  return RecordPaymentReceivedUseCase(ref.watch(partyRepositoryProvider));
+});
+
+final recordPaymentPaidUseCaseProvider = Provider<RecordPaymentPaidUseCase>((ref) {
+  return RecordPaymentPaidUseCase(ref.watch(partyRepositoryProvider));
+});
+
+final partySearchQueryProvider = StateProvider<String>((ref) => '');
 
 final partyListProvider = FutureProvider<List<Party>>((ref) async {
   ref.watch(dataRevisionProvider);
 
   final query = ref.watch(partySearchQueryProvider);
-  final statusFilter = ref.watch(partyStatusFilterProvider);
-  final activeOnly = statusFilter == true;
 
   final Result<List<Party>> result;
   if (query.trim().isNotEmpty) {
     result = await ref.watch(searchPartiesUseCaseProvider)(
-      SearchPartiesParams(query: query, activeOnly: activeOnly),
+      SearchPartiesParams(query: query),
     );
   } else {
     result = await ref.watch(getPartiesUseCaseProvider)(
-      GetPartiesParams(activeOnly: activeOnly),
+      const GetPartiesParams(),
     );
   }
 
@@ -80,11 +96,7 @@ final partyListProvider = FutureProvider<List<Party>>((ref) async {
     throw result.failureOrNull!;
   }
 
-  var parties = result.valueOrNull ?? [];
-  if (statusFilter == false) {
-    parties = parties.where((party) => !party.isActive).toList();
-  }
-  return parties;
+  return result.valueOrNull ?? [];
 });
 
 final partyDetailProvider =
@@ -95,4 +107,14 @@ final partyDetailProvider =
     throw result.failureOrNull!;
   }
   return result.valueOrNull;
+});
+
+final partyHistoryProvider =
+    FutureProvider.family<List<PartyHistoryEntry>, String>((ref, partyId) async {
+  ref.watch(dataRevisionProvider);
+  final result = await ref.watch(getPartyHistoryUseCaseProvider)(partyId);
+  if (result.isFailure) {
+    throw result.failureOrNull!;
+  }
+  return result.valueOrNull ?? [];
 });

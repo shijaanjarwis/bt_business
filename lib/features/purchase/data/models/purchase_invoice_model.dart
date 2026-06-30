@@ -1,25 +1,20 @@
 import '../../../../core/accounting/gst_types.dart';
 import '../../../../core/accounting/payment_modes.dart';
 import '../../../../data/local/database/tables/accounting_tables.dart';
-import '../../domain/entities/sale_invoice.dart';
+import '../../domain/entities/purchase_invoice.dart';
 
-/// Maps between [SaleInvoice] entities and SQLite rows.
-final class SaleInvoiceModel {
-  const SaleInvoiceModel({
-    required this.invoice,
-    required this.partyName,
-  });
+/// Maps between [PurchaseInvoice] entities and SQLite rows.
+final class PurchaseInvoiceModel {
+  const PurchaseInvoiceModel({required this.invoice});
 
-  final SaleInvoice invoice;
-  final String partyName;
+  final PurchaseInvoice invoice;
 
-  factory SaleInvoiceModel.fromJoinedMap(
+  factory PurchaseInvoiceModel.fromJoinedMap(
     Map<String, Object?> map, {
-    required List<SaleLine> lines,
+    required List<PurchaseLine> lines,
   }) {
-    return SaleInvoiceModel(
-      partyName: map['party_name']! as String,
-      invoice: SaleInvoice(
+    return PurchaseInvoiceModel(
+      invoice: PurchaseInvoice(
         id: map[TransactionsTable.id]! as String,
         businessId: map[TransactionsTable.businessId]! as String,
         invoiceNo: map[TransactionsTable.invoiceNo]! as String? ?? '',
@@ -47,8 +42,8 @@ final class SaleInvoiceModel {
     );
   }
 
-  static SaleLine lineFromMap(Map<String, Object?> map) {
-    return SaleLine(
+  static PurchaseLine lineFromMap(Map<String, Object?> map) {
+    return PurchaseLine(
       id: map[TransactionLinesTable.id]! as String,
       transactionId: map[TransactionLinesTable.transactionId]! as String,
       itemId: map[TransactionLinesTable.itemId]! as String,

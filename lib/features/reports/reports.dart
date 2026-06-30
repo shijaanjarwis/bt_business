@@ -1,4 +1,4 @@
-/// Reports Module — financial statements, exports, and analytics.
+/// Reports — transaction history and summaries.
 library;
 
-// Feature implementation pending.
+export 'presentation/pages/transaction_history_page.dart';

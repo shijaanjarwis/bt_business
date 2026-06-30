@@ -1,16 +1,16 @@
 import '../../../../core/accounting/payment_modes.dart';
 import '../../../../core/errors/result.dart';
 import '../../../../core/usecases/usecase.dart';
-import '../entities/sale_invoice.dart';
+import '../entities/sale_entry.dart';
 import '../repositories/sale_repository.dart';
 
-final class GetSalesUseCase implements UseCase<List<SaleInvoice>, GetSalesParams> {
+final class GetSalesUseCase implements UseCase<List<SaleEntry>, GetSalesParams> {
   const GetSalesUseCase(this._repository);
 
   final SaleRepository _repository;
 
   @override
-  Future<Result<List<SaleInvoice>>> call(GetSalesParams params) {
+  Future<Result<List<SaleEntry>>> call(GetSalesParams params) {
     return _repository.getSales(
       fromDate: params.fromDate,
       toDate: params.toDate,

@@ -1,6 +1,9 @@
 import 'package:sqflite/sqflite.dart' hide DatabaseException;
 
+import '../../../../core/accounting/payment_modes.dart';
+import '../../../../core/accounting/transaction_types.dart';
 import '../../../../core/errors/exceptions.dart';
+import '../../domain/entities/party_history_builder.dart';
 import '../../../../data/local/database/tables/accounting_tables.dart';
 import '../../../../features/business/data/datasources/business_table.dart';
 import '../../domain/entities/party.dart';
@@ -49,9 +52,9 @@ final class PartyLocalDataSource {
 
     final pattern = '%$trimmed%';
     final where = StringBuffer(
-      '${PartiesTable.businessId} = ? AND (${PartiesTable.name} LIKE ? OR ${PartiesTable.phone} LIKE ? OR ${PartiesTable.gstin} LIKE ?)',
+      '${PartiesTable.businessId} = ? AND (${PartiesTable.name} LIKE ? OR ${PartiesTable.phone} LIKE ?)',
     );
-    final args = <Object?>[businessId, pattern, pattern, pattern];
+    final args = <Object?>[businessId, pattern, pattern];
     if (activeOnly) {
       where.write(' AND ${PartiesTable.isActive} = 1');
     }
@@ -110,5 +113,37 @@ final class PartyLocalDataSource {
       ),
     );
     return (count ?? 0) > 0;
+  }
+
+  Future<List<PartyHistoryRawRow>> fetchPartyHistory(String partyId) async {
+    final party = await fetchParty(partyId);
+    if (party == null) return [];
+
+    final rows = await _db.query(
+      TransactionsTable.tableName,
+      where: '${TransactionsTable.partyId} = ?',
+      whereArgs: [partyId],
+      orderBy: '${TransactionsTable.date} ASC, ${TransactionsTable.createdAt} ASC',
+    );
+
+    return rows.map((row) {
+      final type = row[TransactionsTable.type]! as String;
+      final notes = row[TransactionsTable.notes] as String?;
+      final paymentCode = row[TransactionsTable.paymentMode] as String?;
+      final isOpening = type == TransactionTypes.journal && notes == 'Opening balance';
+
+      return PartyHistoryRawRow(
+        id: row[TransactionsTable.id]! as String,
+        type: type,
+        date: DateTime.parse(row[TransactionsTable.date]! as String),
+        createdAt: DateTime.parse(row[TransactionsTable.createdAt]! as String),
+        totalAmount: (row[TransactionsTable.totalAmount] as num?)?.toDouble() ?? 0,
+        paymentMode: paymentCode == null
+            ? null
+            : PaymentMode.fromCode(paymentCode),
+        notes: notes,
+        isReceivableOpening: isOpening && party.openingBalance >= 0,
+      );
+    }).toList();
   }
 }

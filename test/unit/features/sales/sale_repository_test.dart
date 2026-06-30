@@ -4,7 +4,7 @@ import 'package:bt_business/data/local/database/tables/accounting_tables.dart';
 import 'package:bt_business/features/sales/data/datasources/sale_local_datasource.dart';
 import 'package:bt_business/features/sales/data/repositories/sale_repository_impl.dart';
 import 'package:bt_business/features/sales/data/services/sale_posting_service.dart';
-import 'package:bt_business/features/sales/domain/entities/sale_invoice.dart';
+import 'package:bt_business/features/sales/domain/entities/sale_entry.dart';
 import 'package:bt_business/features/sales/domain/repositories/sale_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite/sqflite.dart';
@@ -47,7 +47,7 @@ void main() {
     await db.close();
   });
 
-  test('saveSale creates cash invoice with stock deduction and journal', () async {
+  test('saveSale creates cash entry with stock deduction and journal', () async {
     final result = await repository.saveSale(
       SaveSaleInput(
         date: DateTime(2026, 6, 30),
@@ -67,9 +67,9 @@ void main() {
     );
 
     expect(result.isSuccess, isTrue, reason: result.failureOrNull?.message);
-    final invoice = result.valueOrNull!;
-    expect(invoice.invoiceNo.startsWith('SAL-'), isTrue);
-    expect(invoice.grandTotal, closeTo(236, 0.01));
+    final entry = result.valueOrNull!;
+    expect(entry.entryNo.startsWith('SAL-'), isTrue);
+    expect(entry.grandTotal, closeTo(236, 0.01));
 
     final itemRows = await db.query(ItemsTable.tableName, where: 'id = ?', whereArgs: [itemId]);
     expect(itemRows.first[ItemsTable.qtyOnHand], 8);

@@ -81,6 +81,7 @@ final class DashboardLocalDataSource {
         todaysProfit: todaysSales - todaysPurchase - todaysExpenses,
         todaysSales: todaysSales,
         todaysPurchase: todaysPurchase,
+        todaysExpenses: todaysExpenses,
         cashInHand: cashInHand,
         amountInBank: amountInBank,
         todaysReceivables: receivables.total,

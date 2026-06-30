@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/widgets/animations/fade_slide_in.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
@@ -12,9 +13,9 @@ import '../models/dashboard_metric.dart';
 import '../providers/dashboard_provider.dart';
 import '../widgets/bt_business_logo.dart';
 import '../widgets/dashboard_metric_card.dart';
-import '../widgets/dashboard_section_header.dart';
+import '../widgets/dashboard_quick_actions.dart';
 
-/// BT Business home dashboard — iPhone-first production UI.
+/// Daily register summary for the shopkeeper dashboard.
 class HomeDashboardPage extends ConsumerWidget {
   const HomeDashboardPage({super.key});
 
@@ -36,8 +37,12 @@ class HomeDashboardPage extends ConsumerWidget {
         data: (summary) => _DashboardContent(
           metrics: DashboardMetricsBuilder.fromSummary(summary),
           onRefresh: () => ref.read(dashboardProvider.notifier).refresh(),
-          onSalesTap: () => context.push(RouteNames.sales),
-          onNewSaleTap: () => context.push(RouteNames.salesNew),
+          onSalesTap: () => context.go(RouteNames.sales),
+          onPurchasesTap: () => context.go(RouteNames.purchases),
+          onExpenseTap: () => context.push(RouteNames.paymentsExpense),
+          onLenaTap: () => context.go(RouteNames.ledger),
+          onDenaTap: () => context.go(RouteNames.ledger),
+          onHistoryTap: () => context.push(RouteNames.history),
         ),
       ),
     );
@@ -49,23 +54,24 @@ class _DashboardContent extends StatelessWidget {
     required this.metrics,
     required this.onRefresh,
     required this.onSalesTap,
-    required this.onNewSaleTap,
+    required this.onPurchasesTap,
+    required this.onExpenseTap,
+    required this.onLenaTap,
+    required this.onDenaTap,
+    required this.onHistoryTap,
   });
 
   final List<DashboardMetric> metrics;
   final Future<void> Function() onRefresh;
   final VoidCallback onSalesTap;
-  final VoidCallback onNewSaleTap;
+  final VoidCallback onPurchasesTap;
+  final VoidCallback onExpenseTap;
+  final VoidCallback onLenaTap;
+  final VoidCallback onDenaTap;
+  final VoidCallback onHistoryTap;
 
   @override
   Widget build(BuildContext context) {
-    final hero = metrics.first;
-    final today = metrics.sublist(1, 3);
-    final cashBank = metrics.sublist(3, 5);
-    final receivablePayable = metrics.sublist(5, 7);
-    final payments = metrics.sublist(7, 9);
-    final goods = metrics.sublist(9, 11);
-
     return SafeArea(
       bottom: false,
       child: RefreshIndicator(
@@ -104,7 +110,7 @@ class _DashboardContent extends StatelessWidget {
                     FadeSlideIn(
                       index: 1,
                       child: Text(
-                        DashboardMetricsBuilder.todayLabel(),
+                        DateFormatter.displayDate(DateTime.now()),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -114,9 +120,18 @@ class _DashboardContent extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    FadeSlideIn(
+                    const FadeSlideIn(
                       index: 2,
-                      child: DashboardMetricCard(metric: hero),
+                      child: DashboardQuickActions(),
+                    ),
+                    const SizedBox(height: 16),
+                    FadeSlideIn(
+                      index: 3,
+                      child: OutlinedButton.icon(
+                        onPressed: onHistoryTap,
+                        icon: const Icon(Icons.history_rounded, color: ColorPalette.purple),
+                        label: const Text('Poora Record · History'),
+                      ),
                     ),
                     const SizedBox(height: 22),
                   ],
@@ -127,61 +142,37 @@ class _DashboardContent extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  const FadeSlideIn(
-                    index: 3,
-                    child: DashboardSectionHeader(title: 'TODAY'),
-                  ),
                   FadeSlideIn(
                     index: 4,
-                    child: _MetricPairRow(
-                      left: today[0],
-                      right: today[1],
-                      onLeftTap: onSalesTap,
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-                  const FadeSlideIn(
-                    index: 5,
-                    child: DashboardSectionHeader(title: 'CASH & BANK'),
-                  ),
-                  FadeSlideIn(
-                    index: 6,
-                    child: _MetricPairRow(
-                      left: cashBank[0],
-                      right: cashBank[1],
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-                  const FadeSlideIn(
-                    index: 7,
-                    child: DashboardSectionHeader(title: 'LENA / DENA'),
-                  ),
-                  FadeSlideIn(
-                    index: 8,
-                    child: DashboardMetricCard(metric: receivablePayable[0]),
+                    child: DashboardMetricCard(metric: metrics[0]),
                   ),
                   const SizedBox(height: 12),
                   FadeSlideIn(
-                    index: 9,
-                    child: DashboardMetricCard(metric: receivablePayable[1]),
+                    index: 5,
+                    child: _MetricPairRow(
+                      left: metrics[1],
+                      right: metrics[2],
+                      onLeftTap: onLenaTap,
+                      onRightTap: onDenaTap,
+                    ),
                   ),
-                  const SizedBox(height: 22),
-                  const FadeSlideIn(
-                    index: 10,
-                    child: DashboardSectionHeader(title: 'PAYMENTS'),
-                  ),
+                  const SizedBox(height: 12),
                   FadeSlideIn(
-                    index: 11,
-                    child: _MetricPairRow(left: payments[0], right: payments[1]),
+                    index: 6,
+                    child: _MetricPairRow(
+                      left: metrics[3],
+                      right: metrics[4],
+                      onLeftTap: onSalesTap,
+                      onRightTap: onPurchasesTap,
+                    ),
                   ),
-                  const SizedBox(height: 22),
-                  const FadeSlideIn(
-                    index: 12,
-                    child: DashboardSectionHeader(title: 'GOODS'),
-                  ),
+                  const SizedBox(height: 12),
                   FadeSlideIn(
-                    index: 13,
-                    child: _MetricPairRow(left: goods[0], right: goods[1]),
+                    index: 7,
+                    child: DashboardMetricCard(
+                      metric: metrics[5],
+                      onTap: onExpenseTap,
+                    ),
                   ),
                   const SizedBox(height: 120),
                 ]),
@@ -199,11 +190,13 @@ class _MetricPairRow extends StatelessWidget {
     required this.left,
     required this.right,
     this.onLeftTap,
+    this.onRightTap,
   });
 
   final DashboardMetric left;
   final DashboardMetric right;
   final VoidCallback? onLeftTap;
+  final VoidCallback? onRightTap;
 
   @override
   Widget build(BuildContext context) {
@@ -217,7 +210,12 @@ class _MetricPairRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Expanded(child: DashboardMetricCard(metric: right)),
+        Expanded(
+          child: DashboardMetricCard(
+            metric: right,
+            onTap: onRightTap,
+          ),
+        ),
       ],
     );
   }

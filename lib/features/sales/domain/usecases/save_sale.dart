@@ -1,17 +1,16 @@
 import '../../../../core/errors/failures.dart';
 import '../../../../core/errors/result.dart';
 import '../../../../core/usecases/usecase.dart';
-import '../../../../core/utils/validators.dart';
-import '../entities/sale_invoice.dart';
+import '../entities/sale_entry.dart';
 import '../repositories/sale_repository.dart';
 
-final class SaveSaleUseCase implements UseCase<SaleInvoice, SaveSaleInput> {
+final class SaveSaleUseCase implements UseCase<SaleEntry, SaveSaleInput> {
   const SaveSaleUseCase(this._repository);
 
   final SaleRepository _repository;
 
   @override
-  Future<Result<SaleInvoice>> call(SaveSaleInput input) async {
+  Future<Result<SaleEntry>> call(SaveSaleInput input) async {
     final validationError = _validate(input);
     if (validationError != null) {
       return Error(validationError);
@@ -22,30 +21,22 @@ final class SaveSaleUseCase implements UseCase<SaleInvoice, SaveSaleInput> {
 
   Failure? _validate(SaveSaleInput input) {
     if (input.partyId.trim().isEmpty) {
-      return const ValidationFailure('Select a customer');
+      return const ValidationFailure('Grahak chuniye');
     }
     if (input.lines.isEmpty) {
-      return const ValidationFailure('Add at least one product line');
+      return const ValidationFailure('Kam se kam ek maal jodein');
     }
 
     for (final line in input.lines) {
       if (line.itemId.trim().isEmpty) {
-        return const ValidationFailure('Each line must have a product');
+        return const ValidationFailure('Har line mein maal hona chahiye');
       }
       if (line.qty <= 0) {
-        return const ValidationFailure('Quantity must be greater than zero');
+        return const ValidationFailure('Matra zero se zyada honi chahiye');
       }
       if (line.rate <= 0) {
-        return const ValidationFailure('Rate must be greater than zero');
+        return const ValidationFailure('Daam zero se zyada hona chahiye');
       }
-      if (line.discountAmount < 0) {
-        return const ValidationFailure('Discount cannot be negative');
-      }
-      final gstError = Validators.nonNegativeAmount(
-        line.gstRate.toString(),
-        fieldName: 'GST rate',
-      );
-      if (gstError != null) return ValidationFailure(gstError);
     }
 
     return null;

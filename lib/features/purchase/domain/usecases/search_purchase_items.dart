@@ -1,13 +1,13 @@
 import '../../../../core/errors/failures.dart';
 import '../../../../core/errors/result.dart';
 import '../../../../core/usecases/usecase.dart';
-import '../../data/datasources/sale_local_datasource.dart';
-import '../../data/models/sale_item_model.dart';
+import '../../../../features/sales/data/models/sale_item_model.dart';
+import '../../data/datasources/purchase_local_datasource.dart';
 
-final class SearchSaleItemsUseCase implements UseCase<List<SaleItem>, String> {
-  const SearchSaleItemsUseCase(this._localDataSource);
+final class SearchPurchaseItemsUseCase implements UseCase<List<SaleItem>, String> {
+  const SearchPurchaseItemsUseCase(this._localDataSource);
 
-  final SaleLocalDataSource _localDataSource;
+  final PurchaseLocalDataSource _localDataSource;
 
   @override
   Future<Result<List<SaleItem>>> call(String query) async {

@@ -18,13 +18,13 @@ import '../../../../shared/widgets/layout/app_form_section.dart';
 import '../../../../shared/widgets/layout/responsive_form_container.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../ledger/domain/entities/party.dart';
-import '../../../ledger/domain/entities/party_type.dart';
-import '../../../../core/router/route_names.dart';
+import '../../../items/domain/entities/item.dart';
+import '../../../items/presentation/widgets/entry_item_picker_sheet.dart';
 import '../../../ledger/presentation/providers/party_providers.dart';
-import '../../data/models/sale_item_model.dart';
-import '../../domain/entities/sale_invoice.dart';
+import '../../domain/entities/sale_entry.dart';
 import '../../domain/repositories/sale_repository.dart';
 import '../providers/sale_providers.dart';
+import '../widgets/entry_party_picker_sheet.dart';
 
 enum SaleFormMode { create, edit }
 
@@ -48,7 +48,7 @@ class DraftSaleLine {
   double gstRate;
 }
 
-/// Create or edit a sales invoice with GST and stock deduction.
+/// Record a sale — like writing in a register. Stock and ledger update automatically.
 class SaleFormPage extends ConsumerStatefulWidget {
   const SaleFormPage({
     super.key,
@@ -76,7 +76,7 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
   PaymentMode _paymentMode = PaymentMode.cash;
   GstType _gstType = GstType.intra;
   final List<DraftSaleLine> _lines = [];
-  SaleInvoice? _existing;
+  SaleEntry? _existing;
   bool _initialized = false;
   bool _isSaving = false;
   bool _isDeleting = false;
@@ -87,17 +87,17 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
     super.dispose();
   }
 
-  void _applyInvoice(SaleInvoice invoice) {
+  void _applyEntry(SaleEntry entry) {
     if (_initialized) return;
-    _existing = invoice;
-    _date = invoice.date;
-    _paymentMode = invoice.paymentMode;
-    _gstType = invoice.gstType;
-    _notesController.text = invoice.notes ?? '';
+    _existing = entry;
+    _date = entry.date;
+    _paymentMode = entry.paymentMode;
+    _gstType = entry.gstType;
+    _notesController.text = entry.notes ?? '';
     _lines
       ..clear()
       ..addAll(
-        invoice.lines.map(
+        entry.lines.map(
           (line) => DraftSaleLine(
             itemId: line.itemId,
             itemName: line.itemName,
@@ -136,7 +136,7 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
   SaveSaleInput _buildInput() {
     return SaveSaleInput(
       id: _existing?.id,
-      invoiceNo: _existing?.invoiceNo,
+      entryNo: _existing?.entryNo,
       date: _date,
       partyId: _selectedParty!.id,
       paymentMode: _paymentMode,
@@ -163,16 +163,18 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
     final party = await showModalBottomSheet<Party>(
       context: context,
       isScrollControlled: true,
-      builder: (context) => const _PartyPickerSheet(),
+      builder: (context) => const EntryPartyPickerSheet(),
     );
     if (party != null) setState(() => _selectedParty = party);
   }
 
   Future<void> _addLine() async {
-    final item = await showModalBottomSheet<SaleItem>(
+    final item = await showModalBottomSheet<Item>(
       context: context,
       isScrollControlled: true,
-      builder: (context) => const _ItemPickerSheet(),
+      builder: (context) => const EntryItemPickerSheet(
+        mode: EntryItemMode.sale,
+      ),
     );
     if (item == null) return;
 
@@ -191,11 +193,11 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
 
   Future<void> _handleSave() async {
     if (_selectedParty == null) {
-      _showMessage('Select a customer');
+      _showMessage('Pehle grahak chuniye');
       return;
     }
     if (_lines.isEmpty) {
-      _showMessage('Add at least one product');
+      _showMessage('Add at least one item');
       return;
     }
     if (!_formKey.currentState!.validate()) return;
@@ -221,8 +223,8 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete invoice?'),
-        content: const Text('Yeh invoice delete ho jayegi aur stock wapas aa jayega.'),
+        title: const Text('Delete this sale?'),
+        content: const Text('Yeh entry delete ho jayegi aur stock wapas aa jayega.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(
@@ -270,24 +272,24 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
         loading: () => const Scaffold(body: AppLoadingView()),
         error: (error, _) => Scaffold(
           body: AppErrorView(
-            title: 'Invoice load nahi ho payi',
+            title: 'Sale load nahi ho payi',
             message: error.toString(),
             actionLabel: 'Back',
             onAction: () => context.pop(),
           ),
         ),
-        data: (invoice) {
-          if (invoice == null) {
+        data: (entry) {
+          if (entry == null) {
             return Scaffold(
               body: AppErrorView(
-                title: 'Invoice not found',
-                message: 'Yeh invoice ab available nahi hai.',
+                title: 'Sale not found',
+                message: 'Yeh entry ab available nahi hai.',
                 actionLabel: 'Back',
                 onAction: () => context.pop(),
               ),
             );
           }
-          _applyInvoice(invoice);
+          _applyEntry(entry);
           return _buildForm();
         },
       );
@@ -311,21 +313,16 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
         backgroundColor: ColorPalette.background,
         elevation: 0,
         title: BilingualLabel(
-          english: widget.isEdit ? 'Edit Invoice' : 'New Sale Invoice',
-          hindi: widget.isEdit ? 'Invoice badlo' : 'Nayi sale invoice',
+          english: widget.isEdit ? 'Edit Sale' : 'Record Sale',
+          hindi: widget.isEdit ? 'Sale badlo' : 'Sale likho',
           compact: true,
         ),
         actions: [
-          if (widget.isEdit && _existing != null) ...[
-            IconButton(
-              icon: const Icon(Icons.print_rounded),
-              onPressed: () => context.push(RouteNames.salesPrintPath(_existing!.id)),
-            ),
+          if (widget.isEdit && _existing != null)
             IconButton(
               onPressed: _isDeleting ? null : _handleDelete,
               icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
             ),
-          ],
         ],
       ),
       body: SafeArea(
@@ -339,14 +336,14 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     AppFormSection(
-                      title: 'Customer & Date',
+                      title: 'Who & When',
                       child: Column(
                         children: [
                           ListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: const Text('Customer · Grahak'),
+                            title: const Text('Party · Naam'),
                             subtitle: Text(
-                              _selectedParty?.name ?? 'Select customer from ledger',
+                              _selectedParty?.name ?? 'Party chuniye',
                             ),
                             trailing: const Icon(Icons.chevron_right_rounded),
                             onTap: _pickParty,
@@ -360,8 +357,8 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
                           ),
                           const SizedBox(height: 8),
                           const BilingualLabel(
-                            english: 'Payment Mode',
-                            hindi: 'Cash ya udhaar',
+                            english: 'Money received?',
+                            hindi: 'Paisa abhi mila ya udhaar?',
                             compact: true,
                           ),
                           Wrap(
@@ -374,28 +371,12 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
                               );
                             }).toList(),
                           ),
-                          const SizedBox(height: 12),
-                          const BilingualLabel(
-                            english: 'GST Type',
-                            hindi: 'Same state ya alag state',
-                            compact: true,
-                          ),
-                          Wrap(
-                            spacing: 8,
-                            children: GstType.values.map((type) {
-                              return ChoiceChip(
-                                label: Text(type.englishLabel),
-                                selected: _gstType == type,
-                                onSelected: (_) => setState(() => _gstType = type),
-                              );
-                            }).toList(),
-                          ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 20),
                     AppFormSection(
-                      title: 'Products',
+                      title: 'What sold · Kya becha',
                       child: Column(
                         children: [
                           ..._lines.asMap().entries.map((entry) {
@@ -411,7 +392,7 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
                           OutlinedButton.icon(
                             onPressed: _addLine,
                             icon: const Icon(Icons.add_rounded),
-                            label: const Text('Add Product · Maal jodein'),
+                            label: const Text('Add Item · Maal jodein'),
                           ),
                         ],
                       ),
@@ -419,39 +400,25 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
                     const SizedBox(height: 20),
                     if (totals != null)
                       AppFormSection(
-                        title: 'Totals',
-                        child: Column(
-                          children: [
-                            _TotalRow(label: 'Subtotal', amount: totals.subtotal),
-                            _TotalRow(label: 'Discount', amount: totals.discountTotal),
-                            _TotalRow(label: 'Taxable', amount: totals.taxableTotal),
-                            if (totals.cgstTotal > 0)
-                              _TotalRow(label: 'CGST', amount: totals.cgstTotal),
-                            if (totals.sgstTotal > 0)
-                              _TotalRow(label: 'SGST', amount: totals.sgstTotal),
-                            if (totals.igstTotal > 0)
-                              _TotalRow(label: 'IGST', amount: totals.igstTotal),
-                            const Divider(),
-                            _TotalRow(
-                              label: 'Grand Total · Kul raashi',
-                              amount: totals.grandTotal,
-                              bold: true,
-                            ),
-                          ],
+                        title: 'Total · Kul',
+                        child: _TotalRow(
+                          label: 'Amount · Raashi',
+                          amount: totals.grandTotal,
+                          bold: true,
                         ),
                       ),
                     const SizedBox(height: 12),
                     AppFormSection(
-                      title: 'Notes',
+                      title: 'Note (optional)',
                       child: AppTextField(
                         controller: _notesController,
-                        label: 'Notes · Koi note (optional)',
+                        label: 'Kuch yaad rakhna ho to likhein',
                         maxLines: 2,
                       ),
                     ),
                     const SizedBox(height: 24),
                     AppPrimaryButton(
-                      label: widget.isEdit ? 'Save Invoice' : 'Create Invoice',
+                      label: widget.isEdit ? 'Save · Save karein' : 'Record Sale · Sale likho',
                       isLoading: _isSaving,
                       onPressed: _handleSave,
                     ),
@@ -521,25 +488,17 @@ class _LineEditor extends StatefulWidget {
 class _LineEditorState extends State<_LineEditor> {
   late final _qtyController = TextEditingController(text: widget.line.qty.toString());
   late final _rateController = TextEditingController(text: widget.line.rate.toString());
-  late final _discountController =
-      TextEditingController(text: widget.line.discountAmount.toString());
-  late final _gstController = TextEditingController(text: widget.line.gstRate.toString());
 
   @override
   void dispose() {
     _qtyController.dispose();
     _rateController.dispose();
-    _discountController.dispose();
-    _gstController.dispose();
     super.dispose();
   }
 
   void _sync() {
     widget.line.qty = double.tryParse(_qtyController.text) ?? widget.line.qty;
     widget.line.rate = double.tryParse(_rateController.text) ?? widget.line.rate;
-    widget.line.discountAmount =
-        double.tryParse(_discountController.text) ?? widget.line.discountAmount;
-    widget.line.gstRate = double.tryParse(_gstController.text) ?? widget.line.gstRate;
     widget.onChanged();
   }
 
@@ -575,7 +534,7 @@ class _LineEditorState extends State<_LineEditor> {
                 child: TextFormField(
                   controller: _qtyController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Qty'),
+                  decoration: const InputDecoration(labelText: 'Qty · Matra'),
                   validator: (v) => Validators.positiveAmount(v),
                   onChanged: (_) => _sync(),
                 ),
@@ -585,32 +544,8 @@ class _LineEditorState extends State<_LineEditor> {
                 child: TextFormField(
                   controller: _rateController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Rate'),
+                  decoration: const InputDecoration(labelText: 'Rate · Daam'),
                   validator: (v) => Validators.positiveAmount(v),
-                  onChanged: (_) => _sync(),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _discountController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Discount ₹'),
-                  validator: Validators.nonNegativeAmount,
-                  onChanged: (_) => _sync(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextFormField(
-                  controller: _gstController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'GST %'),
-                  validator: Validators.nonNegativeAmount,
                   onChanged: (_) => _sync(),
                 ),
               ),
@@ -618,168 +553,6 @@ class _LineEditorState extends State<_LineEditor> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _PartyPickerSheet extends ConsumerStatefulWidget {
-  const _PartyPickerSheet();
-
-  @override
-  ConsumerState<_PartyPickerSheet> createState() => _PartyPickerSheetState();
-}
-
-class _PartyPickerSheetState extends ConsumerState<_PartyPickerSheet> {
-  final _queryController = TextEditingController();
-
-  @override
-  void dispose() {
-    _queryController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final query = _queryController.text;
-    final partiesAsync = query.trim().isEmpty
-        ? ref.watch(partyListProvider)
-        : ref.watch(partyListProvider);
-
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.7,
-      builder: (context, scrollController) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              const BilingualLabel(
-                english: 'Select Customer',
-                hindi: 'Ledger se customer chuniye',
-                compact: true,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _queryController,
-                onChanged: (_) {
-                  ref.read(partySearchQueryProvider.notifier).state = _queryController.text;
-                  setState(() {});
-                },
-                decoration: const InputDecoration(
-                  hintText: 'Search customer…',
-                  prefixIcon: Icon(Icons.search_rounded),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: partiesAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Text(e.toString()),
-                  data: (parties) {
-                    final customers = parties
-                        .where(
-                          (party) =>
-                              party.isActive &&
-                              (party.type == PartyType.customer ||
-                                  party.type == PartyType.both),
-                        )
-                        .toList();
-                    return ListView.builder(
-                      controller: scrollController,
-                      itemCount: customers.length,
-                      itemBuilder: (context, index) {
-                        final party = customers[index];
-                        return ListTile(
-                          title: Text(party.name),
-                          subtitle: Text(party.phone),
-                          onTap: () => Navigator.pop(context, party),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ItemPickerSheet extends ConsumerStatefulWidget {
-  const _ItemPickerSheet();
-
-  @override
-  ConsumerState<_ItemPickerSheet> createState() => _ItemPickerSheetState();
-}
-
-class _ItemPickerSheetState extends ConsumerState<_ItemPickerSheet> {
-  final _queryController = TextEditingController();
-
-  @override
-  void dispose() {
-    _queryController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final query = _queryController.text;
-    final itemsAsync = ref.watch(saleItemsSearchProvider(query));
-
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.7,
-      builder: (context, scrollController) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              const BilingualLabel(
-                english: 'Select Product',
-                hindi: 'Stock se maal chuniye',
-                compact: true,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _queryController,
-                onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  hintText: 'Search product…',
-                  prefixIcon: Icon(Icons.search_rounded),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: itemsAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Text(e.toString()),
-                  data: (items) {
-                    if (items.isEmpty) {
-                      return const Text('No products in stock. Add items first.');
-                    }
-                    return ListView.builder(
-                      controller: scrollController,
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        return ListTile(
-                          title: Text(item.name),
-                          subtitle: Text(
-                            'Stock: ${item.qtyOnHand} ${item.unit} · ₹${item.saleRate}',
-                          ),
-                          onTap: () => Navigator.pop(context, item),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

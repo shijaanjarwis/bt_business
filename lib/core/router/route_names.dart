@@ -7,24 +7,40 @@ abstract final class RouteNames {
   static const String ai = '/ai';
   static const String businessProfile = '/business-profile';
   static const String ledgerPartyNew = '/ledger/party/new';
+  static const String ledgerPartyDetail = '/ledger/party/:id';
   static const String ledgerPartyEdit = '/ledger/party/:id/edit';
   static const String sales = '/sales';
   static const String salesNew = '/sales/new';
   static const String salesEdit = '/sales/:id/edit';
-  static const String salesPrint = '/sales/:id/print';
+  static const String purchases = '/purchases';
+  static const String purchasesNew = '/purchases/new';
+  static const String purchasesEdit = '/purchases/:id/edit';
+  static const String payments = '/payments';
+  static const String paymentsReceived = '/payments/received';
+  static const String paymentsPaid = '/payments/paid';
+  static const String paymentsExpense = '/payments/expense';
+  static const String history = '/history';
 
+  static String ledgerPartyDetailPath(String id) => '/ledger/party/$id';
   static String ledgerPartyEditPath(String id) => '/ledger/party/$id/edit';
   static String salesEditPath(String id) => '/sales/$id/edit';
-  static String salesPrintPath(String id) => '/sales/$id/print';
-
-  static const String salesPrintName = 'salesPrint';
+  static String purchasesEditPath(String id) => '/purchases/$id/edit';
 
   static const String salesName = 'sales';
   static const String salesNewName = 'salesNew';
   static const String salesEditName = 'salesEdit';
+  static const String purchasesName = 'purchases';
+  static const String purchasesNewName = 'purchasesNew';
+  static const String purchasesEditName = 'purchasesEdit';
+  static const String paymentsName = 'payments';
+  static const String paymentsReceivedName = 'paymentsReceived';
+  static const String paymentsPaidName = 'paymentsPaid';
+  static const String paymentsExpenseName = 'paymentsExpense';
+  static const String historyName = 'history';
   static const String homeName = 'home';
   static const String ledgerName = 'ledger';
   static const String ledgerPartyNewName = 'ledgerPartyNew';
+  static const String ledgerPartyDetailName = 'ledgerPartyDetail';
   static const String ledgerPartyEditName = 'ledgerPartyEdit';
   static const String stockName = 'stock';
   static const String reportsName = 'reports';

@@ -4,21 +4,21 @@ import '../../../../core/accounting/payment_modes.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
-import '../../domain/entities/sale_invoice.dart';
+import '../../domain/entities/sale_entry.dart';
 
 class SaleListTile extends StatelessWidget {
   const SaleListTile({
     super.key,
-    required this.invoice,
+    required this.entry,
     required this.onTap,
   });
 
-  final SaleInvoice invoice;
+  final SaleEntry entry;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final isCredit = invoice.paymentMode == PaymentMode.credit;
+    final isCredit = entry.paymentMode == PaymentMode.credit;
 
     return Material(
       color: Colors.white,
@@ -35,7 +35,7 @@ class SaleListTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      invoice.invoiceNo,
+                      entry.partyName,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -44,18 +44,10 @@ class SaleListTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      invoice.partyName,
+                      DateFormatter.displayDate(entry.date),
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         color: Color(0xFF636366),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      DateFormatter.displayDate(invoice.date),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF8E8E93),
                       ),
                     ),
                   ],
@@ -65,7 +57,7 @@ class SaleListTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    CurrencyFormatter.format(invoice.grandTotal),
+                    CurrencyFormatter.format(entry.grandTotal),
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -81,7 +73,7 @@ class SaleListTile extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      isCredit ? 'Credit · Udhaar' : 'Cash',
+                      isCredit ? 'Udhaar' : 'Abhi mila',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,

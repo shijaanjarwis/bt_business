@@ -11,7 +11,7 @@ import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../providers/sale_providers.dart';
 import '../widgets/sale_list_tile.dart';
 
-/// Sales invoice list with search and payment filters.
+/// Sales register — today's and past sale entries.
 class SaleListPage extends ConsumerStatefulWidget {
   const SaleListPage({super.key});
 
@@ -40,16 +40,16 @@ class _SaleListPageState extends ConsumerState<SaleListPage> {
         elevation: 0,
         scrolledUnderElevation: 0,
         title: const BilingualLabel(
-          english: 'Sales',
-          hindi: 'Sale invoice ka record',
+          english: 'Sale',
+          hindi: 'Sale ka register',
           compact: true,
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(RouteNames.salesNew),
         backgroundColor: ColorPalette.purple,
-        icon: const Icon(Icons.receipt_long_rounded),
-        label: const Text('New Invoice'),
+        icon: const Icon(Icons.edit_note_rounded),
+        label: const Text('Record Sale'),
       ),
       body: SafeArea(
         child: Column(
@@ -62,7 +62,7 @@ class _SaleListPageState extends ConsumerState<SaleListPage> {
                   ref.read(saleSearchQueryProvider.notifier).state = value;
                 },
                 decoration: InputDecoration(
-                  hintText: 'Invoice no, customer, mobile…',
+                  hintText: 'Party, date…',
                   prefixIcon: const Icon(Icons.search_rounded, color: ColorPalette.purple),
                   filled: true,
                   fillColor: Colors.white,
@@ -87,7 +87,7 @@ class _SaleListPageState extends ConsumerState<SaleListPage> {
                     ),
                     const SizedBox(width: 8),
                     _FilterChip(
-                      label: 'Cash',
+                      label: 'Abhi mila',
                       selected: paymentFilter == PaymentMode.cash,
                       onSelected: () => ref
                           .read(salePaymentFilterProvider.notifier)
@@ -95,7 +95,7 @@ class _SaleListPageState extends ConsumerState<SaleListPage> {
                     ),
                     const SizedBox(width: 8),
                     _FilterChip(
-                      label: 'Credit · Udhaar',
+                      label: 'Udhaar',
                       selected: paymentFilter == PaymentMode.credit,
                       onSelected: () => ref
                           .read(salePaymentFilterProvider.notifier)
@@ -119,8 +119,8 @@ class _SaleListPageState extends ConsumerState<SaleListPage> {
                   if (sales.isEmpty) {
                     return const Center(
                       child: BilingualLabel(
-                        english: 'No sales invoices yet',
-                        hindi: 'Pehli sale invoice banayein',
+                        english: 'No sales recorded yet',
+                        hindi: 'Pehli sale likho',
                       ),
                     );
                   }
@@ -133,10 +133,10 @@ class _SaleListPageState extends ConsumerState<SaleListPage> {
                       itemCount: sales.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
-                        final invoice = sales[index];
+                        final entry = sales[index];
                         return SaleListTile(
-                          invoice: invoice,
-                          onTap: () => context.push(RouteNames.salesEditPath(invoice.id)),
+                          entry: entry,
+                          onTap: () => context.push(RouteNames.salesEditPath(entry.id)),
                         );
                       },
                     ),

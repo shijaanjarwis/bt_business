@@ -1,4 +1,4 @@
-/// Stock Module — inventory, SKUs, and stock movements.
+/// Stock tab — flat item master list (replaces Tally-style inventory hierarchy).
 library;
 
-// Feature implementation pending.
+export '../items/items.dart';

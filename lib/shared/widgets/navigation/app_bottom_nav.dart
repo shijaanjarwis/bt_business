@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/color_palette.dart';
 
-enum AppTab { home, ledger, stock, reports, ai }
+enum AppTab { home, ledger, stock, sales, purchases }
 
-/// iOS-style bottom navigation bar for the main app shell.
+/// iOS-style bottom navigation for the five daily shopkeeper workflows.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     super.key,
@@ -36,40 +36,38 @@ class AppBottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _NavItem(
                 icon: Icons.home_rounded,
-                label: 'Home',
+                label: 'Dashboard',
                 selected: currentTab == AppTab.home,
                 onTap: () => onTabSelected(AppTab.home),
               ),
               _NavItem(
                 icon: Icons.menu_book_rounded,
-                label: 'Ledger',
+                label: 'Hisaab',
                 selected: currentTab == AppTab.ledger,
                 onTap: () => onTabSelected(AppTab.ledger),
               ),
-              const SizedBox(width: 56),
               _NavItem(
                 icon: Icons.inventory_2_rounded,
-                label: 'Stock',
+                label: 'Items',
                 selected: currentTab == AppTab.stock,
                 onTap: () => onTabSelected(AppTab.stock),
               ),
               _NavItem(
-                icon: Icons.bar_chart_rounded,
-                label: 'Reports',
-                selected: currentTab == AppTab.reports,
-                onTap: () => onTabSelected(AppTab.reports),
+                icon: Icons.sell_outlined,
+                label: 'Sale',
+                selected: currentTab == AppTab.sales,
+                onTap: () => onTabSelected(AppTab.sales),
               ),
               _NavItem(
-                icon: Icons.auto_awesome_rounded,
-                label: 'AI',
-                selected: currentTab == AppTab.ai,
-                onTap: () => onTabSelected(AppTab.ai),
+                icon: Icons.shopping_bag_outlined,
+                label: 'Purchase',
+                selected: currentTab == AppTab.purchases,
+                onTap: () => onTabSelected(AppTab.purchases),
               ),
             ],
           ),
@@ -111,7 +109,7 @@ class _NavItem extends StatelessWidget {
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutCubic,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
+                    horizontal: 10,
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
@@ -120,16 +118,18 @@ class _NavItem extends StatelessWidget {
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, color: color, size: 22),
+                  child: Icon(icon, color: color, size: 21),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 9.5,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                     color: color,
-                    letterSpacing: -0.1,
+                    letterSpacing: -0.2,
                   ),
                 ),
               ],

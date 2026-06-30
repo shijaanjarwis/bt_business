@@ -1,9 +1,10 @@
 import '../../../../core/errors/result.dart';
 import '../entities/opening_balance_direction.dart';
 import '../entities/party.dart';
+import '../entities/party_history_entry.dart';
 import '../entities/party_type.dart';
 
-/// Persistence contract for ledger parties.
+/// Persistence contract for hisaab parties.
 abstract interface class PartyRepository {
   Future<Result<List<Party>>> getParties({bool activeOnly = false});
 
@@ -16,6 +17,12 @@ abstract interface class PartyRepository {
   Future<Result<void>> deleteParty(String id);
 
   Future<Result<bool>> hasTransactions(String partyId);
+
+  Future<Result<List<PartyHistoryEntry>>> getPartyHistory(String partyId);
+
+  Future<Result<void>> recordPaymentReceived(RecordPaymentInput input);
+
+  Future<Result<void>> recordPaymentPaid(RecordPaymentInput input);
 }
 
 /// Domain input for creating or updating a party.
@@ -51,4 +58,19 @@ class SavePartyInput {
   final String? existingOpeningTransactionId;
   final double? existingBalance;
   final bool allowOpeningUpdate;
+}
+
+/// Input for recording jama or payment on a party hisaab.
+class RecordPaymentInput {
+  const RecordPaymentInput({
+    required this.partyId,
+    required this.amount,
+    required this.date,
+    this.note,
+  });
+
+  final String partyId;
+  final double amount;
+  final DateTime date;
+  final String? note;
 }

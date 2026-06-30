@@ -1,7 +1,7 @@
 import '../../../../core/accounting/gst_types.dart';
 import '../../../../core/accounting/payment_modes.dart';
 
-/// One product line on a sales invoice.
+/// One item line on a sale register entry.
 class SaleLine {
   const SaleLine({
     required this.id,
@@ -36,53 +36,14 @@ class SaleLine {
   final double igstAmount;
   final double lineTotal;
   final int sortOrder;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is SaleLine &&
-          id == other.id &&
-          transactionId == other.transactionId &&
-          itemId == other.itemId &&
-          itemName == other.itemName &&
-          hsnSac == other.hsnSac &&
-          qty == other.qty &&
-          rate == other.rate &&
-          discountAmount == other.discountAmount &&
-          gstRate == other.gstRate &&
-          taxableAmount == other.taxableAmount &&
-          cgstAmount == other.cgstAmount &&
-          sgstAmount == other.sgstAmount &&
-          igstAmount == other.igstAmount &&
-          lineTotal == other.lineTotal &&
-          sortOrder == other.sortOrder;
-
-  @override
-  int get hashCode => Object.hash(
-        id,
-        transactionId,
-        itemId,
-        itemName,
-        hsnSac,
-        qty,
-        rate,
-        discountAmount,
-        gstRate,
-        taxableAmount,
-        cgstAmount,
-        sgstAmount,
-        igstAmount,
-        lineTotal,
-        sortOrder,
-      );
 }
 
-/// A completed sales invoice with GST and line items.
-class SaleInvoice {
-  const SaleInvoice({
+/// A saved sale register entry.
+class SaleEntry {
+  const SaleEntry({
     required this.id,
     required this.businessId,
-    required this.invoiceNo,
+    required this.entryNo,
     required this.date,
     required this.partyId,
     required this.partyName,
@@ -103,7 +64,7 @@ class SaleInvoice {
 
   final String id;
   final String businessId;
-  final String invoiceNo;
+  final String entryNo;
   final DateTime date;
   final String partyId;
   final String partyName;
@@ -122,7 +83,7 @@ class SaleInvoice {
   final DateTime updatedAt;
 }
 
-/// Draft line input before persistence.
+/// Input for one item line when saving a sale entry.
 class SaleLineInput {
   const SaleLineInput({
     required this.itemId,

@@ -3,16 +3,24 @@ import '../../../../core/errors/failures.dart';
 import '../../../../core/errors/result.dart';
 import '../../../../core/utils/id_generator.dart';
 import '../../domain/entities/party.dart';
+import '../../domain/entities/party_history_builder.dart';
+import '../../domain/entities/party_history_entry.dart';
 import '../../domain/repositories/party_repository.dart';
 import '../datasources/party_local_datasource.dart';
 import '../models/party_model.dart';
 import '../services/opening_balance_posting_service.dart';
+import '../services/payment_posting_service.dart';
 
 final class PartyRepositoryImpl implements PartyRepository {
-  const PartyRepositoryImpl(this._localDataSource, this._openingBalanceService);
+  const PartyRepositoryImpl(
+    this._localDataSource,
+    this._openingBalanceService,
+    this._paymentPostingService,
+  );
 
   final PartyLocalDataSource _localDataSource;
   final OpeningBalancePostingService _openingBalanceService;
+  final PaymentPostingService _paymentPostingService;
 
   @override
   Future<Result<List<Party>>> getParties({bool activeOnly = false}) async {
@@ -164,6 +172,60 @@ final class PartyRepositoryImpl implements PartyRepository {
     try {
       final hasTransactions = await _localDataSource.hasTransactions(partyId);
       return Success(hasTransactions);
+    } catch (error, stackTrace) {
+      return Error(ExceptionMapper.map(error, stackTrace));
+    }
+  }
+
+  @override
+  Future<Result<List<PartyHistoryEntry>>> getPartyHistory(String partyId) async {
+    try {
+      final rows = await _localDataSource.fetchPartyHistory(partyId);
+      return Success(PartyHistoryBuilder.build(rows));
+    } catch (error, stackTrace) {
+      return Error(ExceptionMapper.map(error, stackTrace));
+    }
+  }
+
+  @override
+  Future<Result<void>> recordPaymentReceived(RecordPaymentInput input) async {
+    try {
+      final businessId = await _localDataSource.currentBusinessId();
+      if (businessId == null) {
+        return const Error(
+          ValidationFailure('Pehle apni dukaan ka naam set karein'),
+        );
+      }
+      await _paymentPostingService.recordReceived(
+        businessId: businessId,
+        partyId: input.partyId,
+        amount: input.amount,
+        date: input.date,
+        note: input.note,
+      );
+      return const Success(null);
+    } catch (error, stackTrace) {
+      return Error(ExceptionMapper.map(error, stackTrace));
+    }
+  }
+
+  @override
+  Future<Result<void>> recordPaymentPaid(RecordPaymentInput input) async {
+    try {
+      final businessId = await _localDataSource.currentBusinessId();
+      if (businessId == null) {
+        return const Error(
+          ValidationFailure('Pehle apni dukaan ka naam set karein'),
+        );
+      }
+      await _paymentPostingService.recordPaid(
+        businessId: businessId,
+        partyId: input.partyId,
+        amount: input.amount,
+        date: input.date,
+        note: input.note,
+      );
+      return const Success(null);
     } catch (error, stackTrace) {
       return Error(ExceptionMapper.map(error, stackTrace));
     }

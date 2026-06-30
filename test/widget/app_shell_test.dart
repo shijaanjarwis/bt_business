@@ -26,20 +26,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('BT Business'), findsOneWidget);
-    expect(
-      find.text('Bharat Traders - Your Smart Business Partner'),
-      findsOneWidget,
-    );
-    expect(find.text("Today's Profit"), findsOneWidget);
-    expect(find.text('(Aaj Ka Profit)'), findsOneWidget);
-    expect(find.text("Today's Sales"), findsOneWidget);
-    expect(find.text('(Aaj Ki Sale)'), findsOneWidget);
+    expect(find.text('Jama'), findsOneWidget);
+    expect(find.text('Kharch'), findsOneWidget);
+    expect(find.text('Cash in Hand'), findsOneWidget);
     expect(find.text('Voice'), findsOneWidget);
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Ledger'), findsOneWidget);
-    expect(find.text('Stock'), findsOneWidget);
-    expect(find.text('Reports'), findsOneWidget);
-    expect(find.text('AI'), findsOneWidget);
+    expect(find.text('Dashboard'), findsOneWidget);
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -300));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lena Hai'), findsOneWidget);
+    expect(find.text('Dena Hai'), findsOneWidget);
+    expect(find.text('Aaj ki Bikri'), findsOneWidget);
+    expect(find.text('Aaj ka Kharch'), findsOneWidget);
   });
 }
 

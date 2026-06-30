@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,12 +5,18 @@ import '../../features/business/presentation/pages/business_profile_page.dart';
 import '../../features/business/presentation/providers/business_providers.dart';
 import '../../features/home/presentation/pages/home_dashboard_page.dart';
 import '../../shared/widgets/navigation/main_shell.dart';
-import '../../shared/widgets/scaffold/tab_placeholder_page.dart';
+import '../../features/items/presentation/pages/item_list_page.dart';
 import '../../features/ledger/presentation/pages/ledger_page.dart';
+import '../../features/ledger/presentation/pages/party_detail_page.dart';
 import '../../features/ledger/presentation/pages/party_form_page.dart';
 import '../../features/sales/presentation/pages/sale_form_page.dart';
 import '../../features/sales/presentation/pages/sale_list_page.dart';
-import '../../features/sales/presentation/pages/sale_print_page.dart';
+import '../../features/payments/presentation/pages/expense_form_page.dart';
+import '../../features/payments/presentation/pages/payment_form_page.dart';
+import '../../features/payments/presentation/pages/payments_hub_page.dart';
+import '../../features/purchase/presentation/pages/purchase_form_page.dart';
+import '../../features/purchase/presentation/pages/purchase_list_page.dart';
+import '../../features/reports/presentation/pages/transaction_history_page.dart';
 import 'router_error_page.dart';
 import 'router_refresh_notifier.dart';
 import 'route_names.dart';
@@ -42,36 +47,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return BusinessProfilePage(mode: mode);
         },
       ),
-      GoRoute(
-        path: RouteNames.sales,
-        name: RouteNames.salesName,
-        builder: (context, state) => const SaleListPage(),
-        routes: [
-          GoRoute(
-            path: 'new',
-            name: RouteNames.salesNewName,
-            builder: (context, state) => SaleFormPage(
-              mode: SaleFormMode.create,
-              initialPartyId: state.uri.queryParameters['partyId'],
-            ),
-          ),
-          GoRoute(
-            path: ':id/edit',
-            name: RouteNames.salesEditName,
-            builder: (context, state) => SaleFormPage(
-              mode: SaleFormMode.edit,
-              saleId: state.pathParameters['id'],
-            ),
-          ),
-          GoRoute(
-            path: ':id/print',
-            name: RouteNames.salesPrintName,
-            builder: (context, state) => SalePrintPage(
-              saleId: state.pathParameters['id']!,
-            ),
-          ),
-        ],
-      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return MainShell(navigationShell: navigationShell);
@@ -85,6 +60,41 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 pageBuilder: (context, state) => const NoTransitionPage(
                   child: HomeDashboardPage(),
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'payments',
+                    name: RouteNames.paymentsName,
+                    builder: (context, state) => const PaymentsHubPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'received',
+                        name: RouteNames.paymentsReceivedName,
+                        builder: (context, state) => PaymentFormPage(
+                          mode: PaymentFormMode.received,
+                          initialPartyId: state.uri.queryParameters['partyId'],
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'paid',
+                        name: RouteNames.paymentsPaidName,
+                        builder: (context, state) => PaymentFormPage(
+                          mode: PaymentFormMode.paid,
+                          initialPartyId: state.uri.queryParameters['partyId'],
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'expense',
+                        name: RouteNames.paymentsExpenseName,
+                        builder: (context, state) => const ExpenseFormPage(),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'history',
+                    name: RouteNames.historyName,
+                    builder: (context, state) => const TransactionHistoryPage(),
+                  ),
+                ],
               ),
             ],
           ),
@@ -105,6 +115,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     ),
                   ),
                   GoRoute(
+                    path: 'party/:id',
+                    name: RouteNames.ledgerPartyDetailName,
+                    builder: (context, state) => PartyDetailPage(
+                      partyId: state.pathParameters['id']!,
+                    ),
+                  ),
+                  GoRoute(
                     path: 'party/:id/edit',
                     name: RouteNames.ledgerPartyEditName,
                     builder: (context, state) => PartyFormPage(
@@ -122,11 +139,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: RouteNames.stock,
                 name: RouteNames.stockName,
                 pageBuilder: (context, state) => const NoTransitionPage(
-                  child: TabPlaceholderPage(
-                    title: 'Stock',
-                    subtitle: 'Maal ka record yahan hoga — jald aa raha hai',
-                    icon: Icons.inventory_2_rounded,
-                  ),
+                  child: ItemListPage(),
                 ),
               ),
             ],
@@ -134,30 +147,58 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: RouteNames.reports,
-                name: RouteNames.reportsName,
+                path: RouteNames.sales,
+                name: RouteNames.salesName,
                 pageBuilder: (context, state) => const NoTransitionPage(
-                  child: TabPlaceholderPage(
-                    title: 'Reports',
-                    subtitle: 'Business reports yahan milengi — jald aa raha hai',
-                    icon: Icons.bar_chart_rounded,
-                  ),
+                  child: SaleListPage(),
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    name: RouteNames.salesNewName,
+                    builder: (context, state) => SaleFormPage(
+                      mode: SaleFormMode.create,
+                      initialPartyId: state.uri.queryParameters['partyId'],
+                    ),
+                  ),
+                  GoRoute(
+                    path: ':id/edit',
+                    name: RouteNames.salesEditName,
+                    builder: (context, state) => SaleFormPage(
+                      mode: SaleFormMode.edit,
+                      saleId: state.pathParameters['id'],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: RouteNames.ai,
-                name: RouteNames.aiName,
+                path: RouteNames.purchases,
+                name: RouteNames.purchasesName,
                 pageBuilder: (context, state) => const NoTransitionPage(
-                  child: TabPlaceholderPage(
-                    title: 'AI',
-                    subtitle: 'Smart business help yahan milegi — jald aa raha hai',
-                    icon: Icons.auto_awesome_rounded,
-                  ),
+                  child: PurchaseListPage(),
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    name: RouteNames.purchasesNewName,
+                    builder: (context, state) => PurchaseFormPage(
+                      mode: PurchaseFormMode.create,
+                      initialPartyId: state.uri.queryParameters['partyId'],
+                    ),
+                  ),
+                  GoRoute(
+                    path: ':id/edit',
+                    name: RouteNames.purchasesEditName,
+                    builder: (context, state) => PurchaseFormPage(
+                      mode: PurchaseFormMode.edit,
+                      purchaseId: state.pathParameters['id'],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

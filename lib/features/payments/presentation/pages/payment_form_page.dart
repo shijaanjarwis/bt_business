@@ -1,0 +1,219 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../../core/di/data_revision.dart';
+import '../../../../core/theme/color_palette.dart';
+import '../../../../core/utils/date_formatter.dart';
+import '../../../../core/utils/validators.dart';
+import '../../../../shared/widgets/buttons/app_primary_button.dart';
+import '../../../../shared/widgets/inputs/app_text_field.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
+import '../../../../shared/widgets/layout/responsive_form_container.dart';
+import '../../../ledger/domain/entities/party.dart';
+import '../../../ledger/domain/repositories/party_repository.dart';
+import '../../../ledger/presentation/providers/party_providers.dart';
+import '../widgets/register_party_field.dart';
+
+enum PaymentFormMode { received, paid }
+
+/// Jama hua or paise diye — simple register entry.
+class PaymentFormPage extends ConsumerStatefulWidget {
+  const PaymentFormPage({
+    super.key,
+    required this.mode,
+    this.initialPartyId,
+  });
+
+  final PaymentFormMode mode;
+  final String? initialPartyId;
+
+  bool get isReceived => mode == PaymentFormMode.received;
+
+  @override
+  ConsumerState<PaymentFormPage> createState() => _PaymentFormPageState();
+}
+
+class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _amountController = TextEditingController();
+  final _noteController = TextEditingController();
+
+  Party? _selectedParty;
+  DateTime _date = DateTime.now();
+  bool _isSaving = false;
+  bool _partyLoaded = false;
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadInitialParty() async {
+    if (_partyLoaded || widget.initialPartyId == null) {
+      _partyLoaded = true;
+      return;
+    }
+    _partyLoaded = true;
+    final result = await ref.read(getPartyUseCaseProvider)(widget.initialPartyId!);
+    if (result.isSuccess && mounted) {
+      setState(() => _selectedParty = result.valueOrNull);
+    }
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) setState(() => _date = picked);
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedParty == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pehle naam chuniye')),
+      );
+      return;
+    }
+
+    final amount =
+        double.tryParse(_amountController.text.replaceAll(',', '').trim()) ?? 0;
+
+    setState(() => _isSaving = true);
+    try {
+      final input = RecordPaymentInput(
+        partyId: _selectedParty!.id,
+        amount: amount,
+        date: _date,
+        note: _noteController.text.trim().isEmpty ? null : _noteController.text,
+      );
+
+      final result = widget.isReceived
+          ? await ref.read(recordPaymentReceivedUseCaseProvider)(input)
+          : await ref.read(recordPaymentPaidUseCaseProvider)(input);
+
+      if (result.isFailure) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result.failureOrNull!.message)),
+          );
+        }
+        return;
+      }
+
+      notifyDataChanged(ref);
+      if (mounted) context.pop();
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_partyLoaded) {
+      _loadInitialParty();
+    }
+
+    final isReceived = widget.isReceived;
+
+    return Scaffold(
+      backgroundColor: ColorPalette.background,
+      appBar: AppBar(
+        backgroundColor: ColorPalette.background,
+        elevation: 0,
+        title: BilingualLabel(
+          english: isReceived ? 'Jama' : 'Paise Diye',
+          hindi: isReceived ? 'Paisa mila likho' : 'Paisa diya likho',
+          compact: true,
+        ),
+      ),
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+            children: [
+              ResponsiveFormContainer(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    RegisterPartyField(
+                      selectedParty: _selectedParty,
+                      onPartySelected: (party) =>
+                          setState(() => _selectedParty = party),
+                    ),
+                    const SizedBox(height: 16),
+                    Material(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: _pickDate,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const BilingualLabel(
+                                      english: 'Date · Tareekh',
+                                      hindi: 'Kab hua',
+                                      compact: true,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      DateFormatter.shortDate(_date),
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(
+                                Icons.calendar_today_rounded,
+                                color: ColorPalette.purple,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _amountController,
+                      label: 'Amount · Kitna',
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      validator: Validators.positiveAmount,
+                    ),
+                    const SizedBox(height: 16),
+                    AppTextField(
+                      controller: _noteController,
+                      label: 'Note (optional) · Yaad',
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 28),
+                    AppPrimaryButton(
+                      label: 'Save · Save karein',
+                      isLoading: _isSaving,
+                      onPressed: _save,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

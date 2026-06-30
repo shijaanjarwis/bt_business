@@ -2,6 +2,7 @@ import 'package:bt_business/core/errors/failures.dart';
 import 'package:bt_business/core/errors/result.dart';
 import 'package:bt_business/features/ledger/domain/entities/opening_balance_direction.dart';
 import 'package:bt_business/features/ledger/domain/entities/party.dart';
+import 'package:bt_business/features/ledger/domain/entities/party_history_entry.dart';
 import 'package:bt_business/features/ledger/domain/entities/party_type.dart';
 import 'package:bt_business/features/ledger/domain/repositories/party_repository.dart';
 import 'package:bt_business/features/ledger/domain/usecases/save_party.dart';
@@ -59,6 +60,21 @@ class _FakePartyRepository implements PartyRepository {
   Future<Result<bool>> hasTransactions(String partyId) {
     throw UnimplementedError();
   }
+
+  @override
+  Future<Result<List<PartyHistoryEntry>>> getPartyHistory(String partyId) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Result<void>> recordPaymentReceived(RecordPaymentInput input) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Result<void>> recordPaymentPaid(RecordPaymentInput input) {
+    throw UnimplementedError();
+  }
 }
 
 void main() {
@@ -82,7 +98,7 @@ void main() {
     expect(result.failureOrNull, isA<ValidationFailure>());
   });
 
-  test('SavePartyUseCase normalizes phone and gstin', () async {
+  test('SavePartyUseCase normalizes phone when provided', () async {
     final repository = _FakePartyRepository();
     final useCase = SavePartyUseCase(repository);
 
@@ -91,8 +107,7 @@ void main() {
         name: 'Ramesh',
         type: PartyType.customer,
         phone: '+91 98765 43210',
-        address: 'Delhi',
-        gstin: '07aaaaa0000a1z5',
+        address: '',
         openingAmount: 100,
         openingDirection: OpeningBalanceDirection.receivable,
         isActive: true,
@@ -101,6 +116,26 @@ void main() {
 
     expect(result.isSuccess, isTrue);
     expect(repository.lastInput?.phone, '9876543210');
-    expect(repository.lastInput?.gstin, '07AAAAA0000A1Z5');
+    expect(repository.lastInput?.gstin, isNull);
+  });
+
+  test('SavePartyUseCase allows empty phone', () async {
+    final repository = _FakePartyRepository();
+    final useCase = SavePartyUseCase(repository);
+
+    final result = await useCase(
+      SavePartyInput(
+        name: 'Ramesh',
+        type: PartyType.customer,
+        phone: '',
+        address: '',
+        openingAmount: 0,
+        openingDirection: OpeningBalanceDirection.receivable,
+        isActive: true,
+      ),
+    );
+
+    expect(result.isSuccess, isTrue);
+    expect(repository.lastInput?.phone, '');
   });
 }

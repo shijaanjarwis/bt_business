@@ -2,7 +2,7 @@ import '../../../../core/accounting/payment_modes.dart';
 import '../../../../core/errors/exception_mapper.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/errors/result.dart';
-import '../../domain/entities/sale_invoice.dart';
+import '../../domain/entities/sale_entry.dart';
 import '../../domain/repositories/sale_repository.dart';
 import '../datasources/sale_local_datasource.dart';
 import '../services/sale_posting_service.dart';
@@ -14,7 +14,7 @@ final class SaleRepositoryImpl implements SaleRepository {
   final SalePostingService _postingService;
 
   @override
-  Future<Result<List<SaleInvoice>>> getSales({
+  Future<Result<List<SaleEntry>>> getSales({
     DateTime? fromDate,
     DateTime? toDate,
     PaymentMode? paymentMode,
@@ -32,7 +32,7 @@ final class SaleRepositoryImpl implements SaleRepository {
   }
 
   @override
-  Future<Result<List<SaleInvoice>>> searchSales(String query) async {
+  Future<Result<List<SaleEntry>>> searchSales(String query) async {
     try {
       final sales = await _localDataSource.searchSales(query);
       return Success(sales);
@@ -42,7 +42,7 @@ final class SaleRepositoryImpl implements SaleRepository {
   }
 
   @override
-  Future<Result<SaleInvoice?>> getSale(String id) async {
+  Future<Result<SaleEntry?>> getSale(String id) async {
     try {
       final sale = await _localDataSource.fetchSale(id);
       return Success(sale);
@@ -52,12 +52,12 @@ final class SaleRepositoryImpl implements SaleRepository {
   }
 
   @override
-  Future<Result<SaleInvoice>> saveSale(SaveSaleInput input) async {
+  Future<Result<SaleEntry>> saveSale(SaveSaleInput input) async {
     try {
       final businessId = await _localDataSource.currentBusinessId();
       if (businessId == null) {
         return const Error(
-          ValidationFailure('Set up your business profile before creating sales'),
+          ValidationFailure('Pehle apni dukaan ka naam set karein'),
         );
       }
 

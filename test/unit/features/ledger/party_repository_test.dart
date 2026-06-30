@@ -1,6 +1,7 @@
 import 'package:bt_business/features/ledger/data/datasources/party_local_datasource.dart';
 import 'package:bt_business/features/ledger/data/repositories/party_repository_impl.dart';
 import 'package:bt_business/features/ledger/data/services/opening_balance_posting_service.dart';
+import 'package:bt_business/features/ledger/data/services/payment_posting_service.dart';
 import 'package:bt_business/features/ledger/domain/entities/opening_balance_direction.dart';
 import 'package:bt_business/features/ledger/domain/entities/party_type.dart';
 import 'package:bt_business/features/ledger/domain/repositories/party_repository.dart';
@@ -24,6 +25,7 @@ void main() {
     repository = PartyRepositoryImpl(
       PartyLocalDataSource(db),
       OpeningBalancePostingService(db),
+      PaymentPostingService(db),
     );
   });
 

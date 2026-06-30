@@ -1,7 +1,7 @@
-/// How a sale invoice is settled.
+/// How a sale or purchase entry is settled.
 enum PaymentMode {
-  cash('cash', 'Cash', 'Cash'),
-  credit('credit', 'Credit', 'Udhaar');
+  cash('cash', 'Paid now', 'Abhi mila'),
+  credit('credit', 'Udhaar', 'Baad mein');
 
   const PaymentMode(this.code, this.englishLabel, this.hindiLabel);
 

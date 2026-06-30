@@ -2,7 +2,7 @@ import 'package:bt_business/core/accounting/gst_types.dart';
 import 'package:bt_business/core/accounting/payment_modes.dart';
 import 'package:bt_business/core/errors/failures.dart';
 import 'package:bt_business/core/errors/result.dart';
-import 'package:bt_business/features/sales/domain/entities/sale_invoice.dart';
+import 'package:bt_business/features/sales/domain/entities/sale_entry.dart';
 import 'package:bt_business/features/sales/domain/repositories/sale_repository.dart';
 import 'package:bt_business/features/sales/domain/usecases/save_sale.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,7 +11,7 @@ class _FakeSaleRepository implements SaleRepository {
   SaveSaleInput? lastInput;
 
   @override
-  Future<Result<List<SaleInvoice>>> getSales({
+  Future<Result<List<SaleEntry>>> getSales({
     DateTime? fromDate,
     DateTime? toDate,
     PaymentMode? paymentMode,
@@ -20,17 +20,17 @@ class _FakeSaleRepository implements SaleRepository {
   }
 
   @override
-  Future<Result<List<SaleInvoice>>> searchSales(String query) {
+  Future<Result<List<SaleEntry>>> searchSales(String query) {
     throw UnimplementedError();
   }
 
   @override
-  Future<Result<SaleInvoice?>> getSale(String id) {
+  Future<Result<SaleEntry?>> getSale(String id) {
     throw UnimplementedError();
   }
 
   @override
-  Future<Result<SaleInvoice>> saveSale(SaveSaleInput input) async {
+  Future<Result<SaleEntry>> saveSale(SaveSaleInput input) async {
     lastInput = input;
     throw UnimplementedError();
   }
@@ -58,5 +58,6 @@ void main() {
 
     expect(result.isFailure, isTrue);
     expect(result.failureOrNull, isA<ValidationFailure>());
+    expect(result.failureOrNull?.message, contains('Grahak'));
   });
 }

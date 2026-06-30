@@ -36,7 +36,7 @@ class MainShell extends StatelessWidget {
       floatingActionButton: _showVoiceButton
           ? const DashboardVoiceButton(floating: true)
           : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }

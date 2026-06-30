@@ -161,6 +161,30 @@ Future<String> insertCustomer({
   return id;
 }
 
+Future<String> insertSupplier({
+  required Database db,
+  required String businessId,
+  required String name,
+  String phone = '9123456780',
+}) async {
+  final id = IdGenerator.newId();
+  final now = DateTime.now().toIso8601String();
+  await db.insert(PartiesTable.tableName, {
+    PartiesTable.id: id,
+    PartiesTable.businessId: businessId,
+    PartiesTable.name: name,
+    PartiesTable.type: 'supplier',
+    PartiesTable.phone: phone,
+    PartiesTable.address: '',
+    PartiesTable.openingBalance: 0,
+    PartiesTable.isActive: 1,
+    PartiesTable.balance: 0,
+    PartiesTable.createdAt: now,
+    PartiesTable.updatedAt: now,
+  });
+  return id;
+}
+
 Future<String> _accountId(
   Database db,
   String businessId,

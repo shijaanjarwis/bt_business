@@ -1,7 +1,7 @@
 /// Direction of an opening party balance.
 enum OpeningBalanceDirection {
-  receivable('receivable', 'Receivable (Lena)', 'Lena — Paise lene hain'),
-  payable('payable', 'Payable (Dena)', 'Dena — Paise dene hain');
+  receivable('receivable', 'Lena hai', 'Mujhe lena hai'),
+  payable('payable', 'Dena hai', 'Mujhe dena hai');
 
   const OpeningBalanceDirection(
     this.code,

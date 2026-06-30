@@ -20,8 +20,8 @@ class PartyTypeSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const BilingualLabel(
-          english: 'Party Type',
-          hindi: 'Customer ya Supplier chuniye',
+          english: 'Who is this?',
+          hindi: 'Yeh kaun hai',
           compact: true,
         ),
         const SizedBox(height: 8),
@@ -31,7 +31,7 @@ class PartyTypeSelector extends StatelessWidget {
           children: PartyType.values.map((type) {
             final selected = value == type;
             return ChoiceChip(
-              label: Text('${type.englishLabel} · ${type.hindiLabel}'),
+              label: Text(_label(type)),
               selected: selected,
               onSelected: (_) => onChanged(type),
               selectedColor: ColorPalette.purple.withValues(alpha: 0.15),
@@ -47,5 +47,13 @@ class PartyTypeSelector extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _label(PartyType type) {
+    return switch (type) {
+      PartyType.customer => 'Customer · Grahak',
+      PartyType.supplier => 'Supplier',
+      PartyType.both => 'Both · Dono',
+    };
   }
 }

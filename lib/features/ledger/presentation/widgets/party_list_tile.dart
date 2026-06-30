@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/utils/currency_formatter.dart';
 import '../../domain/entities/party.dart';
-import '../../domain/entities/party_type.dart';
-import 'party_status_badge.dart';
 
 class PartyListTile extends StatelessWidget {
   const PartyListTile({
@@ -17,11 +15,20 @@ class PartyListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final balanceColor = party.isReceivable
-        ? const Color(0xFF34C759)
-        : party.isPayable
-            ? const Color(0xFFFF3B30)
-            : const Color(0xFF8E8E93);
+    final balance = party.balance.abs();
+    final isClear = balance == 0;
+    final isLena = party.isReceivable;
+
+    final label = isClear
+        ? 'Clear'
+        : isLena
+            ? 'Lena Hai'
+            : 'Dena Hai';
+    final balanceColor = isClear
+        ? const Color(0xFF8E8E93)
+        : isLena
+            ? const Color(0xFF34C759)
+            : const Color(0xFFFF3B30);
 
     return Material(
       color: Colors.white,
@@ -37,27 +44,12 @@ class PartyListTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            party.name,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1C1C1E),
-                            ),
-                          ),
-                        ),
-                        PartyStatusBadge(isActive: party.isActive),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
                     Text(
-                      _typeLabel(party.type),
+                      party.name,
                       style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF8E8E93),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1C1C1E),
                       ),
                     ),
                     if (party.phone.isNotEmpty) ...[
@@ -77,25 +69,22 @@ class PartyListTile extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    CurrencyFormatter.format(party.balance.abs()),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: balanceColor,
+                  if (!isClear)
+                    Text(
+                      CurrencyFormatter.format(balance),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: balanceColor,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
+                  if (!isClear) const SizedBox(height: 4),
                   Text(
-                    party.isReceivable
-                        ? 'Lena'
-                        : party.isPayable
-                            ? 'Dena'
-                            : 'Clear',
+                    label,
                     style: TextStyle(
                       fontSize: 12,
                       color: balanceColor,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -105,13 +94,5 @@ class PartyListTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _typeLabel(PartyType type) {
-    return switch (type) {
-      PartyType.customer => 'Customer · Grahak',
-      PartyType.supplier => 'Supplier · Supplier',
-      PartyType.both => 'Both · Dono',
-    };
   }
 }

@@ -5,11 +5,10 @@ import '../../../../core/accounting/transaction_types.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../data/local/database/tables/accounting_tables.dart';
 import '../../../../features/business/data/datasources/business_table.dart';
-import '../../domain/entities/sale_invoice.dart';
-import '../models/sale_invoice_model.dart';
-import '../models/sale_item_model.dart';
+import '../../domain/entities/sale_entry.dart';
+import '../models/sale_entry_model.dart';
 
-/// SQLite read/write operations for sales invoices and catalog items.
+/// SQLite read operations for sale register entries.
 final class SaleLocalDataSource {
   const SaleLocalDataSource(this._db);
 
@@ -21,7 +20,7 @@ final class SaleLocalDataSource {
     return rows.first[BusinessTable.id] as String;
   }
 
-  Future<List<SaleInvoice>> fetchSales({
+  Future<List<SaleEntry>> fetchSales({
     DateTime? fromDate,
     DateTime? toDate,
     PaymentMode? paymentMode,
@@ -58,10 +57,10 @@ final class SaleLocalDataSource {
       args,
     );
 
-    return _mapInvoices(rows);
+    return _mapEntries(rows);
   }
 
-  Future<List<SaleInvoice>> searchSales(String query) async {
+  Future<List<SaleEntry>> searchSales(String query) async {
     final businessId = await currentBusinessId();
     if (businessId == null) return [];
 
@@ -76,18 +75,17 @@ final class SaleLocalDataSource {
       INNER JOIN ${PartiesTable.tableName} p ON t.${TransactionsTable.partyId} = p.${PartiesTable.id}
       WHERE t.${TransactionsTable.businessId} = ?
         AND t.${TransactionsTable.type} = ?
-        AND (t.${TransactionsTable.invoiceNo} LIKE ?
-          OR p.${PartiesTable.name} LIKE ?
+        AND (p.${PartiesTable.name} LIKE ?
           OR p.${PartiesTable.phone} LIKE ?)
       ORDER BY t.${TransactionsTable.date} DESC, t.${TransactionsTable.createdAt} DESC
       ''',
-      [businessId, TransactionTypes.sale, pattern, pattern, pattern],
+      [businessId, TransactionTypes.sale, pattern, pattern],
     );
 
-    return _mapInvoices(rows);
+    return _mapEntries(rows);
   }
 
-  Future<SaleInvoice?> fetchSale(String id) async {
+  Future<SaleEntry?> fetchSale(String id) async {
     final rows = await _db.rawQuery(
       '''
       SELECT t.*, p.${PartiesTable.name} AS party_name
@@ -100,52 +98,17 @@ final class SaleLocalDataSource {
     if (rows.isEmpty) return null;
 
     final lines = await _fetchLines(id);
-    return SaleInvoiceModel.fromJoinedMap(rows.first, lines: lines).invoice;
+    return SaleEntryModel.fromJoinedMap(rows.first, lines: lines).entry;
   }
 
-  Future<List<SaleItem>> searchItems(String query) async {
-    final businessId = await currentBusinessId();
-    if (businessId == null) return [];
-
-    final trimmed = query.trim();
-    final where = StringBuffer('${ItemsTable.businessId} = ? AND ${ItemsTable.isActive} = 1');
-    final args = <Object?>[businessId];
-
-    if (trimmed.isNotEmpty) {
-      where.write(' AND ${ItemsTable.name} LIKE ?');
-      args.add('%$trimmed%');
-    }
-
-    final rows = await _db.query(
-      ItemsTable.tableName,
-      where: where.toString(),
-      whereArgs: args,
-      orderBy: '${ItemsTable.name} COLLATE NOCASE ASC',
-      limit: 50,
-    );
-
-    return rows.map((row) => SaleItemModel.fromMap(row).item).toList();
-  }
-
-  Future<SaleItem?> fetchItem(String id) async {
-    final rows = await _db.query(
-      ItemsTable.tableName,
-      where: '${ItemsTable.id} = ?',
-      whereArgs: [id],
-      limit: 1,
-    );
-    if (rows.isEmpty) return null;
-    return SaleItemModel.fromMap(rows.first).item;
-  }
-
-  Future<List<SaleInvoice>> _mapInvoices(List<Map<String, Object?>> rows) async {
-    final invoices = <SaleInvoice>[];
+  Future<List<SaleEntry>> _mapEntries(List<Map<String, Object?>> rows) async {
+    final entries = <SaleEntry>[];
     for (final row in rows) {
       final id = row[TransactionsTable.id]! as String;
       final lines = await _fetchLines(id);
-      invoices.add(SaleInvoiceModel.fromJoinedMap(row, lines: lines).invoice);
+      entries.add(SaleEntryModel.fromJoinedMap(row, lines: lines).entry);
     }
-    return invoices;
+    return entries;
   }
 
   Future<List<SaleLine>> _fetchLines(String transactionId) async {
@@ -155,6 +118,6 @@ final class SaleLocalDataSource {
       whereArgs: [transactionId],
       orderBy: '${TransactionLinesTable.sortOrder} ASC',
     );
-    return rows.map(SaleInvoiceModel.lineFromMap).toList();
+    return rows.map(SaleEntryModel.lineFromMap).toList();
   }
 }

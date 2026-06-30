@@ -8,17 +8,17 @@ import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/utils/gst_calculator.dart';
 import '../../../../core/utils/id_generator.dart';
 import '../../../../data/local/database/tables/accounting_tables.dart';
-import '../../domain/entities/sale_invoice.dart';
+import '../../domain/entities/sale_entry.dart';
 import '../../domain/repositories/sale_repository.dart';
-import '../models/sale_invoice_model.dart';
+import '../models/sale_entry_model.dart';
 
-/// Persists sales invoices with double-entry accounting and stock updates.
+/// Persists sale register entries — stock and ledger update automatically.
 final class SalePostingService {
   const SalePostingService(this._db);
 
   final Database _db;
 
-  Future<SaleInvoice> save({
+  Future<SaleEntry> save({
     required String businessId,
     required SaveSaleInput input,
   }) async {
@@ -26,7 +26,7 @@ final class SalePostingService {
     final totals = GstCalculator.aggregate(computedLines.map((line) => line.amounts).toList());
 
     if (totals.grandTotal <= 0) {
-      throw const ValidationException('Invoice total must be greater than zero');
+      throw const ValidationException('Sale amount must be greater than zero');
     }
 
     await _validateStock(input.lines, excludeTransactionId: input.id);
@@ -39,7 +39,7 @@ final class SalePostingService {
         await _revert(txn, input.id!);
       }
 
-      final invoiceNo = input.invoiceNo ?? await _nextInvoiceNo(txn, businessId);
+      final entryNo = input.entryNo ?? await _nextEntryNo(txn, businessId);
       final isoDate = DateFormatter.isoDate(input.date);
 
       await txn.insert(TransactionsTable.tableName, {
@@ -48,7 +48,7 @@ final class SalePostingService {
         TransactionsTable.type: TransactionTypes.sale,
         TransactionsTable.date: isoDate,
         TransactionsTable.partyId: input.partyId,
-        TransactionsTable.invoiceNo: invoiceNo,
+        TransactionsTable.invoiceNo: entryNo,
         TransactionsTable.notes: input.notes?.trim(),
         TransactionsTable.totalAmount: totals.grandTotal,
         TransactionsTable.paymentMode: input.paymentMode.code,
@@ -108,9 +108,9 @@ final class SalePostingService {
       await _postJournal(txn, businessId: businessId, transactionId: transactionId, input: input, totals: totals);
     });
 
-    final saved = await _fetchInvoice(transactionId);
+    final saved = await _fetchEntry(transactionId);
     if (saved == null) {
-      throw const DatabaseException('Failed to load saved sale invoice');
+      throw const DatabaseException('Failed to load saved sale entry');
     }
     return saved;
   }
@@ -326,7 +326,7 @@ final class SalePostingService {
     return (rows.first[ItemsTable.purchaseRate] as num?)?.toDouble() ?? 0;
   }
 
-  Future<String> _nextInvoiceNo(Transaction txn, String businessId) async {
+  Future<String> _nextEntryNo(Transaction txn, String businessId) async {
     final rows = await txn.rawQuery(
       '''
       SELECT ${TransactionsTable.invoiceNo}
@@ -351,7 +351,7 @@ final class SalePostingService {
     return 'SAL-${sequence.toString().padLeft(4, '0')}';
   }
 
-  Future<SaleInvoice?> _fetchInvoice(String transactionId) async {
+  Future<SaleEntry?> _fetchEntry(String transactionId) async {
     final rows = await _db.rawQuery(
       '''
       SELECT t.*, p.${PartiesTable.name} AS party_name
@@ -369,8 +369,8 @@ final class SalePostingService {
       whereArgs: [transactionId],
       orderBy: '${TransactionLinesTable.sortOrder} ASC',
     );
-    final lines = lineRows.map(SaleInvoiceModel.lineFromMap).toList();
-    return SaleInvoiceModel.fromJoinedMap(rows.first, lines: lines).invoice;
+    final lines = lineRows.map(SaleEntryModel.lineFromMap).toList();
+    return SaleEntryModel.fromJoinedMap(rows.first, lines: lines).entry;
   }
 
   Future<void> _insertLine(

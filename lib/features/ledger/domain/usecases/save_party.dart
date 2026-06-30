@@ -22,12 +22,12 @@ final class SavePartyUseCase implements UseCase<Party, SavePartyInput> {
       name: input.name.trim(),
       type: input.type,
       phone: _normalizePhone(input.phone),
-      address: input.address.trim(),
-      gstin: _normalizeGstin(input.gstin),
+      address: '',
+      gstin: null,
       openingAmount: input.openingAmount,
       openingDirection: input.openingDirection,
-      creditLimit: input.creditLimit,
-      isActive: input.isActive,
+      creditLimit: null,
+      isActive: true,
       existingCreatedAt: input.existingCreatedAt,
       existingOpeningTransactionId: input.existingOpeningTransactionId,
       existingBalance: input.existingBalance,
@@ -41,18 +41,14 @@ final class SavePartyUseCase implements UseCase<Party, SavePartyInput> {
     final nameError = Validators.requiredText(input.name, fieldName: 'Name');
     if (nameError != null) return ValidationFailure(nameError);
 
-    final phoneError = Validators.requiredIndianPhone(input.phone);
-    if (phoneError != null) return ValidationFailure(phoneError);
-
-    final gstinError = Validators.gstin(input.gstin);
-    if (gstinError != null) return ValidationFailure(gstinError);
-
-    if (input.openingAmount < 0) {
-      return const ValidationFailure('Opening balance cannot be negative');
+    final phone = input.phone.trim();
+    if (phone.isNotEmpty) {
+      final phoneError = Validators.indianPhone(phone);
+      if (phoneError != null) return ValidationFailure(phoneError);
     }
 
-    if (input.creditLimit != null && input.creditLimit! < 0) {
-      return const ValidationFailure('Credit limit cannot be negative');
+    if (input.openingAmount < 0) {
+      return const ValidationFailure('Pehle se baaki amount negative nahi ho sakti');
     }
 
     return null;
@@ -64,11 +60,5 @@ final class SavePartyUseCase implements UseCase<Party, SavePartyInput> {
       digits = digits.substring(2);
     }
     return digits;
-  }
-
-  String? _normalizeGstin(String? gstin) {
-    final trimmed = gstin?.trim();
-    if (trimmed == null || trimmed.isEmpty) return null;
-    return trimmed.toUpperCase();
   }
 }

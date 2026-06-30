@@ -4,6 +4,7 @@ class DashboardSummary {
     required this.todaysProfit,
     required this.todaysSales,
     required this.todaysPurchase,
+    required this.todaysExpenses,
     required this.cashInHand,
     required this.amountInBank,
     required this.todaysReceivables,
@@ -20,6 +21,7 @@ class DashboardSummary {
   final double todaysProfit;
   final double todaysSales;
   final double todaysPurchase;
+  final double todaysExpenses;
   final double cashInHand;
   final double amountInBank;
   final double todaysReceivables;
@@ -36,6 +38,7 @@ class DashboardSummary {
     todaysProfit: 0,
     todaysSales: 0,
     todaysPurchase: 0,
+    todaysExpenses: 0,
     cashInHand: 0,
     amountInBank: 0,
     todaysReceivables: 0,

@@ -21,8 +21,8 @@ class PartySearchBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const BilingualLabel(
-          english: 'Search Ledger',
-          hindi: 'Naam, mobile ya GST se khojo',
+          english: 'Search',
+          hindi: 'Naam ya mobile se khojo',
           compact: true,
         ),
         const SizedBox(height: 8),
@@ -30,7 +30,7 @@ class PartySearchBar extends StatelessWidget {
           controller: controller,
           onChanged: onChanged,
           decoration: InputDecoration(
-            hintText: 'Name, mobile, GSTIN…',
+            hintText: 'Naam ya mobile…',
             prefixIcon: const Icon(Icons.search_rounded, color: ColorPalette.purple),
             suffixIcon: controller.text.isEmpty
                 ? null
