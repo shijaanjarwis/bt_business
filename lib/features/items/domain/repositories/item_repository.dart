@@ -18,10 +18,10 @@ class SaveItemInput {
     this.id,
     required this.name,
     required this.unit,
-    required this.openingStock,
-    required this.purchasePrice,
-    required this.salePrice,
-    required this.gstRate,
+    this.openingStock = 0,
+    this.purchasePrice = 0,
+    this.salePrice = 0,
+    this.gstRate = 0,
     this.existingCreatedAt,
   });
 

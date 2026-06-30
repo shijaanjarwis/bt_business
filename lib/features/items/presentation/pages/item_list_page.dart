@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/color_palette.dart';
-import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
@@ -91,16 +90,6 @@ class ItemListPage extends ConsumerWidget {
                           Text(
                             'Stock: ${item.openingStock} ${item.unit}',
                             style: const TextStyle(color: Color(0xFF636366)),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Buy ${CurrencyFormatter.format(item.purchasePrice)} · '
-                            'Sell ${CurrencyFormatter.format(item.salePrice)} · '
-                            'GST ${item.gstRate}%',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF8E8E93),
-                            ),
                           ),
                         ],
                       ),

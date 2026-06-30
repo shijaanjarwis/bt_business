@@ -193,7 +193,7 @@ class _PurchaseFormPageState extends ConsumerState<PurchaseFormPage> {
 
   Future<void> _handleSave() async {
     if (_selectedParty == null) {
-      _showMessage('Select a supplier');
+      _showMessage('Party chuniye');
       return;
     }
     if (_lines.isEmpty) {

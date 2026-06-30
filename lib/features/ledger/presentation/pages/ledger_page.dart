@@ -11,7 +11,7 @@ import '../providers/party_providers.dart';
 import '../widgets/party_list_tile.dart';
 import '../widgets/party_search_bar.dart';
 
-/// Hisaab list — every customer and supplier in one notebook.
+/// Hisaab list — every party in one notebook.
 class LedgerPage extends ConsumerStatefulWidget {
   const LedgerPage({super.key});
 
@@ -84,7 +84,7 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
                     return const Center(
                       child: BilingualLabel(
                         english: 'No names yet',
-                        hindi: 'Pehla customer ya supplier jodein',
+                        hindi: 'Pehla party jodein',
                       ),
                     );
                   }

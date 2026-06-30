@@ -193,7 +193,7 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
 
   Future<void> _handleSave() async {
     if (_selectedParty == null) {
-      _showMessage('Pehle grahak chuniye');
+      _showMessage('Party chuniye');
       return;
     }
     if (_lines.isEmpty) {

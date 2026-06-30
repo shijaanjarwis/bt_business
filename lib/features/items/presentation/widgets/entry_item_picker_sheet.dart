@@ -173,9 +173,6 @@ class _QuickItemCreateSheetState extends ConsumerState<QuickItemCreateSheet> {
   final _formKey = GlobalKey<FormState>();
   late final _nameController = TextEditingController(text: widget.initialName);
   late final _customUnitController = TextEditingController();
-  late final _openingController = TextEditingController();
-  late final _purchaseController = TextEditingController();
-  late final _saleController = TextEditingController();
   String _selectedUnit = ItemUnits.defaultUnit;
   bool _useCustomUnit = false;
   bool _isSaving = false;
@@ -184,16 +181,7 @@ class _QuickItemCreateSheetState extends ConsumerState<QuickItemCreateSheet> {
   void dispose() {
     _nameController.dispose();
     _customUnitController.dispose();
-    _openingController.dispose();
-    _purchaseController.dispose();
-    _saleController.dispose();
     super.dispose();
-  }
-
-  double? _parseOptional(String value) {
-    final trimmed = value.replaceAll(',', '').trim();
-    if (trimmed.isEmpty) return null;
-    return double.tryParse(trimmed);
   }
 
   String get _unit =>
@@ -208,10 +196,6 @@ class _QuickItemCreateSheetState extends ConsumerState<QuickItemCreateSheet> {
         SaveItemInput(
           name: _nameController.text,
           unit: _unit,
-          openingStock: _parseOptional(_openingController.text) ?? 0,
-          purchasePrice: _parseOptional(_purchaseController.text) ?? 0,
-          salePrice: _parseOptional(_saleController.text) ?? 0,
-          gstRate: 0,
         ),
       );
 
@@ -295,27 +279,6 @@ class _QuickItemCreateSheetState extends ConsumerState<QuickItemCreateSheet> {
                   validator: (v) => Validators.requiredText(v, fieldName: 'Unit'),
                 ),
               ],
-              const SizedBox(height: 12),
-              AppTextField(
-                controller: _openingController,
-                label: 'Opening Stock (optional) · Shuruat ka maal',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: Validators.nonNegativeAmount,
-              ),
-              const SizedBox(height: 12),
-              AppTextField(
-                controller: _purchaseController,
-                label: 'Purchase Price (optional) · Kharid rate',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: Validators.nonNegativeAmount,
-              ),
-              const SizedBox(height: 12),
-              AppTextField(
-                controller: _saleController,
-                label: 'Sale Price (optional) · Bechne ka rate',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: Validators.nonNegativeAmount,
-              ),
               const SizedBox(height: 20),
               AppPrimaryButton(
                 label: 'Save · Save karein',
