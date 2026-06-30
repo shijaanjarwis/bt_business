@@ -19,7 +19,7 @@ void main() {
   setUp(() async {
     db = await openDatabase(
       inMemoryDatabasePath,
-      version: 2,
+      version: 3,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
       },

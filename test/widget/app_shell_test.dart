@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:bt_business/app.dart';
 import 'package:bt_business/features/business/presentation/providers/business_providers.dart';
+import 'package:bt_business/features/home/domain/entities/dashboard_summary.dart';
+import 'package:bt_business/features/home/presentation/providers/dashboard_provider.dart';
 
 void main() {
   testWidgets('Home dashboard renders with branding and bilingual labels',
@@ -14,13 +16,14 @@ void main() {
         child: ProviderScope(
           overrides: [
             businessGateProvider.overrideWith((ref) async => true),
+            dashboardProvider.overrideWith(_StaticDashboardNotifier.new),
           ],
           child: const BtBusinessApp(),
         ),
       ),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pumpAndSettle();
 
     expect(find.text('BT Business'), findsOneWidget);
     expect(
@@ -38,4 +41,9 @@ void main() {
     expect(find.text('Reports'), findsOneWidget);
     expect(find.text('AI'), findsOneWidget);
   });
+}
+
+class _StaticDashboardNotifier extends DashboardNotifier {
+  @override
+  Future<DashboardSummary> build() async => DashboardSummary.zero;
 }

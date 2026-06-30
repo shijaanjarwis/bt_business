@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/utils/date_formatter.dart';
-import '../models/dashboard_summary.dart';
+import '../../domain/entities/dashboard_summary.dart';
 import 'dashboard_metric.dart';
 
 /// Maps [DashboardSummary] into ordered dashboard cards.
