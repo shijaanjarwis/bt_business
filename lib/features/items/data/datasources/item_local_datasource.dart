@@ -22,11 +22,16 @@ final class ItemLocalDataSource {
     if (businessId == null) return [];
 
     final trimmed = query.trim();
-    final where = StringBuffer('${ItemsTable.businessId} = ? AND ${ItemsTable.isActive} = 1');
+    final where = StringBuffer(
+      '${ItemsTable.businessId} = ? AND ${ItemsTable.isActive} = 1 AND ${ItemsTable.deletedAt} IS NULL',
+    );
     final args = <Object?>[businessId];
 
     if (trimmed.isNotEmpty) {
-      where.write(' AND ${ItemsTable.name} LIKE ?');
+      where.write(
+        ' AND (${ItemsTable.name} LIKE ? OR ${ItemsTable.unit} LIKE ?)',
+      );
+      args.add('%$trimmed%');
       args.add('%$trimmed%');
     }
 
@@ -35,7 +40,7 @@ final class ItemLocalDataSource {
       where: where.toString(),
       whereArgs: args,
       orderBy: '${ItemsTable.name} COLLATE NOCASE ASC',
-      limit: 50,
+      limit: trimmed.isEmpty ? 500 : 50,
     );
 
     return rows.map((row) => ItemModel.fromMap(row).item).toList();
@@ -44,7 +49,7 @@ final class ItemLocalDataSource {
   Future<Item?> fetchItem(String id) async {
     final rows = await _db.query(
       ItemsTable.tableName,
-      where: '${ItemsTable.id} = ?',
+      where: '${ItemsTable.id} = ? AND ${ItemsTable.deletedAt} IS NULL',
       whereArgs: [id],
       limit: 1,
     );
@@ -59,7 +64,7 @@ final class ItemLocalDataSource {
     final rows = await _db.query(
       ItemsTable.tableName,
       where:
-          '${ItemsTable.businessId} = ? AND LOWER(${ItemsTable.name}) = LOWER(?)',
+          '${ItemsTable.businessId} = ? AND LOWER(${ItemsTable.name}) = LOWER(?) AND ${ItemsTable.deletedAt} IS NULL',
       whereArgs: [businessId, name.trim()],
       limit: 1,
     );
@@ -84,5 +89,22 @@ final class ItemLocalDataSource {
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
     return item;
+  }
+
+  Future<void> softDeleteItem(String id) async {
+    final now = DateTime.now().toIso8601String();
+    final updated = await _db.update(
+      ItemsTable.tableName,
+      {
+        ItemsTable.isActive: 0,
+        ItemsTable.deletedAt: now,
+        ItemsTable.updatedAt: now,
+      },
+      where: '${ItemsTable.id} = ?',
+      whereArgs: [id],
+    );
+    if (updated == 0) {
+      throw StateError('Item not found');
+    }
   }
 }

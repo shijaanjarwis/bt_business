@@ -6,6 +6,7 @@ import '../../data/datasources/item_local_datasource.dart';
 import '../../data/repositories/item_repository_impl.dart';
 import '../../domain/entities/item.dart';
 import '../../domain/repositories/item_repository.dart';
+import '../../domain/usecases/delete_item.dart';
 import '../../domain/usecases/save_item.dart';
 import '../../domain/usecases/search_items.dart';
 
@@ -26,6 +27,12 @@ final searchItemsUseCaseProvider = Provider<SearchItemsUseCase>((ref) {
   return SearchItemsUseCase(ref.watch(itemRepositoryProvider));
 });
 
+final deleteItemUseCaseProvider = Provider<DeleteItemUseCase>((ref) {
+  return DeleteItemUseCase(ref.watch(itemRepositoryProvider));
+});
+
+final itemSearchQueryProvider = StateProvider<String>((ref) => '');
+
 final itemSearchProvider = FutureProvider.family<List<Item>, String>((ref, query) async {
   ref.watch(dataRevisionProvider);
   final result = await ref.watch(searchItemsUseCaseProvider)(query);
@@ -42,4 +49,13 @@ final itemListProvider = FutureProvider<List<Item>>((ref) async {
     throw result.failureOrNull!;
   }
   return result.valueOrNull ?? [];
+});
+
+final itemDetailProvider = FutureProvider.family<Item?, String>((ref, id) async {
+  ref.watch(dataRevisionProvider);
+  final result = await ref.watch(itemRepositoryProvider).getItem(id);
+  if (result.isFailure) {
+    throw result.failureOrNull!;
+  }
+  return result.valueOrNull;
 });

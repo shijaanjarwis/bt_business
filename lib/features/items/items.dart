@@ -2,5 +2,6 @@
 library;
 
 export 'domain/entities/item.dart';
+export 'presentation/pages/item_form_page.dart';
 export 'presentation/pages/item_list_page.dart';
 export 'presentation/widgets/entry_item_picker_sheet.dart';

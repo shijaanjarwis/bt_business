@@ -25,6 +25,11 @@ class _FakeItemRepository implements ItemRepository {
   }
 
   @override
+  Future<Result<void>> deleteItem(String id) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<Result<Item>> saveItem(SaveItemInput input) async {
     lastInput = input;
     return Success(

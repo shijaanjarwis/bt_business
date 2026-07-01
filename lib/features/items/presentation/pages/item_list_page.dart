@@ -1,104 +1,166 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
+import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
-import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../providers/item_providers.dart';
-import '../widgets/entry_item_picker_sheet.dart';
+import '../widgets/item_list_tile.dart';
 
-/// Flat item master list — one simple list, no groups or categories.
-class ItemListPage extends ConsumerWidget {
+/// Maal list — naam + unit shortcuts for faster bikri/kharid.
+class ItemListPage extends ConsumerStatefulWidget {
   const ItemListPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final itemsAsync = ref.watch(itemListProvider);
+  ConsumerState<ItemListPage> createState() => _ItemListPageState();
+}
+
+class _ItemListPageState extends ConsumerState<ItemListPage> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final query = ref.watch(itemSearchQueryProvider);
+    final itemsAsync = ref.watch(itemSearchProvider(query));
 
     return Scaffold(
       backgroundColor: ColorPalette.background,
       appBar: AppBar(
         backgroundColor: ColorPalette.background,
         elevation: 0,
-        title: const BilingualLabel(
-          english: 'Items',
-          hindi: 'Maal ka list — simple item master',
-          compact: true,
+        scrolledUnderElevation: 0,
+        title: const Text(
+          'Maal',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await showModalBottomSheet<void>(
-            context: context,
-            isScrollControlled: true,
-            builder: (context) => const QuickItemCreateSheet(
-              initialName: '',
-              mode: EntryItemMode.sale,
-            ),
-          );
-          ref.invalidate(itemListProvider);
-        },
+        onPressed: () => context.push(RouteNames.stockNew),
         backgroundColor: ColorPalette.purple,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Add Item'),
+        label: const Text('Maal Add Karein'),
       ),
       body: SafeArea(
-        child: itemsAsync.when(
-          loading: () => const AppLoadingView(),
-          error: (error, _) => AppErrorView(
-            title: 'Items load nahi ho paye',
-            message: error.toString(),
-            actionLabel: 'Try Again',
-            onAction: () => ref.invalidate(itemListProvider),
-          ),
-          data: (items) {
-            if (items.isEmpty) {
-              return const Center(
-                child: BilingualLabel(
-                  english: 'No items yet',
-                  hindi: 'Sale ya kharid se pehla maal jodein',
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  ref.read(itemSearchQueryProvider.notifier).state = value;
+                  setState(() {});
+                },
+                decoration: InputDecoration(
+                  hintText: 'Naam ya unit se khojo…',
+                  prefixIcon: const Icon(Icons.search_rounded, color: ColorPalette.purple),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_searchController.text.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          onPressed: () {
+                            _searchController.clear();
+                            ref.read(itemSearchQueryProvider.notifier).state = '';
+                            setState(() {});
+                          },
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.mic_none_rounded, size: 22),
+                        onPressed: () {},
+                        tooltip: 'Awaz se khojo (jald)',
+                      ),
+                    ],
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
-              );
-            }
-
-            return RefreshIndicator(
-              color: ColorPalette.purple,
-              onRefresh: () async => ref.invalidate(itemListProvider),
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
-                itemCount: items.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  return Material(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            ),
+            Expanded(
+              child: itemsAsync.when(
+                loading: () => const AppLoadingView(),
+                error: (error, _) => AppErrorView(
+                  title: 'Maal load nahi ho paya',
+                  message: error.toString(),
+                  actionLabel: 'Phir try karein',
+                  onAction: () => ref.invalidate(itemSearchProvider(query)),
+                ),
+                data: (items) {
+                  if (items.isEmpty) {
+                    return RefreshIndicator(
+                      color: ColorPalette.purple,
+                      onRefresh: () async => ref.invalidate(itemSearchProvider(query)),
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
                         children: [
-                          Text(
-                            item.name,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                          SizedBox(height: MediaQuery.sizeOf(context).height * 0.14),
+                          Center(
+                            child: Text(
+                              query.trim().isEmpty
+                                  ? 'Pehla maal jodein — bikri/kharid tez hogi'
+                                  : 'Match nahi mila — naam ya unit check karein',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Color(0xFF636366),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Stock: ${item.openingStock} ${item.unit}',
-                            style: const TextStyle(color: Color(0xFF636366)),
-                          ),
+                          const DeveloperFooter(),
                         ],
                       ),
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    color: ColorPalette.purple,
+                    onRefresh: () async => ref.invalidate(itemSearchProvider(query)),
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
+                      itemCount: items.length + 1,
+                      separatorBuilder: (context, index) {
+                        if (index >= items.length - 1) {
+                          return const SizedBox.shrink();
+                        }
+                        return const SizedBox(height: 10);
+                      },
+                      itemBuilder: (context, index) {
+                        if (index == items.length) {
+                          return const DeveloperFooter();
+                        }
+                        final item = items[index];
+                        return ItemListTile(
+                          item: item,
+                          onTap: () => context.push(RouteNames.stockEditPath(item.id)),
+                        );
+                      },
                     ),
                   );
                 },
               ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );

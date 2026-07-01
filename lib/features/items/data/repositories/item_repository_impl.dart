@@ -51,14 +51,24 @@ final class ItemRepositoryImpl implements ItemRepository {
         );
       }
 
+      var openingStock = input.openingStock;
+      var gstRate = input.gstRate;
+      if (input.id != null) {
+        final existing = await _localDataSource.fetchItem(input.id!);
+        if (existing != null) {
+          openingStock = existing.openingStock;
+          gstRate = existing.gstRate;
+        }
+      }
+
       final item = Item(
         id: input.id ?? IdGenerator.newId(),
         name: input.name,
         unit: input.unit,
-        openingStock: input.openingStock,
+        openingStock: openingStock,
         purchasePrice: input.purchasePrice,
         salePrice: input.salePrice,
-        gstRate: input.gstRate,
+        gstRate: gstRate,
         isActive: true,
       );
 
@@ -67,6 +77,21 @@ final class ItemRepositoryImpl implements ItemRepository {
         existingCreatedAt: input.existingCreatedAt,
       );
       return Success(saved);
+    } catch (error, stackTrace) {
+      return Error(ExceptionMapper.map(error, stackTrace));
+    }
+  }
+
+  @override
+  Future<Result<void>> deleteItem(String id) async {
+    try {
+      final item = await _localDataSource.fetchItem(id);
+      if (item == null) {
+        return const Error(ValidationFailure('Item not found'));
+      }
+
+      await _localDataSource.softDeleteItem(id);
+      return const Success(null);
     } catch (error, stackTrace) {
       return Error(ExceptionMapper.map(error, stackTrace));
     }

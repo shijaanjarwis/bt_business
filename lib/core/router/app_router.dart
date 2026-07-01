@@ -7,6 +7,7 @@ import '../../features/business/presentation/providers/business_providers.dart';
 import '../../features/home/presentation/pages/home_dashboard_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/widgets/navigation/main_shell.dart';
+import '../../features/items/presentation/pages/item_form_page.dart';
 import '../../features/items/presentation/pages/item_list_page.dart';
 import '../../features/ledger/presentation/pages/ledger_page.dart';
 import '../../features/ledger/presentation/pages/party_detail_page.dart';
@@ -181,6 +182,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 pageBuilder: (context, state) => const NoTransitionPage(
                   child: ItemListPage(),
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    name: RouteNames.stockNewName,
+                    builder: (context, state) => const ItemFormPage(
+                      mode: ItemFormMode.create,
+                    ),
+                  ),
+                  GoRoute(
+                    path: ':id/edit',
+                    name: RouteNames.stockEditName,
+                    builder: (context, state) => ItemFormPage(
+                      mode: ItemFormMode.edit,
+                      itemId: state.pathParameters['id'],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

@@ -10,6 +10,8 @@ abstract interface class ItemRepository {
   Future<Result<Item?>> findByName(String name);
 
   Future<Result<Item>> saveItem(SaveItemInput input);
+
+  Future<Result<void>> deleteItem(String id);
 }
 
 /// Input for creating or updating an item.

@@ -4,6 +4,8 @@ abstract final class RouteNames {
   static const String splash = '/splash';
   static const String ledger = '/ledger';
   static const String stock = '/stock';
+  static const String stockNew = '/stock/new';
+  static const String stockEdit = '/stock/:id/edit';
   static const String reports = '/reports';
   static const String ai = '/ai';
   static const String businessProfile = '/business-profile';
@@ -28,6 +30,7 @@ abstract final class RouteNames {
   static String salesEditPath(String id) => '/sales/$id/edit';
   static String purchasesEditPath(String id) => '/purchases/$id/edit';
   static String paymentsEditPath(String id) => '/payments/$id/edit';
+  static String stockEditPath(String id) => '/stock/$id/edit';
 
   static const String salesName = 'sales';
   static const String salesNewName = 'salesNew';
@@ -48,6 +51,8 @@ abstract final class RouteNames {
   static const String ledgerPartyDetailName = 'ledgerPartyDetail';
   static const String ledgerPartyEditName = 'ledgerPartyEdit';
   static const String stockName = 'stock';
+  static const String stockNewName = 'stockNew';
+  static const String stockEditName = 'stockEdit';
   static const String reportsName = 'reports';
   static const String aiName = 'ai';
   static const String businessProfileName = 'businessProfile';
