@@ -1,6 +1,7 @@
 /// Centralized route paths and names for [GoRouter].
 abstract final class RouteNames {
   static const String home = '/';
+  static const String splash = '/splash';
   static const String ledger = '/ledger';
   static const String stock = '/stock';
   static const String reports = '/reports';
@@ -19,12 +20,14 @@ abstract final class RouteNames {
   static const String paymentsReceived = '/payments/received';
   static const String paymentsPaid = '/payments/paid';
   static const String paymentsExpense = '/payments/expense';
+  static const String paymentsEdit = '/payments/:id/edit';
   static const String history = '/history';
 
   static String ledgerPartyDetailPath(String id) => '/ledger/party/$id';
   static String ledgerPartyEditPath(String id) => '/ledger/party/$id/edit';
   static String salesEditPath(String id) => '/sales/$id/edit';
   static String purchasesEditPath(String id) => '/purchases/$id/edit';
+  static String paymentsEditPath(String id) => '/payments/$id/edit';
 
   static const String salesName = 'sales';
   static const String salesNewName = 'salesNew';
@@ -36,8 +39,10 @@ abstract final class RouteNames {
   static const String paymentsReceivedName = 'paymentsReceived';
   static const String paymentsPaidName = 'paymentsPaid';
   static const String paymentsExpenseName = 'paymentsExpense';
+  static const String paymentsEditName = 'paymentsEdit';
   static const String historyName = 'history';
   static const String homeName = 'home';
+  static const String splashName = 'splash';
   static const String ledgerName = 'ledger';
   static const String ledgerPartyNewName = 'ledgerPartyNew';
   static const String ledgerPartyDetailName = 'ledgerPartyDetail';

@@ -1,9 +1,11 @@
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/business/presentation/pages/business_profile_page.dart';
 import '../../features/business/presentation/providers/business_providers.dart';
 import '../../features/home/presentation/pages/home_dashboard_page.dart';
+import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/widgets/navigation/main_shell.dart';
 import '../../features/items/presentation/pages/item_list_page.dart';
 import '../../features/ledger/presentation/pages/ledger_page.dart';
@@ -13,7 +15,7 @@ import '../../features/sales/presentation/pages/sale_form_page.dart';
 import '../../features/sales/presentation/pages/sale_list_page.dart';
 import '../../features/payments/presentation/pages/expense_form_page.dart';
 import '../../features/payments/presentation/pages/payment_form_page.dart';
-import '../../features/payments/presentation/pages/payments_hub_page.dart';
+import '../../features/payments/presentation/pages/payment_register_page.dart';
 import '../../features/purchase/presentation/pages/purchase_form_page.dart';
 import '../../features/purchase/presentation/pages/purchase_list_page.dart';
 import '../../features/reports/presentation/pages/transaction_history_page.dart';
@@ -23,20 +25,50 @@ import 'route_names.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = ref.watch(routerRefreshNotifierProvider);
-  final hasBusiness = ref.watch(businessGateProvider).valueOrNull;
 
-  return GoRouter(
-    initialLocation: RouteNames.home,
+  // Defer refresh so GoRouter is never re-entered synchronously during redirect.
+  ref.listen<AsyncValue<bool>>(businessGateProvider, (_, _) {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      refreshNotifier.refresh();
+    });
+  });
+
+  final router = GoRouter(
+    initialLocation: RouteNames.splash,
     refreshListenable: refreshNotifier,
     redirect: (context, state) {
-      final onProfileRoute = state.matchedLocation == RouteNames.businessProfile;
+      final onSplash = state.matchedLocation == RouteNames.splash;
+      if (onSplash) return null;
 
-      if (hasBusiness == null) return null;
-      if (!hasBusiness && !onProfileRoute) return RouteNames.businessProfile;
+      final gate = ref.read(businessGateProvider);
+      final onProfileRoute = state.matchedLocation == RouteNames.businessProfile;
+      final isEditProfile = state.uri.queryParameters['mode'] == 'edit';
+
+      // Keep the heavy tab shell unmounted until onboarding state is known.
+      if (gate.isLoading) {
+        return onProfileRoute ? null : RouteNames.businessProfile;
+      }
+
+      final hasBusiness = gate.valueOrNull ?? false;
+      if (!hasBusiness) {
+        return onProfileRoute ? null : RouteNames.businessProfile;
+      }
+
+      if (onProfileRoute && !isEditProfile) {
+        return RouteNames.home;
+      }
+
       return null;
     },
     errorBuilder: (context, state) => RouterErrorPage(state: state),
     routes: [
+      GoRoute(
+        path: RouteNames.splash,
+        name: RouteNames.splashName,
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: SplashPage(),
+        ),
+      ),
       GoRoute(
         path: RouteNames.businessProfile,
         name: RouteNames.businessProfileName,
@@ -64,7 +96,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'payments',
                     name: RouteNames.paymentsName,
-                    builder: (context, state) => const PaymentsHubPage(),
+                    builder: (context, state) => const PaymentRegisterPage(),
                     routes: [
                       GoRoute(
                         path: 'received',
@@ -86,6 +118,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         path: 'expense',
                         name: RouteNames.paymentsExpenseName,
                         builder: (context, state) => const ExpenseFormPage(),
+                      ),
+                      GoRoute(
+                        path: ':id/edit',
+                        name: RouteNames.paymentsEditName,
+                        builder: (context, state) => PaymentFormPage(
+                          mode: PaymentFormMode.received,
+                          paymentId: state.pathParameters['id'],
+                        ),
                       ),
                     ],
                   ),
@@ -206,4 +246,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  ref.onDispose(router.dispose);
+  return router;
 });
