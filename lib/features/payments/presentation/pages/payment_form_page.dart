@@ -14,6 +14,7 @@ import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../ledger/domain/entities/opening_balance_direction.dart';
 import '../../../ledger/domain/entities/party.dart';
 import '../../../ledger/domain/entities/party_type.dart';
@@ -57,6 +58,7 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
   PaymentRegisterEntry? _existing;
   late PaymentFormMode _mode = widget.mode;
   bool _initialized = false;
+  bool _editHydrated = false;
   bool _isSaving = false;
   bool _isDeleting = false;
 
@@ -70,8 +72,17 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant PaymentFormPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.paymentId != widget.paymentId) {
+      _editHydrated = false;
+      _existing = null;
+    }
+  }
+
   void _applyEntry(PaymentRegisterEntry entry) {
-    if (_initialized) return;
+    if (_editHydrated) return;
     _existing = entry;
     _mode = entry.isReceived ? PaymentFormMode.received : PaymentFormMode.paid;
     _dateTime = entry.createdAt;
@@ -91,7 +102,7 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
       updatedAt: entry.createdAt,
     );
     _partyQueryController.text = entry.partyName;
-    _initialized = true;
+    _editHydrated = true;
   }
 
   Future<void> _loadInitialParty() async {
@@ -259,7 +270,7 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
       }
       notifyDataChanged(ref);
       ref.invalidate(paymentListProvider);
-      if (mounted) context.go(RouteNames.payments);
+      if (mounted) context.pop();
     } finally {
       if (mounted) setState(() => _isDeleting = false);
     }
@@ -294,7 +305,13 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
               ),
             );
           }
-          _applyEntry(entry);
+          if (!_editHydrated) {
+            _applyEntry(entry);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() {});
+            });
+            return const Scaffold(body: AppLoadingView());
+          }
           return _buildForm();
         },
       );
@@ -311,10 +328,13 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
   Widget _buildForm() {
     final partyQuery = _partyQueryController.text;
     final partiesAsync = ref.watch(salePartySearchProvider(partyQuery));
-    final title = widget.isEdit
-        ? (isReceived ? 'Jama Badlo' : 'Payment Badlo')
-        : (isReceived ? 'Jama Lo' : 'Paise Do');
-    final saveLabel = isReceived ? 'Jama Save Karein' : 'Paise Do Save Karein';
+    final englishTitle = widget.isEdit
+        ? (isReceived ? 'Edit Cash Received' : 'Edit Payment')
+        : (isReceived ? 'Cash Received' : 'Payment');
+    final hindiTitle = widget.isEdit
+        ? (isReceived ? 'Paise Mile Badlo' : 'Paise Diya Badlo')
+        : (isReceived ? 'Paise Mile' : 'Paise Diya');
+    final saveLabel = isReceived ? 'Paise Mile Save' : 'Paise Diya Save';
 
     return Scaffold(
       backgroundColor: ColorPalette.background,
@@ -326,7 +346,11 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
+        title: BilingualLabel(
+          english: englishTitle,
+          hindi: hindiTitle,
+          compact: true,
+        ),
       ),
       body: SafeArea(
         child: Form(

@@ -7,6 +7,7 @@ import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../domain/entities/party.dart';
 import '../providers/party_providers.dart';
 import '../utils/party_ledger_ui_helpers.dart';
@@ -95,13 +96,10 @@ class PartyDetailPage extends ConsumerWidget {
                       const SizedBox(height: 16),
                       PartyQuickActions(party: party),
                       const SizedBox(height: 20),
-                      const Text(
-                        'Poora Hisaab',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1C1C1E),
-                        ),
+                      const BilingualLabel(
+                        english: 'Full Ledger',
+                        hindi: 'Poora Hisaab',
+                        compact: true,
                       ),
                       const SizedBox(height: 4),
                       const Text(

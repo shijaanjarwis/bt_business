@@ -19,6 +19,7 @@ import '../../domain/usecases/get_sale.dart';
 import '../../domain/usecases/get_sales.dart';
 import '../../domain/usecases/save_sale.dart';
 import '../../domain/usecases/search_sales.dart';
+import '../../../../core/utils/register_date_period.dart';
 import '../models/sale_register_filter.dart';
 import '../utils/sale_ui_helpers.dart';
 
@@ -64,6 +65,13 @@ final saleSearchQueryProvider = StateProvider<String>((ref) => '');
 final saleRegisterFilterProvider =
     StateProvider<SaleRegisterFilter>((ref) => SaleRegisterFilter.all);
 
+final saleRegisterDatePeriodProvider = StateProvider<RegisterDatePeriod>(
+  (ref) => RegisterDatePeriod.thisMonth,
+);
+
+final saleRegisterCustomStartProvider = StateProvider<DateTime?>((ref) => null);
+final saleRegisterCustomEndProvider = StateProvider<DateTime?>((ref) => null);
+
 /// Built-in walk-in party id for cash sales when no party is chosen.
 final cashCustomerPartyIdProvider = FutureProvider<String>((ref) async {
   ref.watch(dataRevisionProvider);
@@ -83,6 +91,9 @@ final saleListProvider = FutureProvider<List<SaleEntry>>((ref) async {
 
   final query = ref.watch(saleSearchQueryProvider);
   final registerFilter = ref.watch(saleRegisterFilterProvider);
+  final datePeriod = ref.watch(saleRegisterDatePeriodProvider);
+  final customStart = ref.watch(saleRegisterCustomStartProvider);
+  final customEnd = ref.watch(saleRegisterCustomEndProvider);
 
   final Result<List<SaleEntry>> result;
   if (query.trim().isNotEmpty) {
@@ -101,6 +112,17 @@ final saleListProvider = FutureProvider<List<SaleEntry>>((ref) async {
         .where((sale) => SaleUiHelpers.matchesRegisterFilter(sale, registerFilter))
         .toList();
   }
+
+  sales = sales
+      .where(
+        (sale) => RegisterDateRange.includesDate(
+          date: sale.date,
+          period: datePeriod,
+          customStart: customStart,
+          customEnd: customEnd,
+        ),
+      )
+      .toList();
 
   return sales;
 });

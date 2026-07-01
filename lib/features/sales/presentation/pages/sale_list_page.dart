@@ -10,6 +10,8 @@ import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
+import '../../../../shared/widgets/filters/register_date_filter_bar.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../domain/entities/sale_entry.dart';
 import '../models/sale_register_filter.dart';
 import '../providers/sale_providers.dart';
@@ -36,6 +38,9 @@ class _SaleListPageState extends ConsumerState<SaleListPage> {
   Widget build(BuildContext context) {
     final salesAsync = ref.watch(saleListProvider);
     final registerFilter = ref.watch(saleRegisterFilterProvider);
+    final datePeriod = ref.watch(saleRegisterDatePeriodProvider);
+    final customStart = ref.watch(saleRegisterCustomStartProvider);
+    final customEnd = ref.watch(saleRegisterCustomEndProvider);
     final cashCustomerId = ref.watch(cashCustomerPartyIdProvider).valueOrNull;
 
     return Scaffold(
@@ -44,16 +49,21 @@ class _SaleListPageState extends ConsumerState<SaleListPage> {
         backgroundColor: ColorPalette.background,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: const Text(
-          'Bikri Register',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        title: const BilingualLabel(
+          english: 'Sale Register',
+          hindi: 'Bikri Register',
+          compact: true,
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(RouteNames.salesNew),
         backgroundColor: ColorPalette.purple,
         icon: const Icon(Icons.edit_note_rounded),
-        label: const Text('Bikri Likho'),
+        label: const BilingualLabel(
+          english: 'Sell',
+          hindi: 'Maal Becha',
+          compact: true,
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -75,6 +85,21 @@ class _SaleListPageState extends ConsumerState<SaleListPage> {
                     borderSide: BorderSide.none,
                   ),
                 ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: RegisterDateFilterBar(
+                period: datePeriod,
+                customStart: customStart,
+                customEnd: customEnd,
+                onPeriodChanged: (period) {
+                  ref.read(saleRegisterDatePeriodProvider.notifier).state = period;
+                },
+                onCustomRangeChanged: (start, end) {
+                  ref.read(saleRegisterCustomStartProvider.notifier).state = start;
+                  ref.read(saleRegisterCustomEndProvider.notifier).state = end;
+                },
               ),
             ),
             Padding(
@@ -137,7 +162,7 @@ class _SaleListPageState extends ConsumerState<SaleListPage> {
                               'Pehli bikri likhein',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Color(0xFF636366),
+                                color: ColorPalette.labelSecondary,
                               ),
                             ),
                           ),
@@ -252,14 +277,14 @@ class _SaleRegisterTile extends StatelessWidget {
                     value: CurrencyFormatter.format(entry.dueAmount),
                     color: entry.dueAmount > 0
                         ? Colors.orange.shade800
-                        : const Color(0xFF636366),
+                        : ColorPalette.labelSecondary,
                   ),
                   const Spacer(),
                   Text(
                     '${DateFormatter.shortDate(entry.date)} · $timeLabel',
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF636366),
+                      color: ColorPalette.labelSecondary,
                     ),
                   ),
                 ],

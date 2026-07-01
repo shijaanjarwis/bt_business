@@ -1,26 +1,25 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/color_palette.dart';
+import '../../../../shared/widgets/branding/app_branding.dart';
 
-/// BT Business brand header — logo placeholder + app name + subtitle.
+/// BT Business brand header — Bharat Traders logo beside app name.
 class BtBusinessLogo extends StatelessWidget {
   const BtBusinessLogo({super.key});
-
-  static const _logoAssetPath = 'assets/images/bt_business_logo.png';
 
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        _LogoPlaceholder(assetPath: _logoAssetPath),
+        const _BrandLogo(),
         const SizedBox(width: 12),
         const Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'BT Business',
+                AppBranding.appName,
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -31,7 +30,7 @@ class BtBusinessLogo extends StatelessWidget {
               ),
               SizedBox(height: 3),
               Text(
-                'Bharat Traders - Your Smart Business Partner',
+                AppBranding.subtitle,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w400,
@@ -48,72 +47,45 @@ class BtBusinessLogo extends StatelessWidget {
   }
 }
 
-class _LogoPlaceholder extends StatelessWidget {
-  const _LogoPlaceholder({required this.assetPath});
+class _BrandLogo extends StatelessWidget {
+  const _BrandLogo();
 
-  final String assetPath;
+  static const _size = 40.0;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 52,
-      height: 52,
+      width: _size,
+      height: _size,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: ColorPalette.purple.withValues(alpha: 0.15),
-          width: 1.2,
+          color: const Color(0xFFE5E5EA),
+          width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: ColorPalette.purple.withValues(alpha: 0.12),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.all(4),
       child: Image.asset(
-        assetPath,
-        fit: BoxFit.cover,
+        AppBranding.logoAssetPath,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
         errorBuilder: (context, error, stackTrace) {
           return Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  ColorPalette.purpleLight,
-                  ColorPalette.purple,
-                ],
-              ),
-            ),
             alignment: Alignment.center,
-            child: const Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'BT',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.8,
-                    height: 1,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'LOGO',
-                  style: TextStyle(
-                    color: Color(0xCCFFFFFF),
-                    fontSize: 7,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
+            decoration: BoxDecoration(
+              color: ColorPalette.purple.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Text(
+              'BT',
+              style: TextStyle(
+                color: ColorPalette.purple,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
             ),
           );
         },

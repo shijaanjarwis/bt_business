@@ -15,6 +15,7 @@ import '../../data/services/expense_posting_service.dart';
 import '../../domain/entities/payment_register_entry.dart';
 import '../../domain/repositories/expense_repository.dart';
 import '../../domain/usecases/record_expense.dart';
+import '../../../../core/utils/register_date_period.dart';
 import '../models/payment_register_filter.dart';
 import '../services/payment_register_actions.dart';
 
@@ -49,11 +50,21 @@ final paymentSearchQueryProvider = StateProvider<String>((ref) => '');
 final paymentRegisterFilterProvider =
     StateProvider<PaymentRegisterFilter>((ref) => PaymentRegisterFilter.all);
 
+final paymentRegisterDatePeriodProvider = StateProvider<RegisterDatePeriod>(
+  (ref) => RegisterDatePeriod.thisMonth,
+);
+
+final paymentRegisterCustomStartProvider = StateProvider<DateTime?>((ref) => null);
+final paymentRegisterCustomEndProvider = StateProvider<DateTime?>((ref) => null);
+
 final paymentListProvider = FutureProvider<List<PaymentRegisterEntry>>((ref) async {
   ref.watch(dataRevisionProvider);
 
   final query = ref.watch(paymentSearchQueryProvider);
   final filter = ref.watch(paymentRegisterFilterProvider);
+  final datePeriod = ref.watch(paymentRegisterDatePeriodProvider);
+  final customStart = ref.watch(paymentRegisterCustomStartProvider);
+  final customEnd = ref.watch(paymentRegisterCustomEndProvider);
   final datasource = ref.watch(paymentRegisterLocalDataSourceProvider);
 
   List<PaymentRegisterEntry> entries;
@@ -72,6 +83,17 @@ final paymentListProvider = FutureProvider<List<PaymentRegisterEntry>>((ref) asy
       };
     }).toList();
   }
+
+  entries = entries
+      .where(
+        (entry) => RegisterDateRange.includesDate(
+          date: entry.date,
+          period: datePeriod,
+          customStart: customStart,
+          customEnd: customEnd,
+        ),
+      )
+      .toList();
 
   return entries;
 });

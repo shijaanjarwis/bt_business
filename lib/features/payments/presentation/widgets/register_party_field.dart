@@ -56,7 +56,7 @@ class RegisterPartyField extends ConsumerWidget {
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: selectedParty == null
-                            ? const Color(0xFF8E8E93)
+                            ? ColorPalette.hintText
                             : const Color(0xFF1C1C1E),
                       ),
                     ),
@@ -66,7 +66,7 @@ class RegisterPartyField extends ConsumerWidget {
                         selectedParty!.phone,
                         style: const TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF636366),
+                          color: ColorPalette.labelSecondary,
                         ),
                       ),
                     ],

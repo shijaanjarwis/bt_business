@@ -15,6 +15,7 @@ import '../../domain/usecases/get_purchases.dart';
 import '../../domain/usecases/save_purchase.dart';
 import '../../domain/usecases/search_purchase_items.dart';
 import '../../domain/usecases/search_purchases.dart';
+import '../../../../core/utils/register_date_period.dart';
 import '../models/purchase_register_filter.dart';
 import '../utils/purchase_ui_helpers.dart';
 
@@ -64,11 +65,21 @@ final purchaseSearchQueryProvider = StateProvider<String>((ref) => '');
 final purchaseRegisterFilterProvider =
     StateProvider<PurchaseRegisterFilter>((ref) => PurchaseRegisterFilter.all);
 
+final purchaseRegisterDatePeriodProvider = StateProvider<RegisterDatePeriod>(
+  (ref) => RegisterDatePeriod.thisMonth,
+);
+
+final purchaseRegisterCustomStartProvider = StateProvider<DateTime?>((ref) => null);
+final purchaseRegisterCustomEndProvider = StateProvider<DateTime?>((ref) => null);
+
 final purchaseListProvider = FutureProvider<List<PurchaseInvoice>>((ref) async {
   ref.watch(dataRevisionProvider);
 
   final query = ref.watch(purchaseSearchQueryProvider);
   final registerFilter = ref.watch(purchaseRegisterFilterProvider);
+  final datePeriod = ref.watch(purchaseRegisterDatePeriodProvider);
+  final customStart = ref.watch(purchaseRegisterCustomStartProvider);
+  final customEnd = ref.watch(purchaseRegisterCustomEndProvider);
 
   final Result<List<PurchaseInvoice>> result;
   if (query.trim().isNotEmpty) {
@@ -90,6 +101,17 @@ final purchaseListProvider = FutureProvider<List<PurchaseInvoice>>((ref) async {
         )
         .toList();
   }
+
+  purchases = purchases
+      .where(
+        (invoice) => RegisterDateRange.includesDate(
+          date: invoice.date,
+          period: datePeriod,
+          customStart: customStart,
+          customEnd: customEnd,
+        ),
+      )
+      .toList();
 
   return purchases;
 });

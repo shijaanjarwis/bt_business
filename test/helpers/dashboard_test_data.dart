@@ -4,6 +4,7 @@ import 'package:bt_business/core/utils/date_formatter.dart';
 import 'package:bt_business/core/utils/id_generator.dart';
 import 'package:bt_business/data/local/database/migrations/migration_runner.dart';
 import 'package:bt_business/data/local/database/seeders/account_seeder.dart';
+import 'package:bt_business/data/local/database/seeders/cash_customer_seeder.dart';
 import 'package:bt_business/data/local/database/tables/accounting_tables.dart';
 import 'package:bt_business/features/business/data/datasources/business_table.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -11,7 +12,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 Future<Database> createTestDatabase() async {
   return openDatabase(
     inMemoryDatabasePath,
-    version: 5,
+    version: 6,
     singleInstance: false,
     onConfigure: (db) async {
       await db.execute('PRAGMA foreign_keys = ON');
@@ -38,6 +39,7 @@ Future<String> seedTestBusiness(Database db) async {
   });
 
   await AccountSeeder.seedForBusiness(db, businessId);
+  await CashCustomerSeeder.seedForBusiness(db, businessId);
   return businessId;
 }
 
@@ -46,31 +48,52 @@ Future<void> insertSale({
   required String businessId,
   required double amount,
   DateTime? date,
+  double paidAmount = 0,
+  double dueAmount = 0,
+  String? partyId,
 }) async {
   final isoDate = DateFormatter.isoDate(date ?? DateTime.now());
   final now = DateTime.now().toIso8601String();
   final transactionId = IdGenerator.newId();
+  final paid = paidAmount > 0 ? paidAmount : amount;
+  final due = dueAmount > 0 ? dueAmount : (amount - paid).clamp(0, amount);
 
   await db.insert(TransactionsTable.tableName, {
     TransactionsTable.id: transactionId,
     TransactionsTable.businessId: businessId,
     TransactionsTable.type: TransactionTypes.sale,
     TransactionsTable.date: isoDate,
+    TransactionsTable.partyId: partyId,
     TransactionsTable.totalAmount: amount,
+    TransactionsTable.paidAmount: paid,
+    TransactionsTable.dueAmount: due,
     TransactionsTable.createdAt: now,
     TransactionsTable.updatedAt: now,
   });
 
   final salesAccount = await _accountId(db, businessId, AccountTypes.sales);
   final cashAccount = await _accountId(db, businessId, AccountTypes.cash);
+  final receivableAccount = await _accountId(db, businessId, AccountTypes.receivable);
 
-  await db.insert(JournalLinesTable.tableName, {
-    JournalLinesTable.id: IdGenerator.newId(),
-    JournalLinesTable.transactionId: transactionId,
-    JournalLinesTable.accountId: cashAccount,
-    JournalLinesTable.debit: amount,
-    JournalLinesTable.credit: 0,
-  });
+  if (paid > 0) {
+    await db.insert(JournalLinesTable.tableName, {
+      JournalLinesTable.id: IdGenerator.newId(),
+      JournalLinesTable.transactionId: transactionId,
+      JournalLinesTable.accountId: cashAccount,
+      JournalLinesTable.debit: paid,
+      JournalLinesTable.credit: 0,
+    });
+  }
+  if (due > 0) {
+    await db.insert(JournalLinesTable.tableName, {
+      JournalLinesTable.id: IdGenerator.newId(),
+      JournalLinesTable.transactionId: transactionId,
+      JournalLinesTable.accountId: receivableAccount,
+      JournalLinesTable.partyId: partyId,
+      JournalLinesTable.debit: due,
+      JournalLinesTable.credit: 0,
+    });
+  }
   await db.insert(JournalLinesTable.tableName, {
     JournalLinesTable.id: IdGenerator.newId(),
     JournalLinesTable.transactionId: transactionId,
@@ -78,6 +101,83 @@ Future<void> insertSale({
     JournalLinesTable.debit: 0,
     JournalLinesTable.credit: amount,
   });
+}
+
+Future<void> insertCashJournal({
+  required Database db,
+  required String businessId,
+  required String transactionType,
+  required double cashIn,
+  required double cashOut,
+  DateTime? date,
+}) async {
+  final isoDate = DateFormatter.isoDate(date ?? DateTime.now());
+  final now = DateTime.now().toIso8601String();
+  final transactionId = IdGenerator.newId();
+  final cashAccount = await _accountId(db, businessId, AccountTypes.cash);
+  final offsetAccount = await _accountId(db, businessId, AccountTypes.expense);
+
+  await db.insert(TransactionsTable.tableName, {
+    TransactionsTable.id: transactionId,
+    TransactionsTable.businessId: businessId,
+    TransactionsTable.type: transactionType,
+    TransactionsTable.date: isoDate,
+    TransactionsTable.totalAmount: cashIn > 0 ? cashIn : cashOut,
+    TransactionsTable.createdAt: now,
+    TransactionsTable.updatedAt: now,
+  });
+
+  if (cashIn > 0) {
+    await db.insert(JournalLinesTable.tableName, {
+      JournalLinesTable.id: IdGenerator.newId(),
+      JournalLinesTable.transactionId: transactionId,
+      JournalLinesTable.accountId: cashAccount,
+      JournalLinesTable.debit: cashIn,
+      JournalLinesTable.credit: 0,
+    });
+    await db.insert(JournalLinesTable.tableName, {
+      JournalLinesTable.id: IdGenerator.newId(),
+      JournalLinesTable.transactionId: transactionId,
+      JournalLinesTable.accountId: offsetAccount,
+      JournalLinesTable.debit: 0,
+      JournalLinesTable.credit: cashIn,
+    });
+  }
+  if (cashOut > 0) {
+    await db.insert(JournalLinesTable.tableName, {
+      JournalLinesTable.id: IdGenerator.newId(),
+      JournalLinesTable.transactionId: transactionId,
+      JournalLinesTable.accountId: offsetAccount,
+      JournalLinesTable.debit: cashOut,
+      JournalLinesTable.credit: 0,
+    });
+    await db.insert(JournalLinesTable.tableName, {
+      JournalLinesTable.id: IdGenerator.newId(),
+      JournalLinesTable.transactionId: transactionId,
+      JournalLinesTable.accountId: cashAccount,
+      JournalLinesTable.debit: 0,
+      JournalLinesTable.credit: cashOut,
+    });
+  }
+}
+
+Future<void> softDeleteTransaction({
+  required Database db,
+  required String transactionId,
+}) async {
+  final now = DateTime.now().toIso8601String();
+  await db.update(
+    TransactionsTable.tableName,
+    {TransactionsTable.deletedAt: now},
+    where: '${TransactionsTable.id} = ?',
+    whereArgs: [transactionId],
+  );
+  await db.update(
+    JournalLinesTable.tableName,
+    {JournalLinesTable.deletedAt: now},
+    where: '${JournalLinesTable.transactionId} = ?',
+    whereArgs: [transactionId],
+  );
 }
 
 Future<void> insertPartyBalance({

@@ -6,6 +6,7 @@ import '../../../../core/di/data_revision.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/utils/validators.dart';
+import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
@@ -172,6 +173,7 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
                   ],
                 ),
               ),
+              const DeveloperFooter(),
             ],
           ),
         ),

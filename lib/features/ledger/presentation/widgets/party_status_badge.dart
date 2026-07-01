@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/color_palette.dart';
+
 class PartyStatusBadge extends StatelessWidget {
   const PartyStatusBadge({
     super.key,
@@ -10,7 +12,7 @@ class PartyStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? const Color(0xFF34C759) : const Color(0xFF8E8E93);
+    final color = isActive ? const Color(0xFF34C759) : ColorPalette.labelTertiary;
     final label = isActive ? 'Active' : 'Inactive';
 
     return Container(

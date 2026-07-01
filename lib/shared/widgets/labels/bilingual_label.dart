@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/color_palette.dart';
-
-/// English heading with daily spoken Hindi subtitle in parentheses.
+/// English heading with simple Hindi subtitle on the line below.
 class BilingualLabel extends StatelessWidget {
   const BilingualLabel({
     super.key,
@@ -11,6 +9,7 @@ class BilingualLabel extends StatelessWidget {
     this.englishStyle,
     this.hindiStyle,
     this.compact = false,
+    this.crossAxisAlignment = CrossAxisAlignment.start,
   });
 
   final String english;
@@ -18,13 +17,14 @@ class BilingualLabel extends StatelessWidget {
   final TextStyle? englishStyle;
   final TextStyle? hindiStyle;
   final bool compact;
+  final CrossAxisAlignment crossAxisAlignment;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: crossAxisAlignment,
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
@@ -34,17 +34,17 @@ class BilingualLabel extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF1C1C1E),
                 letterSpacing: -0.2,
-                fontSize: compact ? 13 : 15,
+                fontSize: compact ? 14 : 16,
                 height: 1.2,
               ),
         ),
         SizedBox(height: compact ? 2 : 4),
         Text(
-          '($hindi)',
+          hindi,
           style: hindiStyle ??
               theme.textTheme.bodySmall?.copyWith(
-                color: ColorPalette.hindiText,
-                fontSize: compact ? 11 : 12,
+                color: const Color(0xFF48484A),
+                fontSize: compact ? 12 : 13,
                 fontWeight: FontWeight.w400,
                 height: 1.35,
               ),

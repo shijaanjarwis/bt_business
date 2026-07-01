@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 
 /// Large quick-action buttons for daily register work.
 class DashboardQuickActions extends StatelessWidget {
@@ -13,48 +14,49 @@ class DashboardQuickActions extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Jaldi Kaam',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1C1C1E),
-            letterSpacing: -0.2,
-          ),
+        const BilingualLabel(
+          english: 'Quick Actions',
+          hindi: 'Jaldi Kaam',
+          compact: true,
         ),
         const SizedBox(height: 12),
         _QuickActionButton(
-          label: 'Bikri Likho',
+          english: 'Sell',
+          hindi: 'Maal Becha',
           icon: Icons.edit_note_rounded,
           color: ColorPalette.purple,
           onTap: () => context.push(RouteNames.salesNew),
         ),
         const SizedBox(height: 10),
         _QuickActionButton(
-          label: 'Kharid Likho',
+          english: 'Purchase',
+          hindi: 'Maal Kharida',
           icon: Icons.shopping_bag_outlined,
           color: const Color(0xFF007AFF),
           onTap: () => context.push(RouteNames.purchasesNew),
         ),
         const SizedBox(height: 10),
         _QuickActionButton(
-          label: 'Jama Lo',
+          english: 'Cash Received',
+          hindi: 'Paise Mile',
           icon: Icons.call_received_rounded,
           color: const Color(0xFF34C759),
           onTap: () => context.push(RouteNames.paymentsReceived),
         ),
         const SizedBox(height: 10),
         _QuickActionButton(
-          label: 'Paise Do',
+          english: 'Payment',
+          hindi: 'Paise Diya',
           icon: Icons.call_made_rounded,
           color: const Color(0xFFFF9500),
           onTap: () => context.push(RouteNames.paymentsPaid),
         ),
         const SizedBox(height: 10),
         _QuickActionButton(
-          label: 'Kharcha Likho',
+          english: 'Expense',
+          hindi: 'Kharcha',
           icon: Icons.receipt_long_rounded,
-          color: const Color(0xFF636366),
+          color: ColorPalette.labelSecondary,
           onTap: () => context.push(RouteNames.paymentsExpense),
         ),
       ],
@@ -64,13 +66,15 @@ class DashboardQuickActions extends StatelessWidget {
 
 class _QuickActionButton extends StatelessWidget {
   const _QuickActionButton({
-    required this.label,
+    required this.english,
+    required this.hindi,
     required this.icon,
     required this.color,
     required this.onTap,
   });
 
-  final String label;
+  final String english;
+  final String hindi;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
@@ -102,14 +106,10 @@ class _QuickActionButton extends StatelessWidget {
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1C1C1E),
-                    letterSpacing: -0.2,
-                  ),
+                child: BilingualLabel(
+                  english: english,
+                  hindi: hindi,
+                  compact: true,
                 ),
               ),
               Icon(Icons.chevron_right_rounded, color: color.withValues(alpha: 0.8)),

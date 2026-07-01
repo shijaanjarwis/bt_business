@@ -20,6 +20,7 @@ import '../../features/payments/presentation/pages/payment_register_page.dart';
 import '../../features/purchase/presentation/pages/purchase_form_page.dart';
 import '../../features/purchase/presentation/pages/purchase_list_page.dart';
 import '../../features/reports/presentation/pages/transaction_history_page.dart';
+import '../../shared/widgets/scaffold/keep_alive_tab.dart';
 import 'router_error_page.dart';
 import 'router_refresh_notifier.dart';
 import 'route_names.dart';
@@ -45,9 +46,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final onProfileRoute = state.matchedLocation == RouteNames.businessProfile;
       final isEditProfile = state.uri.queryParameters['mode'] == 'edit';
 
-      // Keep the heavy tab shell unmounted until onboarding state is known.
+      // Stay on splash while onboarding state loads — avoids profile flash.
       if (gate.isLoading) {
-        return onProfileRoute ? null : RouteNames.businessProfile;
+        return onSplash ? null : RouteNames.splash;
       }
 
       final hasBusiness = gate.valueOrNull ?? false;
@@ -91,7 +92,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: RouteNames.home,
                 name: RouteNames.homeName,
                 pageBuilder: (context, state) => const NoTransitionPage(
-                  child: HomeDashboardPage(),
+                  child: KeepAliveTab(child: HomeDashboardPage()),
                 ),
                 routes: [
                   GoRoute(
@@ -145,7 +146,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: RouteNames.ledger,
                 name: RouteNames.ledgerName,
                 pageBuilder: (context, state) => const NoTransitionPage(
-                  child: LedgerPage(),
+                  child: KeepAliveTab(child: LedgerPage()),
                 ),
                 routes: [
                   GoRoute(
@@ -180,7 +181,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: RouteNames.stock,
                 name: RouteNames.stockName,
                 pageBuilder: (context, state) => const NoTransitionPage(
-                  child: ItemListPage(),
+                  child: KeepAliveTab(child: ItemListPage()),
                 ),
                 routes: [
                   GoRoute(
@@ -208,7 +209,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: RouteNames.sales,
                 name: RouteNames.salesName,
                 pageBuilder: (context, state) => const NoTransitionPage(
-                  child: SaleListPage(),
+                  child: KeepAliveTab(child: SaleListPage()),
                 ),
                 routes: [
                   GoRoute(
@@ -237,7 +238,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 path: RouteNames.purchases,
                 name: RouteNames.purchasesName,
                 pageBuilder: (context, state) => const NoTransitionPage(
-                  child: PurchaseListPage(),
+                  child: KeepAliveTab(child: PurchaseListPage()),
                 ),
                 routes: [
                   GoRoute(

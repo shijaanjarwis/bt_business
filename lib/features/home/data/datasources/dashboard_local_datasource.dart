@@ -7,50 +7,59 @@ import '../../../../core/utils/date_formatter.dart';
 import '../../../../data/local/database/tables/accounting_tables.dart';
 import '../../../../features/business/data/datasources/business_table.dart';
 import '../../domain/entities/dashboard_summary.dart';
+import '../services/dashboard_calculation_service.dart';
 
 /// Aggregates dashboard metrics from SQLite ledger tables.
 final class DashboardLocalDataSource {
-  const DashboardLocalDataSource(this._db);
+  DashboardLocalDataSource(
+    this._db, {
+    DashboardCalculationService? calculationService,
+  }) : _calculationService = calculationService ?? const DashboardCalculationService();
 
   final Database _db;
+  final DashboardCalculationService _calculationService;
 
   Future<DashboardSummary> fetchSummary({DateTime? asOf}) async {
     try {
       final businessId = await _currentBusinessId();
       if (businessId == null) return DashboardSummary.zero;
 
-      final date = DateFormatter.isoDate(asOf ?? DateTime.now());
-
-      final todaysSales = await _sumTransactions(
+      final date = asOf ?? DateTime.now();
+      final isoDate = DateFormatter.isoDate(date);
+      final coreMetrics = await _calculationService.calculateCoreMetrics(
+        db: _db,
         businessId: businessId,
-        type: TransactionTypes.sale,
-        date: date,
+        asOf: date,
       );
+      final todaysSales = coreMetrics.aajKiBikri;
+      final todaysCashReceived = coreMetrics.aajCashMila;
+      final todaysUdhaarCreated = coreMetrics.aajUdhaarBana;
       final todaysPurchase = await _sumTransactions(
         businessId: businessId,
         type: TransactionTypes.purchase,
-        date: date,
+        date: isoDate,
+        column: TransactionsTable.totalAmount,
       );
       final todaysExpenses = await _sumTransactions(
         businessId: businessId,
         type: TransactionTypes.expense,
-        date: date,
+        date: isoDate,
+        column: TransactionsTable.totalAmount,
       );
       final paymentReceived = await _sumTransactions(
         businessId: businessId,
         type: TransactionTypes.paymentReceived,
-        date: date,
+        date: isoDate,
+        column: TransactionsTable.totalAmount,
       );
       final paymentPaid = await _sumTransactions(
         businessId: businessId,
         type: TransactionTypes.paymentPaid,
-        date: date,
+        date: isoDate,
+        column: TransactionsTable.totalAmount,
       );
 
-      final cashInHand = await _accountBalance(
-        businessId: businessId,
-        accountType: AccountTypes.cash,
-      );
+      final cashInHand = coreMetrics.cashInHand;
       final amountInBank = await _accountBalance(
         businessId: businessId,
         accountType: AccountTypes.bank,
@@ -67,12 +76,12 @@ final class DashboardLocalDataSource {
 
       final goodsSold = await _sumStockMovements(
         businessId: businessId,
-        date: date,
+        date: isoDate,
         sold: true,
       );
       final goodsPurchased = await _sumStockMovements(
         businessId: businessId,
-        date: date,
+        date: isoDate,
         sold: false,
       );
       final stockValue = await _stockValue(businessId: businessId);
@@ -80,6 +89,8 @@ final class DashboardLocalDataSource {
       return DashboardSummary(
         todaysProfit: todaysSales - todaysPurchase - todaysExpenses,
         todaysSales: todaysSales,
+        todaysCashReceived: todaysCashReceived,
+        todaysUdhaarCreated: todaysUdhaarCreated,
         todaysPurchase: todaysPurchase,
         todaysExpenses: todaysExpenses,
         cashInHand: cashInHand,
@@ -117,14 +128,16 @@ final class DashboardLocalDataSource {
     required String businessId,
     required String type,
     required String date,
+    required String column,
   }) async {
     return _readDouble(
       '''
-        SELECT COALESCE(SUM(${TransactionsTable.totalAmount}), 0)
-        FROM ${TransactionsTable.tableName}
-        WHERE ${TransactionsTable.businessId} = ?
-          AND ${TransactionsTable.type} = ?
-          AND ${TransactionsTable.date} = ?
+        SELECT COALESCE(SUM(t.$column), 0)
+        FROM ${TransactionsTable.tableName} t
+        WHERE t.${TransactionsTable.businessId} = ?
+          AND t.${TransactionsTable.type} = ?
+          AND t.${TransactionsTable.date} = ?
+          AND t.${TransactionsTable.deletedAt} IS NULL
         ''',
       [businessId, type, date],
     );
@@ -142,6 +155,7 @@ final class DashboardLocalDataSource {
           ON jl.${JournalLinesTable.accountId} = a.${AccountsTable.id}
         WHERE a.${AccountsTable.businessId} = ?
           AND a.${AccountsTable.type} = ?
+          AND jl.${JournalLinesTable.deletedAt} IS NULL
         ''',
       [businessId, accountType],
     );
@@ -159,6 +173,8 @@ final class DashboardLocalDataSource {
         WHERE ${PartiesTable.businessId} = ?
           AND ${PartiesTable.balance} $operator 0
           AND ${PartiesTable.isActive} = 1
+          AND ${PartiesTable.deletedAt} IS NULL
+          AND ${PartiesTable.isSystem} = 0
         ''',
       [businessId],
     );
@@ -170,6 +186,8 @@ final class DashboardLocalDataSource {
         WHERE ${PartiesTable.businessId} = ?
           AND ${PartiesTable.balance} $operator 0
           AND ${PartiesTable.isActive} = 1
+          AND ${PartiesTable.deletedAt} IS NULL
+          AND ${PartiesTable.isSystem} = 0
         ''',
         [businessId],
       ),
@@ -194,6 +212,7 @@ final class DashboardLocalDataSource {
           ON sm.${StockMovementsTable.itemId} = i.${ItemsTable.id}
         WHERE i.${ItemsTable.businessId} = ?
           AND sm.${StockMovementsTable.movementDate} = ?
+          AND sm.${StockMovementsTable.deletedAt} IS NULL
           AND $qtyFilter
         ''',
       [businessId, date],
@@ -206,6 +225,7 @@ final class DashboardLocalDataSource {
         SELECT COALESCE(SUM(${ItemsTable.qtyOnHand} * ${ItemsTable.purchaseRate}), 0)
         FROM ${ItemsTable.tableName}
         WHERE ${ItemsTable.businessId} = ?
+          AND ${ItemsTable.deletedAt} IS NULL
         ''',
       [businessId],
     );

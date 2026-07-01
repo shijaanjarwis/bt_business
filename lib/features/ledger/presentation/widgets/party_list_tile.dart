@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../domain/entities/party.dart';
 import '../utils/party_ledger_ui_helpers.dart';
@@ -59,7 +60,7 @@ class PartyListTile extends StatelessWidget {
                         'Aakhri: ${DateFormatter.shortDate(lastActivity!)} · ${DateFormat('h:mm a').format(lastActivity!)}',
                         style: const TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF8E8E93),
+                          color: ColorPalette.labelTertiary,
                         ),
                       ),
                     ],

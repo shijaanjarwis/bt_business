@@ -3,6 +3,8 @@ class DashboardSummary {
   const DashboardSummary({
     required this.todaysProfit,
     required this.todaysSales,
+    required this.todaysCashReceived,
+    required this.todaysUdhaarCreated,
     required this.todaysPurchase,
     required this.todaysExpenses,
     required this.cashInHand,
@@ -20,6 +22,10 @@ class DashboardSummary {
 
   final double todaysProfit;
   final double todaysSales;
+  /// All cash received today (sales, jama, and other incoming cash).
+  final double todaysCashReceived;
+  /// Udhaar created on today's sales.
+  final double todaysUdhaarCreated;
   final double todaysPurchase;
   final double todaysExpenses;
   final double cashInHand;
@@ -37,6 +43,8 @@ class DashboardSummary {
   static const DashboardSummary zero = DashboardSummary(
     todaysProfit: 0,
     todaysSales: 0,
+    todaysCashReceived: 0,
+    todaysUdhaarCreated: 0,
     todaysPurchase: 0,
     todaysExpenses: 0,
     cashInHand: 0,

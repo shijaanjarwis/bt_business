@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
+import '../../../../shared/widgets/filters/register_date_filter_bar.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../models/payment_register_filter.dart';
@@ -32,6 +34,9 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
   Widget build(BuildContext context) {
     final paymentsAsync = ref.watch(paymentListProvider);
     final filter = ref.watch(paymentRegisterFilterProvider);
+    final datePeriod = ref.watch(paymentRegisterDatePeriodProvider);
+    final customStart = ref.watch(paymentRegisterCustomStartProvider);
+    final customEnd = ref.watch(paymentRegisterCustomEndProvider);
 
     return Scaffold(
       backgroundColor: ColorPalette.background,
@@ -39,9 +44,10 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
         backgroundColor: ColorPalette.background,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: const Text(
-          'Jama / Payment Register',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        title: const BilingualLabel(
+          english: 'Payment Register',
+          hindi: 'Jama Register',
+          compact: true,
         ),
       ),
       body: SafeArea(
@@ -87,6 +93,21 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
               ),
             ),
             Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: RegisterDateFilterBar(
+                period: datePeriod,
+                customStart: customStart,
+                customEnd: customEnd,
+                onPeriodChanged: (period) {
+                  ref.read(paymentRegisterDatePeriodProvider.notifier).state = period;
+                },
+                onCustomRangeChanged: (start, end) {
+                  ref.read(paymentRegisterCustomStartProvider.notifier).state = start;
+                  ref.read(paymentRegisterCustomEndProvider.notifier).state = end;
+                },
+              ),
+            ),
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -125,7 +146,8 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
                 children: [
                   Expanded(
                     child: _ActionButton(
-                      label: 'Jama Lo',
+                      english: 'Cash Received',
+                      hindi: 'Paise Mile',
                       color: const Color(0xFF34C759),
                       onTap: () => context.push(RouteNames.paymentsReceived),
                     ),
@@ -133,7 +155,8 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _ActionButton(
-                      label: 'Paise Do',
+                      english: 'Payment',
+                      hindi: 'Paise Diya',
                       color: const Color(0xFFFF9500),
                       onTap: () => context.push(RouteNames.paymentsPaid),
                     ),
@@ -248,12 +271,14 @@ class _FilterChip extends StatelessWidget {
 
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
-    required this.label,
+    required this.english,
+    required this.hindi,
     required this.color,
     required this.onTap,
   });
 
-  final String label;
+  final String english;
+  final String hindi;
   final Color color;
   final VoidCallback onTap;
 
@@ -266,14 +291,22 @@ class _ActionButton extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
+            child: BilingualLabel(
+              english: english,
+              hindi: hindi,
+              compact: true,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              englishStyle: TextStyle(
                 fontWeight: FontWeight.w700,
                 color: color,
-                fontSize: 15,
+                fontSize: 14,
+              ),
+              hindiStyle: TextStyle(
+                fontWeight: FontWeight.w400,
+                color: color.withValues(alpha: 0.85),
+                fontSize: 12,
               ),
             ),
           ),

@@ -8,6 +8,8 @@ import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
+import '../../../../shared/widgets/filters/register_date_filter_bar.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../sales/presentation/providers/sale_providers.dart';
@@ -37,6 +39,9 @@ class _PurchaseListPageState extends ConsumerState<PurchaseListPage> {
   Widget build(BuildContext context) {
     final purchasesAsync = ref.watch(purchaseListProvider);
     final registerFilter = ref.watch(purchaseRegisterFilterProvider);
+    final datePeriod = ref.watch(purchaseRegisterDatePeriodProvider);
+    final customStart = ref.watch(purchaseRegisterCustomStartProvider);
+    final customEnd = ref.watch(purchaseRegisterCustomEndProvider);
     final defaultPartyId = ref.watch(cashCustomerPartyIdProvider).valueOrNull;
 
     return Scaffold(
@@ -45,16 +50,21 @@ class _PurchaseListPageState extends ConsumerState<PurchaseListPage> {
         backgroundColor: ColorPalette.background,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: const Text(
-          'Kharid Register',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        title: const BilingualLabel(
+          english: 'Purchase Register',
+          hindi: 'Kharid Register',
+          compact: true,
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(RouteNames.purchasesNew),
         backgroundColor: ColorPalette.purple,
         icon: const Icon(Icons.edit_note_rounded),
-        label: const Text('Kharid Likho'),
+        label: const BilingualLabel(
+          english: 'Purchase',
+          hindi: 'Maal Kharida',
+          compact: true,
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -76,6 +86,21 @@ class _PurchaseListPageState extends ConsumerState<PurchaseListPage> {
                     borderSide: BorderSide.none,
                   ),
                 ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: RegisterDateFilterBar(
+                period: datePeriod,
+                customStart: customStart,
+                customEnd: customEnd,
+                onPeriodChanged: (period) {
+                  ref.read(purchaseRegisterDatePeriodProvider.notifier).state = period;
+                },
+                onCustomRangeChanged: (start, end) {
+                  ref.read(purchaseRegisterCustomStartProvider.notifier).state = start;
+                  ref.read(purchaseRegisterCustomEndProvider.notifier).state = end;
+                },
               ),
             ),
             Padding(

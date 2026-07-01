@@ -9,6 +9,8 @@ abstract final class ColorPalette {
 
   static const Color background = Color(0xFFF2F2F7);
   static const Color cardSurface = Color(0xFFFFFFFF);
-  static const Color labelSecondary = Color(0xFF8E8E93);
-  static const Color hindiText = Color(0xFF636366);
+  static const Color labelSecondary = Color(0xFF636366);
+  static const Color labelTertiary = Color(0xFF48484A);
+  static const Color hindiText = Color(0xFF48484A);
+  static const Color hintText = Color(0xFF6C6C70);
 }

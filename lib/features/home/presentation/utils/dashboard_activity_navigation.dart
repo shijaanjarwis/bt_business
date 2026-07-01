@@ -14,9 +14,8 @@ abstract final class DashboardActivityNavigation {
       case TransactionTypes.purchase:
         context.push(RouteNames.purchasesEditPath(entry.id));
       case TransactionTypes.paymentReceived:
-        context.push(RouteNames.paymentsReceived);
       case TransactionTypes.paymentPaid:
-        context.push(RouteNames.paymentsPaid);
+        context.push(RouteNames.paymentsEditPath(entry.id));
       case TransactionTypes.expense:
         context.push(RouteNames.paymentsExpense);
       default:

@@ -18,6 +18,7 @@ import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../items/domain/entities/item.dart';
 import '../../../items/domain/repositories/item_repository.dart';
 import '../../../items/presentation/providers/item_providers.dart';
@@ -86,6 +87,7 @@ class _PurchaseFormPageState extends ConsumerState<PurchaseFormPage> {
   final List<DraftPurchaseLine> _lines = [];
   PurchaseInvoice? _existing;
   bool _initialized = false;
+  bool _editHydrated = false;
   bool _isSaving = false;
   bool _isDeleting = false;
   bool _paidManuallyEdited = false;
@@ -101,8 +103,17 @@ class _PurchaseFormPageState extends ConsumerState<PurchaseFormPage> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant PurchaseFormPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.purchaseId != widget.purchaseId) {
+      _editHydrated = false;
+      _existing = null;
+    }
+  }
+
   void _applyInvoice(PurchaseInvoice invoice, String? defaultPartyId) {
-    if (_initialized) return;
+    if (_editHydrated) return;
     _existing = invoice;
     _date = invoice.date;
     _gstType = invoice.gstType;
@@ -147,7 +158,7 @@ class _PurchaseFormPageState extends ConsumerState<PurchaseFormPage> {
           ),
         ),
       );
-    _initialized = true;
+    _editHydrated = true;
   }
 
   Future<void> _loadInitialParty() async {
@@ -431,10 +442,14 @@ class _PurchaseFormPageState extends ConsumerState<PurchaseFormPage> {
               ),
             );
           }
-          if (defaultPartyAsync.hasValue) {
-            _applyInvoice(invoice, defaultPartyAsync.value);
-          }
           if (!defaultPartyAsync.hasValue) {
+            return const Scaffold(body: AppLoadingView());
+          }
+          if (!_editHydrated) {
+            _applyInvoice(invoice, defaultPartyAsync.value);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() {});
+            });
             return const Scaffold(body: AppLoadingView());
           }
           return _buildForm();
@@ -466,9 +481,10 @@ class _PurchaseFormPageState extends ConsumerState<PurchaseFormPage> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
-        title: Text(
-          widget.isEdit ? 'Kharid Badlo' : 'Kharid Likho',
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        title: BilingualLabel(
+          english: widget.isEdit ? 'Edit Purchase' : 'Purchase',
+          hindi: widget.isEdit ? 'Kharid Badlo' : 'Maal Kharida',
+          compact: true,
         ),
       ),
       body: SafeArea(

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/di/data_revision.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/validators.dart';
+import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
@@ -48,6 +49,7 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
   bool _isDeleting = false;
   bool _hasOtherTransactions = false;
   bool _partyApplied = false;
+  bool _formReady = false;
   bool _txChecked = false;
 
   @override
@@ -58,14 +60,28 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant PartyFormPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.partyId != widget.partyId) {
+      _partyApplied = false;
+      _formReady = false;
+      _txChecked = false;
+      _hasOtherTransactions = false;
+    }
+  }
+
   void _applyParty(Party party) {
-    if (_partyApplied) return;
+    if (_partyApplied && _existingParty?.id == party.id) return;
     _existingParty = party;
     _nameController.text = party.name;
     _phoneController.text = party.phone;
     if (party.openingAmount > 0) {
       _previousBalanceController.text = party.openingAmount.toString();
       _previousDirection = party.openingDirection;
+    } else {
+      _previousBalanceController.clear();
+      _previousDirection = OpeningBalanceDirection.receivable;
     }
     _partyApplied = true;
   }
@@ -139,6 +155,13 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
 
     if (confirmed != true || !mounted) return;
 
+    if (_hasOtherTransactions) {
+      _showMessage(
+        'Is party ki purani entries hain — pehle unhe theek karein, phir naam delete karein.',
+      );
+      return;
+    }
+
     setState(() => _isDeleting = true);
     try {
       final result = await ref.read(deletePartyUseCaseProvider)(partyId);
@@ -183,17 +206,23 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
               ),
             );
           }
-          _applyParty(party);
-          _loadTransactionLock(party.id);
-          return _buildForm();
+          if (!_formReady) {
+            _applyParty(party);
+            _loadTransactionLock(party.id);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _formReady = true);
+            });
+            return const Scaffold(body: AppLoadingView());
+          }
+          return _buildForm(party.id);
         },
       );
     }
 
-    return _buildForm();
+    return _buildForm(null);
   }
 
-  Widget _buildForm() {
+  Widget _buildForm(String? formKey) {
     return Scaffold(
       backgroundColor: ColorPalette.background,
       appBar: AppBar(
@@ -205,7 +234,7 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
           compact: true,
         ),
         actions: [
-          if (widget.isEdit && !_hasOtherTransactions)
+          if (widget.isEdit)
             IconButton(
               onPressed: _isDeleting ? null : _handleDelete,
               icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
@@ -216,6 +245,7 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
         child: Form(
           key: _formKey,
           child: ListView(
+            key: formKey == null ? null : ValueKey(formKey),
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
             children: [
               ResponsiveFormContainer(
@@ -292,6 +322,7 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
                   ],
                 ),
               ),
+              const DeveloperFooter(),
             ],
           ),
         ),

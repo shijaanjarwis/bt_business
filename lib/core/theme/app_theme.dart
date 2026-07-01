@@ -36,6 +36,11 @@ abstract final class AppTheme {
 
     return base.copyWith(
       textTheme: AppTextStyles.applyPlatformAdjustments(base.textTheme),
+      inputDecorationTheme: InputDecorationTheme(
+        hintStyle: TextStyle(color: ColorPalette.hintText),
+        labelStyle: const TextStyle(color: ColorPalette.labelTertiary),
+        floatingLabelStyle: const TextStyle(color: ColorPalette.labelSecondary),
+      ),
     );
   }
 

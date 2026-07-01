@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../reports/data/datasources/transaction_history_local_datasource.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../utils/dashboard_activity_navigation.dart';
 
 /// Last five register entries with tap-to-open.
@@ -22,14 +23,10 @@ class DashboardRecentActivitySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Abhi Ka Kaam',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1C1C1E),
-            letterSpacing: -0.2,
-          ),
+        const BilingualLabel(
+          english: 'Recent Activity',
+          hindi: 'Abhi Ka Kaam',
+          compact: true,
         ),
         const SizedBox(height: 12),
         if (entries.isEmpty)
@@ -42,7 +39,7 @@ class DashboardRecentActivitySection extends StatelessWidget {
               border: Border.all(color: const Color(0xFFE5E5EA)),
             ),
             child: const Text(
-              'Abhi koi entry nahi · Pehli bikri likho',
+              'Abhi koi entry nahi · Pehla maal becho',
               style: TextStyle(
                 fontSize: 14,
                 color: ColorPalette.labelSecondary,

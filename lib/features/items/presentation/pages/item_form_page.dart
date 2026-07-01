@@ -296,7 +296,7 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
                     const SizedBox(height: 8),
                     const Text(
                       'Daam sirf suggestion hai — bikri/kharid likhte waqt badal sakte hain.',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF8E8E93)),
+                      style: TextStyle(fontSize: 12, color: ColorPalette.labelTertiary),
                     ),
                     const SizedBox(height: 28),
                     AppPrimaryButton(

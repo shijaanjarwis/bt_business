@@ -39,7 +39,7 @@ class AppTextField extends StatelessWidget {
           style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: ColorPalette.labelSecondary,
+            color: Color(0xFF48484A),
             letterSpacing: -0.1,
           ),
         ),
@@ -59,6 +59,7 @@ class AppTextField extends StatelessWidget {
           ),
           decoration: InputDecoration(
             hintText: hint,
+            hintStyle: const TextStyle(color: ColorPalette.hintText),
             prefixIcon: prefixIcon == null
                 ? null
                 : Icon(prefixIcon, color: ColorPalette.purple, size: 20),

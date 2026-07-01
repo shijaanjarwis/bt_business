@@ -25,6 +25,8 @@ void main() {
   test('returns zero summary when no business exists', () async {
     final summary = await dataSource.fetchSummary();
     expect(summary.todaysSales, 0);
+    expect(summary.todaysCashReceived, 0);
+    expect(summary.todaysUdhaarCreated, 0);
     expect(summary.cashInHand, 0);
     expect(summary.stockValue, 0);
   });
@@ -56,6 +58,8 @@ void main() {
     final summary = await dataSource.fetchSummary();
 
     expect(summary.todaysSales, 5000);
+    expect(summary.todaysCashReceived, 5000);
+    expect(summary.todaysUdhaarCreated, 0);
     expect(summary.todaysProfit, 5000);
     expect(summary.cashInHand, 5000);
     expect(summary.todaysReceivables, 1200);

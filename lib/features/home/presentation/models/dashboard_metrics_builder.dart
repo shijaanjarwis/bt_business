@@ -8,28 +8,32 @@ abstract final class DashboardMetricsBuilder {
   static List<DashboardMetric> fromSummary(DashboardSummary summary) {
     return [
       DashboardMetric(
-        englishLabel: 'Aaj ki Bikri',
-        hindiLabel: 'Aaj ki bikri',
+        englishLabel: "Today's Sale",
+        hindiLabel: 'Aaj Ki Bikri',
         amount: summary.todaysSales,
         icon: Icons.sell_outlined,
+        target: DashboardMetricTarget.todaySales,
       ),
       DashboardMetric(
-        englishLabel: 'Aaj Cash Mila',
-        hindiLabel: 'Aaj cash mila',
+        englishLabel: "Today's Cash",
+        hindiLabel: 'Aaj Cash Mila',
         amount: summary.todaysCashReceived,
         icon: Icons.payments_rounded,
+        target: DashboardMetricTarget.todayCash,
       ),
       DashboardMetric(
-        englishLabel: 'Aaj Udhaar Bana',
-        hindiLabel: 'Aaj udhaar bana',
+        englishLabel: "Today's Credit",
+        hindiLabel: 'Aaj Udhaar Bana',
         amount: summary.todaysUdhaarCreated,
         icon: Icons.schedule_rounded,
+        target: DashboardMetricTarget.todayCredit,
       ),
       DashboardMetric(
-        englishLabel: 'Cash in Hand',
-        hindiLabel: 'Haath mein cash',
+        englishLabel: 'Cash In Hand',
+        hindiLabel: 'Haath Mein Cash',
         amount: summary.cashInHand,
         icon: Icons.account_balance_wallet_outlined,
+        target: DashboardMetricTarget.cashInHand,
       ),
     ];
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../domain/entities/party.dart';
 import '../../domain/entities/party_history_entry.dart';
@@ -10,7 +11,7 @@ abstract final class PartyLedgerUiHelpers {
   static ({String label, Color color}) balanceStatus(Party party) {
     final amount = party.balance.abs();
     if (amount == 0) {
-      return (label: 'Saaf Hisaab', color: const Color(0xFF8E8E93));
+      return (label: 'Saaf Hisaab', color: ColorPalette.labelTertiary);
     }
     if (party.isReceivable) {
       return (label: 'Lena Hai', color: const Color(0xFF34C759));
@@ -36,15 +37,15 @@ abstract final class PartyLedgerUiHelpers {
       PartyHistoryKind.opening => 'Pehle se baaki',
       PartyHistoryKind.sale => 'Bikri',
       PartyHistoryKind.purchase => 'Kharid',
-      PartyHistoryKind.received => 'Jama Liya',
-      PartyHistoryKind.paid => 'Paise Diye',
+      PartyHistoryKind.received => 'Paise Mile',
+      PartyHistoryKind.paid => 'Paise Diya',
     };
   }
 
   static Color runningBalanceColor(double runningBalance) {
     if (runningBalance > 0) return const Color(0xFF34C759);
     if (runningBalance < 0) return const Color(0xFFFF3B30);
-    return const Color(0xFF8E8E93);
+    return ColorPalette.labelTertiary;
   }
 
   static String runningBalanceLabel(double runningBalance) {

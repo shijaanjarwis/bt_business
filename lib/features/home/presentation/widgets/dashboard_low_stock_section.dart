@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/color_palette.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../items/domain/entities/item.dart';
 
 /// Low-stock warning — hidden when the list is empty.
@@ -19,14 +20,10 @@ class DashboardLowStockSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Kam Stock',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1C1C1E),
-            letterSpacing: -0.2,
-          ),
+        const BilingualLabel(
+          english: 'Low Stock',
+          hindi: 'Kam Stock',
+          compact: true,
         ),
         const SizedBox(height: 4),
         const Text(

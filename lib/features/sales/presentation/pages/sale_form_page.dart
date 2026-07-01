@@ -18,6 +18,7 @@ import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../items/domain/entities/item.dart';
 import '../../../items/domain/repositories/item_repository.dart';
 import '../../../items/presentation/providers/item_providers.dart';
@@ -85,6 +86,7 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
   final List<DraftSaleLine> _lines = [];
   SaleEntry? _existing;
   bool _initialized = false;
+  bool _editHydrated = false;
   bool _isSaving = false;
   bool _isDeleting = false;
   bool _paidManuallyEdited = false;
@@ -100,8 +102,17 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant SaleFormPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.saleId != widget.saleId) {
+      _editHydrated = false;
+      _existing = null;
+    }
+  }
+
   void _applyEntry(SaleEntry entry, String? cashCustomerId) {
-    if (_initialized) return;
+    if (_editHydrated) return;
     _existing = entry;
     _date = entry.date;
     _gstType = entry.gstType;
@@ -146,7 +157,7 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
           ),
         ),
       );
-    _initialized = true;
+    _editHydrated = true;
   }
 
   Future<void> _loadInitialParty() async {
@@ -430,10 +441,14 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
               ),
             );
           }
-          if (cashCustomerAsync.hasValue) {
-            _applyEntry(entry, cashCustomerAsync.value);
-          }
           if (!cashCustomerAsync.hasValue) {
+            return const Scaffold(body: AppLoadingView());
+          }
+          if (!_editHydrated) {
+            _applyEntry(entry, cashCustomerAsync.value);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() {});
+            });
             return const Scaffold(body: AppLoadingView());
           }
           return _buildForm();
@@ -465,9 +480,10 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
-        title: Text(
-          widget.isEdit ? 'Bikri Badlo' : 'Bikri Likho',
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        title: BilingualLabel(
+          english: widget.isEdit ? 'Edit Sale' : 'Sell',
+          hindi: widget.isEdit ? 'Bikri Badlo' : 'Maal Becha',
+          compact: true,
         ),
       ),
       body: SafeArea(

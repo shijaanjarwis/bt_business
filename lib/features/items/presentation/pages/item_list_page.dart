@@ -7,6 +7,7 @@ import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../providers/item_providers.dart';
 import '../widgets/item_list_tile.dart';
 
@@ -38,16 +39,21 @@ class _ItemListPageState extends ConsumerState<ItemListPage> {
         backgroundColor: ColorPalette.background,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: const Text(
-          'Maal',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        title: const BilingualLabel(
+          english: 'Items',
+          hindi: 'Maal',
+          compact: true,
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(RouteNames.stockNew),
         backgroundColor: ColorPalette.purple,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Maal Add Karein'),
+        label: const BilingualLabel(
+          english: 'Add Item',
+          hindi: 'Maal Jodein',
+          compact: true,
+        ),
       ),
       body: SafeArea(
         child: Column(

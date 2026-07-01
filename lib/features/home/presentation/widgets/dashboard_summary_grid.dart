@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../models/dashboard_metric.dart';
+import '../utils/dashboard_register_navigation.dart';
 
-/// 2×2 grid of today's summary cards.
-class DashboardSummaryGrid extends StatelessWidget {
+/// 2×2 grid of today's summary cards — tap opens filtered register.
+class DashboardSummaryGrid extends ConsumerWidget {
   const DashboardSummaryGrid({
     super.key,
     required this.metrics,
@@ -14,18 +17,14 @@ class DashboardSummaryGrid extends StatelessWidget {
   final List<DashboardMetric> metrics;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Aaj ka Hisaab',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1C1C1E),
-            letterSpacing: -0.2,
-          ),
+        const BilingualLabel(
+          english: "Today's Summary",
+          hindi: 'Aaj ka Hisaab',
+          compact: true,
         ),
         const SizedBox(height: 12),
         GridView.count(
@@ -34,8 +33,10 @@ class DashboardSummaryGrid extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
-          childAspectRatio: 1.15,
-          children: metrics.map(_SummaryCard.new).toList(),
+          childAspectRatio: 1.08,
+          children: metrics
+              .map((metric) => _SummaryCard(metric: metric, ref: ref))
+              .toList(),
         ),
       ],
     );
@@ -43,54 +44,52 @@ class DashboardSummaryGrid extends StatelessWidget {
 }
 
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard(this.metric);
+  const _SummaryCard({
+    required this.metric,
+    required this.ref,
+  });
 
   final DashboardMetric metric;
+  final WidgetRef ref;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ColorPalette.cardSurface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E5EA)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(metric.icon, size: 20, color: ColorPalette.purple),
-          const Spacer(),
-          Text(
-            metric.hindiLabel,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF636366),
-              height: 1.2,
-            ),
+    return Material(
+      color: ColorPalette.cardSurface,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => DashboardRegisterNavigation.open(context, ref, metric),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFE5E5EA)),
+            borderRadius: BorderRadius.circular(18),
           ),
-          const SizedBox(height: 2),
-          Text(
-            metric.englishLabel,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: ColorPalette.labelSecondary,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(metric.icon, size: 22, color: ColorPalette.purple),
+              const Spacer(),
+              BilingualLabel(
+                english: metric.englishLabel,
+                hindi: metric.hindiLabel,
+                compact: true,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                CurrencyFormatter.format(metric.amount),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1C1C1E),
+                  letterSpacing: -0.5,
+                  height: 1,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            CurrencyFormatter.format(metric.amount),
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1C1C1E),
-              letterSpacing: -0.5,
-              height: 1,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

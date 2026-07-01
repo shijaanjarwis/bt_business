@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../domain/entities/party.dart';
 
 /// Large quick actions from a party's hisaab page.
@@ -19,38 +20,39 @@ class PartyQuickActions extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Jaldi Kaam',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1C1C1E),
-          ),
+        const BilingualLabel(
+          english: 'Quick Actions',
+          hindi: 'Jaldi Kaam',
+          compact: true,
         ),
         const SizedBox(height: 12),
         _QuickActionButton(
-          label: 'Bikri Likho',
+          english: 'Sell',
+          hindi: 'Maal Becha',
           icon: Icons.edit_note_rounded,
           color: ColorPalette.purple,
           onTap: () => context.push('${RouteNames.salesNew}?partyId=${party.id}'),
         ),
         const SizedBox(height: 10),
         _QuickActionButton(
-          label: 'Kharid Likho',
+          english: 'Purchase',
+          hindi: 'Maal Kharida',
           icon: Icons.shopping_bag_outlined,
           color: const Color(0xFF007AFF),
           onTap: () => context.push('${RouteNames.purchasesNew}?partyId=${party.id}'),
         ),
         const SizedBox(height: 10),
         _QuickActionButton(
-          label: 'Jama Lo',
+          english: 'Cash Received',
+          hindi: 'Paise Mile',
           icon: Icons.call_received_rounded,
           color: const Color(0xFF34C759),
           onTap: () => context.push('${RouteNames.paymentsReceived}?partyId=${party.id}'),
         ),
         const SizedBox(height: 10),
         _QuickActionButton(
-          label: 'Paise Do',
+          english: 'Payment',
+          hindi: 'Paise Diya',
           icon: Icons.call_made_rounded,
           color: const Color(0xFFFF9500),
           onTap: () => context.push('${RouteNames.paymentsPaid}?partyId=${party.id}'),
@@ -62,13 +64,15 @@ class PartyQuickActions extends StatelessWidget {
 
 class _QuickActionButton extends StatelessWidget {
   const _QuickActionButton({
-    required this.label,
+    required this.english,
+    required this.hindi,
     required this.icon,
     required this.color,
     required this.onTap,
   });
 
-  final String label;
+  final String english;
+  final String hindi;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
@@ -96,13 +100,10 @@ class _QuickActionButton extends StatelessWidget {
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1C1C1E),
-                  ),
+                child: BilingualLabel(
+                  english: english,
+                  hindi: hindi,
+                  compact: true,
                 ),
               ),
               Icon(Icons.chevron_right_rounded, color: color.withValues(alpha: 0.8)),

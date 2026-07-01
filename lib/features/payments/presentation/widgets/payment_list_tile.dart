@@ -51,7 +51,7 @@ class PaymentListTile extends StatelessWidget {
                         entry.partyPhone,
                         style: const TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF636366),
+                          color: ColorPalette.labelSecondary,
                         ),
                       ),
                     ],
@@ -90,7 +90,7 @@ class PaymentListTile extends StatelessWidget {
                     '${DateFormatter.shortDate(entry.date)} · $timeLabel',
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF8E8E93),
+                      color: ColorPalette.labelTertiary,
                     ),
                   ),
                 ],

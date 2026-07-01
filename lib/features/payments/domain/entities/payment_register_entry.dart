@@ -27,5 +27,5 @@ class PaymentRegisterEntry {
   bool get isReceived => type == TransactionTypes.paymentReceived;
   bool get isPaid => type == TransactionTypes.paymentPaid;
 
-  String get typeLabel => isReceived ? 'Jama Liya' : 'Paise Diye';
+  String get typeLabel => isReceived ? 'Paise Mile' : 'Paise Diya';
 }

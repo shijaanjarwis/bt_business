@@ -2,32 +2,50 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/color_palette.dart';
-import '../../../../core/utils/currency_formatter.dart';
-import '../../../../core/utils/date_formatter.dart';
+import '../../../../shared/widgets/branding/developer_footer.dart';
+import '../../../../shared/widgets/filters/register_date_filter_bar.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
-import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../data/datasources/transaction_history_local_datasource.dart';
-import '../../domain/history_models.dart';
 import '../providers/history_providers.dart';
+import '../utils/history_entry_navigation.dart';
+import '../widgets/history_list_tile.dart';
 
-/// Full register history — all entries, filter by date.
-class TransactionHistoryPage extends ConsumerWidget {
+/// Full register history — grouped by date, search, tap to edit.
+class TransactionHistoryPage extends ConsumerStatefulWidget {
   const TransactionHistoryPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final historyAsync = ref.watch(transactionHistoryProvider);
+  ConsumerState<TransactionHistoryPage> createState() =>
+      _TransactionHistoryPageState();
+}
+
+class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final groupedAsync = ref.watch(groupedTransactionHistoryProvider);
     final period = ref.watch(historyPeriodProvider);
+    final customStart = ref.watch(historyCustomStartProvider);
+    final customEnd = ref.watch(historyCustomEndProvider);
 
     return Scaffold(
       backgroundColor: ColorPalette.background,
       appBar: AppBar(
         backgroundColor: ColorPalette.background,
         elevation: 0,
+        scrolledUnderElevation: 0,
         title: const BilingualLabel(
-          english: 'History',
-          hindi: 'Poora record',
+          english: 'Full Record',
+          hindi: 'Poora Record',
           compact: true,
         ),
       ),
@@ -37,28 +55,93 @@ class TransactionHistoryPage extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: _PeriodFilterRow(period: period),
-            ),
-            if (period == HistoryPeriod.custom)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                child: _CustomDateRow(),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  ref.read(historySearchQueryProvider.notifier).state = value;
+                  setState(() {});
+                },
+                decoration: InputDecoration(
+                  hintText: 'Party, type, rashi, tareekh…',
+                  prefixIcon: const Icon(Icons.search_rounded, color: ColorPalette.purple),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_searchController.text.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          onPressed: () {
+                            _searchController.clear();
+                            ref.read(historySearchQueryProvider.notifier).state = '';
+                            setState(() {});
+                          },
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.mic_none_rounded, size: 22),
+                        onPressed: () {},
+                        tooltip: 'Awaz se khojo (jald)',
+                      ),
+                    ],
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
               ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: RegisterDateFilterBar(
+                period: period,
+                customStart: customStart,
+                customEnd: customEnd,
+                onPeriodChanged: (value) {
+                  ref.read(historyPeriodProvider.notifier).state = value;
+                },
+                onCustomRangeChanged: (start, end) {
+                  ref.read(historyCustomStartProvider.notifier).state = start;
+                  ref.read(historyCustomEndProvider.notifier).state = end;
+                },
+              ),
+            ),
             Expanded(
-              child: historyAsync.when(
+              child: groupedAsync.when(
                 loading: () => const AppLoadingView(),
                 error: (error, _) => AppErrorView(
                   title: 'Record load nahi ho paya',
                   message: error.toString(),
-                  actionLabel: 'Try Again',
+                  actionLabel: 'Phir try karein',
                   onAction: () => ref.invalidate(transactionHistoryProvider),
                 ),
-                data: (entries) {
-                  if (entries.isEmpty) {
-                    return const Center(
-                      child: BilingualLabel(
-                        english: 'No entries in this period',
-                        hindi: 'Is samay koi entry nahi',
+                data: (sections) {
+                  if (sections.isEmpty) {
+                    return RefreshIndicator(
+                      color: ColorPalette.purple,
+                      onRefresh: () async => ref.invalidate(transactionHistoryProvider),
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(
+                          parent: BouncingScrollPhysics(),
+                        ),
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                        children: [
+                          SizedBox(height: MediaQuery.sizeOf(context).height * 0.14),
+                          Center(
+                            child: Text(
+                              _searchController.text.trim().isEmpty
+                                  ? 'Is samay koi entry nahi'
+                                  : 'Match nahi mila — doosra shabd try karein',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Color(0xFF636366),
+                              ),
+                            ),
+                          ),
+                          const DeveloperFooter(),
+                        ],
                       ),
                     );
                   }
@@ -66,15 +149,17 @@ class TransactionHistoryPage extends ConsumerWidget {
                   return RefreshIndicator(
                     color: ColorPalette.purple,
                     onRefresh: () async => ref.invalidate(transactionHistoryProvider),
-                    child: ListView.separated(
+                    child: ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-                      itemCount: entries.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemCount: _listItemCount(sections),
                       itemBuilder: (context, index) {
-                        return _HistoryTile(entry: entries[index]);
+                        if (index == _listItemCount(sections) - 1) {
+                          return const DeveloperFooter();
+                        }
+                        return _buildListItem(context, sections, index);
                       },
                     ),
                   );
@@ -86,175 +171,54 @@ class TransactionHistoryPage extends ConsumerWidget {
       ),
     );
   }
-}
 
-class _PeriodFilterRow extends ConsumerWidget {
-  const _PeriodFilterRow({required this.period});
+  int _listItemCount(
+    List<({String header, DateTime day, List<TransactionHistoryEntry> entries})>
+        sections,
+  ) {
+    var count = 0;
+    for (final section in sections) {
+      count += 1 + section.entries.length;
+    }
+    return count + 1;
+  }
 
-  final HistoryPeriod period;
+  Widget _buildListItem(
+    BuildContext context,
+    List<({String header, DateTime day, List<TransactionHistoryEntry> entries})>
+        sections,
+    int index,
+  ) {
+    var cursor = 0;
+    for (final section in sections) {
+      if (cursor == index) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 10),
+          child: Text(
+            section.header,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF636366),
+            ),
+          ),
+        );
+      }
+      cursor++;
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: HistoryPeriod.values.map((value) {
-          final selected = period == value;
+      for (final entry in section.entries) {
+        if (cursor == index) {
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              label: Text('${value.hindiLabel} · ${value.englishLabel}'),
-              selected: selected,
-              onSelected: (_) {
-                ref.read(historyPeriodProvider.notifier).state = value;
-              },
-              selectedColor: ColorPalette.purple.withValues(alpha: 0.15),
-              checkmarkColor: ColorPalette.purple,
+            padding: const EdgeInsets.only(bottom: 10),
+            child: HistoryListTile(
+              entry: entry,
+              onTap: () => openHistoryEntry(context, entry),
             ),
           );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _CustomDateRow extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final start = ref.watch(historyCustomStartProvider) ?? DateTime.now();
-    final end = ref.watch(historyCustomEndProvider) ?? DateTime.now();
-
-    Future<void> pickStart() async {
-      final picked = await showDatePicker(
-        context: context,
-        initialDate: start,
-        firstDate: DateTime(2000),
-        lastDate: DateTime.now(),
-      );
-      if (picked != null) {
-        ref.read(historyCustomStartProvider.notifier).state = picked;
+        }
+        cursor++;
       }
     }
-
-    Future<void> pickEnd() async {
-      final picked = await showDatePicker(
-        context: context,
-        initialDate: end,
-        firstDate: DateTime(2000),
-        lastDate: DateTime.now(),
-      );
-      if (picked != null) {
-        ref.read(historyCustomEndProvider.notifier).state = picked;
-      }
-    }
-
-    return Row(
-      children: [
-        Expanded(
-          child: _DateChip(
-            label: 'Se · From',
-            date: start,
-            onTap: pickStart,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _DateChip(
-            label: 'Tak · To',
-            date: end,
-            onTap: pickEnd,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DateChip extends StatelessWidget {
-  const _DateChip({
-    required this.label,
-    required this.date,
-    required this.onTap,
-  });
-
-  final String label;
-  final DateTime date;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF8E8E93))),
-              const SizedBox(height: 4),
-              Text(
-                DateFormatter.shortDate(date),
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HistoryTile extends StatelessWidget {
-  const _HistoryTile({required this.entry});
-
-  final TransactionHistoryEntry entry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 72,
-            child: Text(
-              DateFormatter.shortDate(entry.date),
-              style: const TextStyle(fontSize: 12, color: Color(0xFF8E8E93)),
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${entry.label} ${CurrencyFormatter.format(entry.amount)}',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1C1C1E),
-                  ),
-                ),
-                if (entry.partyName != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    entry.partyName!,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF636366)),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return const SizedBox.shrink();
   }
 }

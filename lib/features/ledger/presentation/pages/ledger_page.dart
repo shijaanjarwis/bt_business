@@ -7,6 +7,7 @@ import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../providers/party_ledger_extras_provider.dart';
 import '../providers/party_providers.dart';
 import '../widgets/party_list_tile.dart';
@@ -47,16 +48,21 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
         backgroundColor: ColorPalette.background,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: const Text(
-          'Hisaab',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+        title: const BilingualLabel(
+          english: 'Party Ledger',
+          hindi: 'Hisaab',
+          compact: true,
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(RouteNames.ledgerPartyNew),
         backgroundColor: ColorPalette.purple,
         icon: const Icon(Icons.person_add_alt_1_rounded),
-        label: const Text('Naya Party'),
+        label: const BilingualLabel(
+          english: 'New Party',
+          hindi: 'Naya Party',
+          compact: true,
+        ),
       ),
       body: SafeArea(
         child: Column(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../domain/entities/party_history_entry.dart';
@@ -78,7 +79,7 @@ class PartyHistoryTile extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 12,
                   height: 1.4,
-                  color: Color(0xFF8E8E93),
+                  color: ColorPalette.labelTertiary,
                 ),
               ),
             ],

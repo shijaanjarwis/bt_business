@@ -1,4 +1,11 @@
 import '../../../../core/accounting/transaction_types.dart';
+import '../../../../core/utils/register_date_period.dart';
+
+/// Synthetic history row types (not stored in [TransactionsTable.type]).
+abstract final class HistoryEntryTypes {
+  static const partyCreated = 'party_created';
+  static const partyUpdated = 'party_updated';
+}
 
 /// User-visible label for a register transaction row.
 abstract final class TransactionHistoryLabels {
@@ -10,7 +17,7 @@ abstract final class TransactionHistoryLabels {
       TransactionTypes.sale => 'Bikri',
       TransactionTypes.purchase => 'Kharid',
       TransactionTypes.paymentReceived => 'Jama',
-      TransactionTypes.paymentPaid => 'Paise Diye',
+      TransactionTypes.paymentPaid => 'Paise Diya',
       TransactionTypes.expense => _expenseLabel(notes),
       _ => 'Entry',
     };
@@ -25,18 +32,7 @@ abstract final class TransactionHistoryLabels {
 }
 
 /// Filter periods for transaction history.
-enum HistoryPeriod {
-  today('Aaj', 'Today'),
-  thisWeek('Is hafte', 'This Week'),
-  thisMonth('Is mahine', 'This Month'),
-  thisYear('Is saal', 'This Year'),
-  custom('Khud chunein', 'Custom');
-
-  const HistoryPeriod(this.hindiLabel, this.englishLabel);
-
-  final String hindiLabel;
-  final String englishLabel;
-}
+typedef HistoryPeriod = RegisterDatePeriod;
 
 /// Resolves inclusive ISO date bounds for [HistoryPeriod].
 abstract final class HistoryDateRange {
@@ -45,31 +41,11 @@ abstract final class HistoryDateRange {
     DateTime? customStart,
     DateTime? customEnd,
     DateTime? now,
-  }) {
-    final today = now ?? DateTime.now();
-    final todayDate = DateTime(today.year, today.month, today.day);
-
-    return switch (period) {
-      HistoryPeriod.today => (
-          start: todayDate,
-          end: todayDate,
-        ),
-      HistoryPeriod.thisWeek => (
-          start: todayDate.subtract(Duration(days: todayDate.weekday - 1)),
-          end: todayDate,
-        ),
-      HistoryPeriod.thisMonth => (
-          start: DateTime(todayDate.year, todayDate.month),
-          end: todayDate,
-        ),
-      HistoryPeriod.thisYear => (
-          start: DateTime(todayDate.year),
-          end: todayDate,
-        ),
-      HistoryPeriod.custom => (
-          start: customStart ?? todayDate,
-          end: customEnd ?? todayDate,
-        ),
-    };
-  }
+  }) =>
+      RegisterDateRange.resolve(
+        period: period,
+        customStart: customStart,
+        customEnd: customEnd,
+        now: now,
+      );
 }
