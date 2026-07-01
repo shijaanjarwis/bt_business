@@ -16,6 +16,7 @@ import '../../domain/usecases/get_party.dart';
 import '../../domain/usecases/party_hisaab_usecases.dart';
 import '../../domain/usecases/save_party.dart';
 import '../../domain/usecases/search_parties.dart';
+import '../utils/party_ledger_ui_helpers.dart';
 
 final partyLocalDataSourceProvider = Provider<PartyLocalDataSource>((ref) {
   final database = ref.watch(appDatabaseProvider).requireValue;
@@ -75,7 +76,7 @@ final recordPaymentPaidUseCaseProvider = Provider<RecordPaymentPaidUseCase>((ref
 });
 
 /// Which parties to show on the Hisaab list.
-enum PartyBalanceFilter { all, lena, dena }
+enum PartyBalanceFilter { all, lena, dena, saaf }
 
 final partyBalanceFilterProvider =
     StateProvider<PartyBalanceFilter>((ref) => PartyBalanceFilter.all);
@@ -86,6 +87,7 @@ final partyListProvider = FutureProvider<List<Party>>((ref) async {
   ref.watch(dataRevisionProvider);
 
   final query = ref.watch(partySearchQueryProvider);
+  final filter = ref.watch(partyBalanceFilterProvider);
 
   final Result<List<Party>> result;
   if (query.trim().isNotEmpty) {
@@ -102,7 +104,13 @@ final partyListProvider = FutureProvider<List<Party>>((ref) async {
     throw result.failureOrNull!;
   }
 
-  return result.valueOrNull ?? [];
+  var parties = result.valueOrNull ?? [];
+  if (filter != PartyBalanceFilter.all) {
+    parties = parties
+        .where((party) => PartyLedgerUiHelpers.matchesFilter(party, filter))
+        .toList();
+  }
+  return parties;
 });
 
 final partyDetailProvider =

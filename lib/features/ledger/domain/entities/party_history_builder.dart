@@ -22,6 +22,7 @@ abstract final class PartyHistoryBuilder {
         PartyHistoryEntry(
           id: row.id,
           date: row.date,
+          createdAt: row.createdAt,
           kind: _kind(row),
           label: _label(row),
           amount: row.totalAmount,

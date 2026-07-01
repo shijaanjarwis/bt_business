@@ -11,6 +11,7 @@ class PartyHistoryEntry {
   const PartyHistoryEntry({
     required this.id,
     required this.date,
+    required this.createdAt,
     required this.kind,
     required this.label,
     required this.amount,
@@ -20,6 +21,7 @@ class PartyHistoryEntry {
 
   final String id;
   final DateTime date;
+  final DateTime createdAt;
   final PartyHistoryKind kind;
   final String label;
   final double amount;

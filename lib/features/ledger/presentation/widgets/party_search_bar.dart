@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/color_palette.dart';
-import '../../../../shared/widgets/labels/bilingual_label.dart';
 
 class PartySearchBar extends StatelessWidget {
   const PartySearchBar({
@@ -17,37 +16,35 @@ class PartySearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const BilingualLabel(
-          english: 'Search',
-          hindi: 'Naam ya mobile se khojo',
-          compact: true,
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          onChanged: onChanged,
-          decoration: InputDecoration(
-            hintText: 'Naam ya mobile…',
-            prefixIcon: const Icon(Icons.search_rounded, color: ColorPalette.purple),
-            suffixIcon: controller.text.isEmpty
-                ? null
-                : IconButton(
-                    onPressed: onClear,
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none,
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        hintText: 'Party ya mobile…',
+        prefixIcon: const Icon(Icons.search_rounded, color: ColorPalette.purple),
+        suffixIcon: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (controller.text.isNotEmpty)
+              IconButton(
+                onPressed: onClear,
+                icon: const Icon(Icons.close_rounded, size: 20),
+              ),
+            IconButton(
+              icon: const Icon(Icons.mic_none_rounded, size: 22),
+              onPressed: () {},
+              tooltip: 'Awaz se khojo (jald)',
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          ),
+          ],
         ),
-      ],
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      ),
     );
   }
 }

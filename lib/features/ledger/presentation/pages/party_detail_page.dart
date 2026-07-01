@@ -4,16 +4,16 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
-import '../../../../core/utils/currency_formatter.dart';
+import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
-import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../domain/entities/party.dart';
 import '../providers/party_providers.dart';
+import '../utils/party_ledger_ui_helpers.dart';
 import '../widgets/party_history_tile.dart';
 import '../widgets/party_quick_actions.dart';
 
-/// One person's page in the digital notebook — balance + full history.
+/// One party's full hisaab — balance, timeline, quick actions.
 class PartyDetailPage extends ConsumerWidget {
   const PartyDetailPage({
     super.key,
@@ -31,9 +31,9 @@ class PartyDetailPage extends ConsumerWidget {
       loading: () => const Scaffold(body: AppLoadingView()),
       error: (error, _) => Scaffold(
         body: AppErrorView(
-          title: 'Load nahi ho paya',
+          title: 'Hisaab load nahi ho paya',
           message: error.toString(),
-          actionLabel: 'Back',
+          actionLabel: 'Wapas',
           onAction: () => context.pop(),
         ),
       ),
@@ -41,9 +41,9 @@ class PartyDetailPage extends ConsumerWidget {
         if (party == null) {
           return Scaffold(
             body: AppErrorView(
-              title: 'Not found',
+              title: 'Party nahi mili',
               message: 'Yeh naam hisaab mein nahi mila.',
-              actionLabel: 'Back',
+              actionLabel: 'Wapas',
               onAction: () => context.pop(),
             ),
           );
@@ -54,69 +54,91 @@ class PartyDetailPage extends ConsumerWidget {
           appBar: AppBar(
             backgroundColor: ColorPalette.background,
             elevation: 0,
-            title: Text(party.name),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () => context.push(RouteNames.ledgerPartyEditPath(partyId)),
-              ),
-            ],
+            scrolledUnderElevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              onPressed: () => context.pop(),
+            ),
+            title: Text(
+              party.name,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+            ),
           ),
-          bottomNavigationBar: PartyQuickActions(party: party),
           body: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _BalanceHeader(party: party),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(20, 8, 20, 0),
-                  child: BilingualLabel(
-                    english: 'History',
-                    hindi: 'Poora hisaab',
-                    compact: true,
-                  ),
-                ),
-                Expanded(
-                  child: historyAsync.when(
-                    loading: () => const AppLoadingView(),
-                    error: (error, _) => AppErrorView(
-                      title: 'History load nahi ho payi',
-                      message: error.toString(),
-                      actionLabel: 'Try Again',
-                      onAction: () => ref.invalidate(partyHistoryProvider(partyId)),
-                    ),
-                    data: (entries) {
-                      if (entries.isEmpty) {
-                        return const Center(
-                          child: BilingualLabel(
-                            english: 'No entries yet',
-                            hindi: 'Upar Sale ya Received dabayein',
-                          ),
-                        );
-                      }
+            child: historyAsync.when(
+              loading: () => const AppLoadingView(),
+              error: (error, _) => AppErrorView(
+                title: 'History load nahi ho payi',
+                message: error.toString(),
+                actionLabel: 'Phir try karein',
+                onAction: () => ref.invalidate(partyHistoryProvider(partyId)),
+              ),
+              data: (entries) {
+                final timeline = entries.reversed.toList();
 
-                      return RefreshIndicator(
-                        color: ColorPalette.purple,
-                        onRefresh: () async {
-                          ref.invalidate(partyHistoryProvider(partyId));
-                          ref.invalidate(partyDetailProvider(partyId));
-                        },
-                        child: ListView.separated(
-                          physics: const AlwaysScrollableScrollPhysics(
-                            parent: BouncingScrollPhysics(),
-                          ),
-                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                          itemCount: entries.length,
-                          separatorBuilder: (_, _) => const PartyHistoryDivider(),
-                          itemBuilder: (context, index) {
-                            return PartyHistoryTile(entry: entries[index]);
-                          },
+                return RefreshIndicator(
+                  color: ColorPalette.purple,
+                  onRefresh: () async {
+                    ref.invalidate(partyHistoryProvider(partyId));
+                    ref.invalidate(partyDetailProvider(partyId));
+                  },
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    children: [
+                      _PartyHeaderCard(
+                        party: party,
+                        onEdit: () => context.push(RouteNames.ledgerPartyEditPath(partyId)),
+                      ),
+                      const SizedBox(height: 16),
+                      PartyQuickActions(party: party),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Poora Hisaab',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1C1C1E),
                         ),
-                      );
-                    },
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Sabse nayi entry upar · tap karke badlein',
+                        style: TextStyle(fontSize: 12, color: Color(0xFF636366)),
+                      ),
+                      const SizedBox(height: 12),
+                      if (timeline.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'Abhi koi entry nahi — upar se shuru karein',
+                              style: TextStyle(color: Color(0xFF636366)),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        )
+                      else
+                        ...timeline.map(
+                          (entry) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: PartyHistoryTile(
+                              entry: entry,
+                              partyId: partyId,
+                            ),
+                          ),
+                        ),
+                      const DeveloperFooter(),
+                    ],
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         );
@@ -125,62 +147,77 @@ class PartyDetailPage extends ConsumerWidget {
   }
 }
 
-class _BalanceHeader extends StatelessWidget {
-  const _BalanceHeader({required this.party});
+class _PartyHeaderCard extends StatelessWidget {
+  const _PartyHeaderCard({
+    required this.party,
+    required this.onEdit,
+  });
 
   final Party party;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
-    final balance = party.balance.abs();
-    final isClear = balance == 0;
-    final isLena = party.isReceivable;
+    final status = PartyLedgerUiHelpers.balanceStatus(party);
 
-    final label = isClear
-        ? 'Sab clear'
-        : isLena
-            ? 'Lena Hai'
-            : 'Dena Hai';
-    final color = isClear
-        ? const Color(0xFF8E8E93)
-        : isLena
-            ? const Color(0xFF34C759)
-            : const Color(0xFFFF3B30);
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          if (party.phone.isNotEmpty)
-            Text(
-              party.phone,
-              style: const TextStyle(color: Color(0xFF636366)),
-            ),
-          if (party.phone.isNotEmpty) const SizedBox(height: 12),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onEdit,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      party.name,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1C1C1E),
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.edit_outlined, size: 20, color: status.color),
+                ],
+              ),
+              if (party.phone.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  party.phone,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF636366),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              Text(
+                status.label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: status.color,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                PartyLedgerUiHelpers.formattedBalance(party),
+                style: TextStyle(
+                  fontSize: 34,
+                  fontWeight: FontWeight.w800,
+                  color: status.color,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            CurrencyFormatter.format(balance),
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              color: color,
-              letterSpacing: -0.5,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
