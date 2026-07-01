@@ -150,6 +150,45 @@ Before implementing any new feature, always ask:
 
 If the answer is yes, implement the simpler solution.
 
+## 12. Not an Inventory App (Permanent Business Rule)
+
+**BT Business is NOT an Inventory Management application.**
+
+Its purpose is to replace the traditional notebook (copy) used by Indian shopkeepers.
+
+**Items exist ONLY** to make Sale and Purchase entry faster. The application must **NEVER** maintain or calculate stock for the user.
+
+The shopkeeper already knows approximately how much stock is available by looking at the shop. BT Business only maintains **financial records**.
+
+### What BT Business maintains
+
+- Bikri
+- Kharid
+- Jama Liya
+- Paise Diye
+- Party Hisaab
+- Daily Cash
+- Dashboard
+- History
+
+Nothing else unless explicitly approved by the project owner.
+
+### Permanently disabled — never add to user-facing product
+
+- Stock quantity, available stock, remaining stock
+- Low stock alerts, out of stock alerts
+- Inventory valuation, warehouse, stock ledger
+- Barcode requirement, SKU requirement
+- Inventory reports, stock movement history
+- Automatic stock increase/decrease shown to or driven by the user as inventory
+- Purchase vs sale quantity matching as inventory control
+
+### Future override rule
+
+No future AI, developer, or feature request should introduce stock management **unless explicitly approved by the project owner**.
+
+This rule **overrides** any previous inventory-related suggestions in this project.
+
 ---
 
 ## What this app is
@@ -280,6 +319,12 @@ Voice button on home dashboard — voice-first workflow; typing remains optional
 
 ## Item rules
 
+### Purpose
+
+**Maal / Items** are a **name + unit shortcut** for faster Bikri and Kharid entry — not an inventory system.
+
+Never show stock levels, stock alerts, or inventory valuation anywhere in the UI.
+
 ### Creation — 2 fields only
 
 When creating an item (including inline from Sale/Purchase):
@@ -292,14 +337,13 @@ When creating an item (including inline from Sale/Purchase):
 **Nothing else** in the create flow:
 
 - No category, item code, HSN, GST, opening stock, stock group, purchase price, or sale price on create.
-
-Stock updates **automatically** after every Sale and Purchase entry.
+- No barcode, SKU, warehouse, or stock quantity fields.
 
 During Sale/Purchase, if an item name does not exist, **auto-create** it inline and continue — no blocking dialogs.
 
 ### Items list
 
-Show **name**, **stock**, and **unit** only. Do not show GST, buy rate, or sell rate on the master list.
+Show **name** and **unit** only. Do not show stock, GST, buy rate, or sell rate on the master list.
 
 ---
 
@@ -342,17 +386,19 @@ One **Party** can be both buyer and seller. Never split customers and suppliers 
 
 These update automatically when entries are saved — the shopkeeper never "posts" or "balances" manually:
 
-- Stock quantities
 - Hisaab (party balances)
 - Dashboard totals (calculated from transactions — never stored; auto-refresh after every change)
 - Transaction history
+
+Do **not** surface stock tracking, stock alerts, or inventory movement to the user.
 
 ---
 
 ## Explicitly out of scope (never add to user-facing product)
 
-Unless product rules are deliberately revised in this file:
+Unless product rules are deliberately revised in this file **by the project owner**:
 
+- **Any inventory / stock management** (see Section 12 — permanently disabled)
 - Invoice printing, PDF bills, e-way bills
 - GST breakup screens, HSN/SAC fields, tax invoices
 - Journal entries, vouchers, debit/credit UI
@@ -396,6 +442,7 @@ Before shipping, verify (see also Section 11 above):
 9. Is it **fast** — no unnecessary animations or rebuilds?
 10. Does branding stay **consistent** (logo, footer, spacing)?
 11. If it feels like Tally — **remove or simplify**.
+12. Does this introduce **inventory or stock management**? If yes — **reject** unless the project owner explicitly approves (Section 12).
 
 ---
 
@@ -411,4 +458,4 @@ The codebase may retain double-entry posting, GST calculation, and SQLite accoun
 - `.cursor/rules/digital-register.mdc` mirrors these rules for AI-assisted development in Cursor.
 - If this file and the codebase disagree, **update the codebase to match this file** — not the other way around.
 
-*Last updated: June 2026 — Permanent UX, branding and development guidelines.*
+*Last updated: June 2026 — Permanent UX, branding, development guidelines, and no-inventory scope.*

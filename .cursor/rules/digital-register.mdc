@@ -73,6 +73,19 @@ Never sacrifice speed for animations. Fast response > fancy effects. Avoid unnec
 ## 11. Future Development Rule
 Before any new feature, ask: Can this be simpler? Reduce taps? Reduce typing? Work with voice? **If yes, implement the simpler solution.**
 
+## 12. Not an Inventory App (Permanent — overrides prior inventory suggestions)
+
+**BT Business is NOT an Inventory Management application.** It replaces the shopkeeper's **notebook (copy)**.
+
+**Items exist ONLY** to speed up Bikri/Kharid entry. The app must **NEVER** maintain or calculate stock for the user. The shopkeeper knows stock by looking at the shop.
+
+**Financial records only:** Bikri · Kharid · Jama Liya · Paise Diye · Party Hisaab · Daily Cash · Dashboard · History.
+
+**Permanently disabled (never add unless project owner explicitly approves):**
+Stock qty · Available/remaining stock · Low/out-of-stock alerts · Inventory valuation · Warehouse · Barcode/SKU requirement · Inventory reports · Stock ledger · Automatic stock increase/decrease (as inventory UX) · Purchase vs sale qty matching · Stock movement history
+
+No AI, developer, or feature request may introduce stock management without **explicit project owner approval**.
+
 ---
 
 ## UI vocabulary
@@ -91,7 +104,7 @@ Before any new feature, ask: Can this be simpler? Reduce taps? Reduce typing? Wo
 | Receivable / Payable | **Lena Hai** / **Dena Hai** |
 
 ## Item creation (2 fields only)
-**Item Name** + **Unit** only. Stock updates automatically after Sale/Purchase.
+**Item Name** + **Unit** only — a shortcut for faster entry, **not inventory**. Never show stock levels or alerts. No barcode, SKU, opening stock, or warehouse.
 
 ## Party creation (up to 3 fields)
 **Name** (required) · **Mobile** (optional) · **Previous Balance** (optional). One Party for buyer and seller.
@@ -107,11 +120,14 @@ Pick or instant-create Party and Item inline. No master-data detours.
 Dashboard · Hisaab · Items · Sale · Purchase — no separate Customer/Supplier tab.
 
 ## Automatic (hidden from user)
-Stock, hisaab balances, dashboard totals, and history update automatically when entries are saved.
+Hisaab balances, dashboard totals, and history update when entries are saved. **No inventory/stock UX** — ever, unless project owner explicitly approves.
 No invoice printing, PDF bills, or e-way.
 
 ## Scale
 Stay fast at 100,000+ transactions. Paginate lists; index `date`, `party_id`, `type`, name search.
+
+## Out of scope
+Inventory/stock management (Section 12), Tally-style accounting UI, invoice/GST screens, item codes, stock groups — unless project owner revises rules in `PROJECT_RULES.md`.
 
 ## Authority
 `PROJECT_RULES.md` is the full source of truth. If code disagrees with rules, **update the code**.
