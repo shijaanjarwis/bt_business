@@ -4,25 +4,32 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
-import '../../../../core/utils/date_formatter.dart';
-import '../../../../shared/widgets/animations/fade_slide_in.dart';
+import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
-import '../models/dashboard_metrics_builder.dart';
+import '../../../business/presentation/providers/business_providers.dart';
+import '../../../items/domain/entities/item.dart';
+import '../../../reports/data/datasources/transaction_history_local_datasource.dart';
 import '../models/dashboard_metric.dart';
+import '../models/dashboard_metrics_builder.dart';
+import '../providers/dashboard_extras_provider.dart';
 import '../providers/dashboard_provider.dart';
-import '../../../ledger/presentation/providers/party_providers.dart';
-import '../widgets/bt_business_logo.dart';
-import '../widgets/dashboard_metric_card.dart';
+import '../widgets/dashboard_header.dart';
+import '../widgets/dashboard_low_stock_section.dart';
 import '../widgets/dashboard_quick_actions.dart';
+import '../widgets/dashboard_recent_activity_section.dart';
+import '../widgets/dashboard_summary_grid.dart';
 
-/// Daily register summary for the shopkeeper dashboard.
+/// Daily business overview for shopkeepers and wholesalers.
 class HomeDashboardPage extends ConsumerWidget {
   const HomeDashboardPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboardAsync = ref.watch(dashboardProvider);
+    final businessAsync = ref.watch(businessProfileProvider);
+    final recentAsync = ref.watch(dashboardRecentActivityProvider);
+    final lowStockAsync = ref.watch(dashboardLowStockProvider);
 
     return Scaffold(
       backgroundColor: ColorPalette.background,
@@ -35,24 +42,34 @@ class HomeDashboardPage extends ConsumerWidget {
           onAction: () => ref.invalidate(dashboardProvider),
           icon: Icons.cloud_off_rounded,
         ),
-        data: (summary) => _DashboardContent(
-          metrics: DashboardMetricsBuilder.fromSummary(summary),
-          onRefresh: () => ref.read(dashboardProvider.notifier).refresh(),
-          onSalesTap: () => context.go(RouteNames.sales),
-          onPurchasesTap: () => context.go(RouteNames.purchases),
-          onExpenseTap: () => context.push(RouteNames.paymentsExpense),
-          onLenaTap: () {
-            ref.read(partyBalanceFilterProvider.notifier).state =
-                PartyBalanceFilter.lena;
-            context.go(RouteNames.ledger);
-          },
-          onDenaTap: () {
-            ref.read(partyBalanceFilterProvider.notifier).state =
-                PartyBalanceFilter.dena;
-            context.go(RouteNames.ledger);
-          },
-          onHistoryTap: () => context.push(RouteNames.history),
-        ),
+        data: (summary) {
+          final businessName = businessAsync.maybeWhen(
+            data: (business) => business?.name.trim().isNotEmpty == true
+                ? business!.name
+                : 'Apka Business',
+            orElse: () => 'Apka Business',
+          );
+          final metrics = DashboardMetricsBuilder.fromSummary(summary);
+          final recentEntries = recentAsync.valueOrNull ?? const [];
+          final lowStockItems = lowStockAsync.valueOrNull ?? const [];
+
+          return _DashboardContent(
+            businessName: businessName,
+            metrics: metrics,
+            recentEntries: recentEntries,
+            lowStockItems: lowStockItems,
+            onRefresh: () async {
+              ref.invalidate(dashboardProvider);
+              ref.invalidate(dashboardRecentActivityProvider);
+              ref.invalidate(dashboardLowStockProvider);
+              ref.invalidate(businessProfileProvider);
+              await ref.read(dashboardProvider.future);
+            },
+            onProfileTap: () => context.push(
+              '${RouteNames.businessProfile}?mode=edit',
+            ),
+          );
+        },
       ),
     );
   }
@@ -60,24 +77,20 @@ class HomeDashboardPage extends ConsumerWidget {
 
 class _DashboardContent extends StatelessWidget {
   const _DashboardContent({
+    required this.businessName,
     required this.metrics,
+    required this.recentEntries,
+    required this.lowStockItems,
     required this.onRefresh,
-    required this.onSalesTap,
-    required this.onPurchasesTap,
-    required this.onExpenseTap,
-    required this.onLenaTap,
-    required this.onDenaTap,
-    required this.onHistoryTap,
+    required this.onProfileTap,
   });
 
+  final String businessName;
   final List<DashboardMetric> metrics;
+  final List<TransactionHistoryEntry> recentEntries;
+  final List<Item> lowStockItems;
   final Future<void> Function() onRefresh;
-  final VoidCallback onSalesTap;
-  final VoidCallback onPurchasesTap;
-  final VoidCallback onExpenseTap;
-  final VoidCallback onLenaTap;
-  final VoidCallback onDenaTap;
-  final VoidCallback onHistoryTap;
+  final VoidCallback onProfileTap;
 
   @override
   Widget build(BuildContext context) {
@@ -86,146 +99,35 @@ class _DashboardContent extends StatelessWidget {
       child: RefreshIndicator(
         color: ColorPalette.purple,
         onRefresh: onRefresh,
-        child: CustomScrollView(
+        child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
           ),
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    FadeSlideIn(
-                      index: 0,
-                      child: Row(
-                        children: [
-                          const Expanded(child: BtBusinessLogo()),
-                          IconButton(
-                            tooltip: 'Business Profile',
-                            onPressed: () => context.push(
-                              '${RouteNames.businessProfile}?mode=edit',
-                            ),
-                            icon: const Icon(
-                              Icons.storefront_rounded,
-                              color: ColorPalette.purple,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    FadeSlideIn(
-                      index: 1,
-                      child: Text(
-                        DateFormatter.displayDate(DateTime.now()),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: ColorPalette.labelSecondary,
-                          letterSpacing: -0.1,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const FadeSlideIn(
-                      index: 2,
-                      child: DashboardQuickActions(),
-                    ),
-                    const SizedBox(height: 16),
-                    FadeSlideIn(
-                      index: 3,
-                      child: OutlinedButton.icon(
-                        onPressed: onHistoryTap,
-                        icon: const Icon(Icons.history_rounded, color: ColorPalette.purple),
-                        label: const Text('Poora Record · History'),
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-                  ],
-                ),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DashboardHeader(
+                businessName: businessName,
+                onProfileTap: onProfileTap,
               ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  FadeSlideIn(
-                    index: 4,
-                    child: DashboardMetricCard(metric: metrics[0]),
-                  ),
-                  const SizedBox(height: 12),
-                  FadeSlideIn(
-                    index: 5,
-                    child: _MetricPairRow(
-                      left: metrics[1],
-                      right: metrics[2],
-                      onLeftTap: onLenaTap,
-                      onRightTap: onDenaTap,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  FadeSlideIn(
-                    index: 6,
-                    child: _MetricPairRow(
-                      left: metrics[3],
-                      right: metrics[4],
-                      onLeftTap: onSalesTap,
-                      onRightTap: onPurchasesTap,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  FadeSlideIn(
-                    index: 7,
-                    child: DashboardMetricCard(
-                      metric: metrics[5],
-                      onTap: onExpenseTap,
-                    ),
-                  ),
-                  const SizedBox(height: 120),
-                ]),
+              const SizedBox(height: 24),
+              DashboardSummaryGrid(metrics: metrics),
+              const SizedBox(height: 28),
+              const DashboardQuickActions(),
+              if (lowStockItems.isNotEmpty) ...[
+                const SizedBox(height: 28),
+                DashboardLowStockSection(items: lowStockItems),
+              ],
+              const SizedBox(height: 28),
+              DashboardRecentActivitySection(entries: recentEntries),
+              const DeveloperFooter(
+                padding: EdgeInsets.fromLTRB(0, 28, 0, 8),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    );
-  }
-}
-
-class _MetricPairRow extends StatelessWidget {
-  const _MetricPairRow({
-    required this.left,
-    required this.right,
-    this.onLeftTap,
-    this.onRightTap,
-  });
-
-  final DashboardMetric left;
-  final DashboardMetric right;
-  final VoidCallback? onLeftTap;
-  final VoidCallback? onRightTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: DashboardMetricCard(
-            metric: left,
-            onTap: onLeftTap,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: DashboardMetricCard(
-            metric: right,
-            onTap: onRightTap,
-          ),
-        ),
-      ],
     );
   }
 }

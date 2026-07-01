@@ -1,36 +1,12 @@
 import 'package:flutter/material.dart';
+
 import '../../domain/entities/dashboard_summary.dart';
 import 'dashboard_metric.dart';
 
-/// Six simple daily cards for shopkeepers.
+/// Four daily summary cards for the shopkeeper dashboard.
 abstract final class DashboardMetricsBuilder {
   static List<DashboardMetric> fromSummary(DashboardSummary summary) {
     return [
-      DashboardMetric(
-        englishLabel: 'Cash in Hand',
-        hindiLabel: 'Haath mein cash',
-        amount: summary.cashInHand,
-        icon: Icons.payments_rounded,
-        fullWidth: true,
-      ),
-      DashboardMetric(
-        englishLabel: 'Lena Hai',
-        hindiLabel: 'Lena hai',
-        amount: summary.todaysReceivables,
-        icon: Icons.call_received_rounded,
-        subtitle: summary.receivableCount > 0
-            ? '${summary.receivableCount} party'
-            : null,
-      ),
-      DashboardMetric(
-        englishLabel: 'Dena Hai',
-        hindiLabel: 'Dena hai',
-        amount: summary.todaysPayables,
-        icon: Icons.call_made_rounded,
-        subtitle: summary.payableCount > 0
-            ? '${summary.payableCount} party'
-            : null,
-      ),
       DashboardMetric(
         englishLabel: 'Aaj ki Bikri',
         hindiLabel: 'Aaj ki bikri',
@@ -38,16 +14,22 @@ abstract final class DashboardMetricsBuilder {
         icon: Icons.sell_outlined,
       ),
       DashboardMetric(
-        englishLabel: 'Aaj ki Kharid',
-        hindiLabel: 'Aaj ki kharid',
-        amount: summary.todaysPurchase,
-        icon: Icons.shopping_bag_outlined,
+        englishLabel: 'Aaj Cash Mila',
+        hindiLabel: 'Aaj cash mila',
+        amount: summary.todaysCashReceived,
+        icon: Icons.payments_rounded,
       ),
       DashboardMetric(
-        englishLabel: 'Aaj ka Kharch',
-        hindiLabel: 'Aaj ka kharch',
-        amount: summary.todaysExpenses,
-        icon: Icons.receipt_long_rounded,
+        englishLabel: 'Aaj Udhaar Bana',
+        hindiLabel: 'Aaj udhaar bana',
+        amount: summary.todaysUdhaarCreated,
+        icon: Icons.schedule_rounded,
+      ),
+      DashboardMetric(
+        englishLabel: 'Cash in Hand',
+        hindiLabel: 'Haath mein cash',
+        amount: summary.cashInHand,
+        icon: Icons.account_balance_wallet_outlined,
       ),
     ];
   }
