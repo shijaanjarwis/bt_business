@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/accounting/payment_modes.dart';
 import '../../../../core/di/core_providers.dart';
 import '../../../../core/di/data_revision.dart';
 import '../../../../core/errors/result.dart';
@@ -16,6 +15,8 @@ import '../../domain/usecases/get_purchases.dart';
 import '../../domain/usecases/save_purchase.dart';
 import '../../domain/usecases/search_purchase_items.dart';
 import '../../domain/usecases/search_purchases.dart';
+import '../models/purchase_register_filter.dart';
+import '../utils/purchase_ui_helpers.dart';
 
 final purchaseLocalDataSourceProvider = Provider<PurchaseLocalDataSource>((ref) {
   final database = ref.watch(appDatabaseProvider).requireValue;
@@ -60,28 +61,37 @@ final searchPurchaseItemsUseCaseProvider = Provider<SearchPurchaseItemsUseCase>(
 
 final purchaseSearchQueryProvider = StateProvider<String>((ref) => '');
 
-final purchasePaymentFilterProvider = StateProvider<PaymentMode?>((ref) => null);
+final purchaseRegisterFilterProvider =
+    StateProvider<PurchaseRegisterFilter>((ref) => PurchaseRegisterFilter.all);
 
 final purchaseListProvider = FutureProvider<List<PurchaseInvoice>>((ref) async {
   ref.watch(dataRevisionProvider);
 
   final query = ref.watch(purchaseSearchQueryProvider);
-  final paymentFilter = ref.watch(purchasePaymentFilterProvider);
+  final registerFilter = ref.watch(purchaseRegisterFilterProvider);
 
   final Result<List<PurchaseInvoice>> result;
   if (query.trim().isNotEmpty) {
     result = await ref.watch(searchPurchasesUseCaseProvider)(query);
   } else {
-    result = await ref.watch(getPurchasesUseCaseProvider)(
-      GetPurchasesParams(paymentMode: paymentFilter),
-    );
+    result = await ref.watch(getPurchasesUseCaseProvider)(const GetPurchasesParams());
   }
 
   if (result.isFailure) {
     throw result.failureOrNull!;
   }
 
-  return result.valueOrNull ?? [];
+  var purchases = result.valueOrNull ?? [];
+  if (registerFilter != PurchaseRegisterFilter.all) {
+    purchases = purchases
+        .where(
+          (invoice) =>
+              PurchaseUiHelpers.matchesRegisterFilter(invoice, registerFilter),
+        )
+        .toList();
+  }
+
+  return purchases;
 });
 
 final purchaseDetailProvider =

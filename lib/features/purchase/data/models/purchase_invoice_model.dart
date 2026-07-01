@@ -35,6 +35,8 @@ final class PurchaseInvoiceModel {
         sgstTotal: (map[TransactionsTable.sgstTotal] as num?)?.toDouble() ?? 0,
         igstTotal: (map[TransactionsTable.igstTotal] as num?)?.toDouble() ?? 0,
         grandTotal: (map[TransactionsTable.totalAmount] as num?)?.toDouble() ?? 0,
+        paidAmount: (map[TransactionsTable.paidAmount] as num?)?.toDouble() ?? 0,
+        dueAmount: (map[TransactionsTable.dueAmount] as num?)?.toDouble() ?? 0,
         lines: lines,
         createdAt: DateTime.parse(map[TransactionsTable.createdAt]! as String),
         updatedAt: DateTime.parse(map[TransactionsTable.updatedAt]! as String),

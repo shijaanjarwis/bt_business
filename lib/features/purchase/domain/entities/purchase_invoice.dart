@@ -57,6 +57,8 @@ class PurchaseInvoice {
     required this.sgstTotal,
     required this.igstTotal,
     required this.grandTotal,
+    required this.paidAmount,
+    required this.dueAmount,
     required this.lines,
     required this.createdAt,
     required this.updatedAt,
@@ -78,6 +80,8 @@ class PurchaseInvoice {
   final double sgstTotal;
   final double igstTotal;
   final double grandTotal;
+  final double paidAmount;
+  final double dueAmount;
   final List<PurchaseLine> lines;
   final DateTime createdAt;
   final DateTime updatedAt;
