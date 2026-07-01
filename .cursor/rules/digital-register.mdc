@@ -1,72 +1,117 @@
 ---
-description: Digital register for India's smallest shopkeepers — never accounting software
+description: Digital register for India's smallest shopkeepers — permanent UX, branding and development rules
 alwaysApply: true
 ---
 
 # BT Business — Paper Register, Not Tally
 
-## Target user
-A shopkeeper who **writes everything in a notebook** today: pan shop, tea stall, kirana, hardware, mobile shop, dairy, bakery, small wholesaler.
+These rules apply to the **entire project** unless explicitly approved otherwise.
 
-**Zero accounting knowledge.** Must be **easier than Tally**.
+## Target user
+Shopkeepers and wholesalers who **write everything in a notebook** today. **Zero accounting knowledge.** Must be **easier than Tally**.
 
 ## Golden rule
 If a feature feels like **Tally or accounting software**, remove it or hide it from the user.
 The app must always feel like **writing in a paper register**.
 
-## Design principles (permanent)
+---
 
-1. **2–3 taps** — every common task should finish in 2–3 taps when possible.
-2. **5–6 fields max** — every form has at most 5–6 fields. Never ask for unnecessary information.
-3. **Instant search** — search everywhere by typing a few letters of a name. No IDs, no item codes.
-4. **Reports are read-only** — users never edit data from reports/history screens.
-5. **History is complete** — never delete old years automatically. Keep unlimited years unless the user manually deletes an entry.
-6. **Performance at scale** — stay fast with 100,000+ transactions. Use pagination, lazy loading, and indexed queries.
+## 1. Simplicity First
+Every screen stays simple. If a feature complicates the UI, redesign the feature — not the user flow.
+
+- Max **2–3 taps** for common work
+- **Minimum typing**
+- No unnecessary dialogs, confusing workflows, or hidden important actions
+- **5–6 fields max** per form
+
+## 2. Hindi First
+All user-visible text: **simple daily spoken Hindi**.
+
+Examples: Party chuniye · Maal chuniye · Kitna mila · Kitna baaki · Paisa mila · Kharcha · Bikri · Kharid · Poora hisaab · Save karein · Edit karein · Delete karein
+
+**Never expose in UI:** Invoice · Posting · Migration · Database · Repository · Engine · Service · Audit · Linked rows · Transaction · Recalculate · Sync · Journal · Voucher · Debit · Credit · HSN · GSTIN
+
+Code may use accounting terms internally — **never expose to users**.
+
+## 3. Voice First Workflow
+Assume users may **speak instead of type**. Voice wherever practical. Typing optional. Every new feature considers voice first.
+
+## 4. Auto-Creation Philosophy
+During Sale/Purchase, if item does not exist: **auto-create inline**, continue entry, no blocking warnings, no forced detour to item master.
+
+## 5. Everything Must Be Editable
+Users can always edit: Sale · Purchase · Payment received · Payment given · Expense · Party · Item.
+
+**History is never read-only.** Help users correct mistakes.
+
+## 6. Dashboard Philosophy
+Dashboard shows **calculated** info only — never manually editable. Totals computed from transactions (never stored). Auto-refresh after every change.
+
+## 7. Consistent Design
+Same spacing, typography, colors, buttons, cards, icons on every screen. No screen should look visually different.
+
+## 8. Branding Rules
+Always use **Bharat Traders** branding (`assets/images/bharat_traders_logo.png`).
+
+- **Splash:** Bharat Traders logo (`SplashPage`, ~2s)
+- **Header:** BT Business + logo beside title (`BtBusinessLogo`, 40×40, `BoxFit.contain`)
+- Never stretch or distort logo; keep clean professional spacing
+
+## 9. Developer Credit
+Every **vertically scrollable page** ends with footer via `DeveloperFooter`:
+
+```
+Developed by
+Mohd Anas Mansoori
+```
+
+Small · elegant · low emphasis · professional · consistent.
+
+## 10. Performance First
+Never sacrifice speed for animations. Fast response > fancy effects. Avoid unnecessary rebuilds, delays, heavy animations.
+
+## 11. Future Development Rule
+Before any new feature, ask: Can this be simpler? Reduce taps? Reduce typing? Work with voice? **If yes, implement the simpler solution.**
+
+---
 
 ## UI vocabulary
 
 | Never say | Say instead |
 |-----------|-------------|
 | Ledger | **Hisaab** |
-| Customer / Supplier | **Party** (one party can be both) |
-| Inventory tab label | **Items** / **Maal** |
-| Sale Invoice / Voucher | **Sale** / **Bikri** |
+| Customer / Supplier | **Party** |
+| Inventory tab | **Items** / **Maal** |
+| Sale Invoice | **Sale** / **Bikri** |
 | Purchase Invoice | **Purchase** / **Kharid** |
 | Credit | **Udhaar** |
 | Payment received | **Jama** / **Paisa mila** |
 | Payment paid | **Paisa diya** |
 | Expense | **Kharch** |
 | Receivable / Payable | **Lena Hai** / **Dena Hai** |
-| Journal, Voucher, Debit, Credit, HSN, GSTIN, Stock Group, Item Code | **Never show in UI** |
 
-Code may use `ledger`, `journal`, `debit` internally — **never expose to users**.
+## Item creation (2 fields only)
+**Item Name** + **Unit** only. Stock updates automatically after Sale/Purchase.
 
-## Item creation (instant — 2 fields only)
-- **Item Name** (required)
-- **Unit** — Piece, Kg, Gram, Litre, Packet, Box, Meter, Dozen, etc. (required)
+## Party creation (up to 3 fields)
+**Name** (required) · **Mobile** (optional) · **Previous Balance** (optional). One Party for buyer and seller.
 
-Nothing else in the create flow: no category, item code, HSN, GST, opening stock, stock group, purchase/sale price on create.
-Stock updates **automatically** after every Sale and Purchase.
+## Entry forms
+- **Jama / Paisa diya:** Party, Amount, Date, Note (optional)
+- **Kharch:** Expense name, Amount, Date, Note (optional)
+- **Sale / Purchase:** Party, Date, payment mode, line items (qty + rate) — register style, not invoice
 
-## Party creation (instant — up to 3 fields)
-- **Name** (required)
-- **Mobile** (optional)
-- **Previous Balance** (optional — Lena hai / Dena hai)
+Pick or instant-create Party and Item inline. No master-data detours.
 
-Nothing else: no GSTIN, credit limit, address, customer/supplier type picker, active/inactive.
-
-## Entry forms (max fields)
-- **Jama / Paisa diya**: Party, Amount, Date, Note (optional)
-- **Kharch**: Expense Name, Amount, Date, Note (optional)
-- **Sale / Purchase**: Party, Date, payment mode, line items (qty + rate) — register style, not invoice
-
-Pick or **instant-create** Party and Item inline from entry screens. No separate master-data detours.
+## Navigation (5 tabs)
+Dashboard · Hisaab · Items · Sale · Purchase — no separate Customer/Supplier tab.
 
 ## Automatic (hidden from user)
 Stock, hisaab balances, dashboard totals, and history update automatically when entries are saved.
-No invoice printing, no bills/PDF/e-way.
+No invoice printing, PDF bills, or e-way.
 
-## When building new features
-- Prefer **simple over powerful** every time.
-- Paginate lists; index `date`, `party_id`, `type`, and name search columns.
-- History and reports: filter and display only — no inline edit.
+## Scale
+Stay fast at 100,000+ transactions. Paginate lists; index `date`, `party_id`, `type`, name search.
+
+## Authority
+`PROJECT_RULES.md` is the full source of truth. If code disagrees with rules, **update the code**.
