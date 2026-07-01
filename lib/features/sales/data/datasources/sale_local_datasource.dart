@@ -29,7 +29,7 @@ final class SaleLocalDataSource {
     if (businessId == null) return [];
 
     final where = StringBuffer(
-      't.${TransactionsTable.businessId} = ? AND t.${TransactionsTable.type} = ?',
+      't.${TransactionsTable.businessId} = ? AND t.${TransactionsTable.type} = ? AND t.${TransactionsTable.deletedAt} IS NULL',
     );
     final args = <Object?>[businessId, TransactionTypes.sale];
 
@@ -75,11 +75,19 @@ final class SaleLocalDataSource {
       INNER JOIN ${PartiesTable.tableName} p ON t.${TransactionsTable.partyId} = p.${PartiesTable.id}
       WHERE t.${TransactionsTable.businessId} = ?
         AND t.${TransactionsTable.type} = ?
+        AND t.${TransactionsTable.deletedAt} IS NULL
         AND (p.${PartiesTable.name} LIKE ?
-          OR p.${PartiesTable.phone} LIKE ?)
+          OR p.${PartiesTable.phone} LIKE ?
+          OR t.${TransactionsTable.date} LIKE ?
+          OR EXISTS (
+            SELECT 1 FROM ${TransactionLinesTable.tableName} tl
+            WHERE tl.${TransactionLinesTable.transactionId} = t.${TransactionsTable.id}
+              AND tl.${TransactionLinesTable.deletedAt} IS NULL
+              AND tl.${TransactionLinesTable.itemName} LIKE ?
+          ))
       ORDER BY t.${TransactionsTable.date} DESC, t.${TransactionsTable.createdAt} DESC
       ''',
-      [businessId, TransactionTypes.sale, pattern, pattern],
+      [businessId, TransactionTypes.sale, pattern, pattern, pattern, pattern],
     );
 
     return _mapEntries(rows);
@@ -91,7 +99,7 @@ final class SaleLocalDataSource {
       SELECT t.*, p.${PartiesTable.name} AS party_name
       FROM ${TransactionsTable.tableName} t
       INNER JOIN ${PartiesTable.tableName} p ON t.${TransactionsTable.partyId} = p.${PartiesTable.id}
-      WHERE t.${TransactionsTable.id} = ?
+      WHERE t.${TransactionsTable.id} = ? AND t.${TransactionsTable.deletedAt} IS NULL
       ''',
       [id],
     );
@@ -114,7 +122,8 @@ final class SaleLocalDataSource {
   Future<List<SaleLine>> _fetchLines(String transactionId) async {
     final rows = await _db.query(
       TransactionLinesTable.tableName,
-      where: '${TransactionLinesTable.transactionId} = ?',
+      where:
+          '${TransactionLinesTable.transactionId} = ? AND ${TransactionLinesTable.deletedAt} IS NULL',
       whereArgs: [transactionId],
       orderBy: '${TransactionLinesTable.sortOrder} ASC',
     );
