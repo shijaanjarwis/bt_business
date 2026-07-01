@@ -1,17 +1,30 @@
-# bt_business
+# BT Business
 
-A new Flutter project.
+**A digital register for India's smallest shopkeepers** — Bharat Traders.
 
-## Getting Started
+BT Business replaces the shopkeeper's **paper notebook** (bahi-khata). It is **not** Tally, **not** an ERP, and **not** an inventory management system.
 
-This project is a starting point for a Flutter application.
+## What it does
 
-A few resources to get you started if this is your first Flutter project:
+- **Bikri / Kharid** — record sales and purchases in register style
+- **Hisaab** — party names and balances (Lena Hai / Dena Hai)
+- **Jama / Paisa diya / Kharch** — payments and expenses
+- **Maal** — item name + unit shortcuts so entry is faster (optional default rates only)
+- **Dashboard & History** — today's summary and full register log
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## What it is not
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+No stock quantity UI, low-stock alerts, warehouse, barcode/SKU, inventory reports, or inventory valuation. **Maal** exists only to speed up Sale and Purchase lines.
+
+## Product rules
+
+See [`PROJECT_RULES.md`](PROJECT_RULES.md) for permanent UX, Hindi-first copy, and scope decisions.
+
+## Development
+
+```bash
+flutter pub get
+flutter analyze
+flutter test
+flutter run
+```

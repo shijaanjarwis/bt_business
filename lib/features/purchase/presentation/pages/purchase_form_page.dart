@@ -362,7 +362,7 @@ class _PurchaseFormPageState extends ConsumerState<PurchaseFormPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Yeh kharid delete karein?'),
-        content: const Text('Entry hat jayegi aur stock adjust ho jayega.'),
+        content: const Text('Yeh entry delete ho jayegi.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Rahne dein')),
           TextButton(

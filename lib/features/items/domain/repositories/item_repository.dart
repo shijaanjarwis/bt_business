@@ -1,7 +1,7 @@
 import '../../../../core/errors/result.dart';
 import '../entities/item.dart';
 
-/// Persistence contract for the flat item master.
+/// Persistence for Maal shortcuts (name, unit, optional default rates).
 abstract interface class ItemRepository {
   Future<Result<List<Item>>> searchItems(String query);
 
@@ -14,7 +14,10 @@ abstract interface class ItemRepository {
   Future<Result<void>> deleteItem(String id);
 }
 
-/// Input for creating or updating an item.
+/// Input for creating or updating a Maal shortcut.
+///
+/// [openingStock] and [gstRate] are legacy internal fields — not product fields.
+/// UI must not collect or display them.
 class SaveItemInput {
   const SaveItemInput({
     this.id,

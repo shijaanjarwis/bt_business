@@ -56,6 +56,7 @@ final class ItemRepositoryImpl implements ItemRepository {
       if (input.id != null) {
         final existing = await _localDataSource.fetchItem(input.id!);
         if (existing != null) {
+          // Preserve legacy internal row data — not exposed in Item Master UI.
           openingStock = existing.openingStock;
           gstRate = existing.gstRate;
         }

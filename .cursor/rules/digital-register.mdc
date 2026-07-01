@@ -102,9 +102,23 @@ No AI, developer, or feature request may introduce stock management without **ex
 | Payment paid | **Paisa diya** |
 | Expense | **Kharch** |
 | Receivable / Payable | **Lena Hai** / **Dena Hai** |
+| Stock, Inventory, SKU, Barcode | **Never show in UI** |
 
-## Item creation (2 fields only)
-**Item Name** + **Unit** only — a shortcut for faster entry, **not inventory**. Never show stock levels or alerts. No barcode, SKU, opening stock, or warehouse.
+## Item Master (Maal — shortcuts only)
+**Purpose:** speed up Bikri/Kharid — **not inventory**.
+
+Each item: **Item Name** + **Unit** (required) · **Purchase Rate** + **Sale Rate** (optional defaults on master form only).
+
+**Inline create** from Sale/Purchase: name + unit only — auto-create, no detour.
+
+**List:** name + unit only. **Never** show quantity, alerts, barcode, SKU, or warehouse.
+
+**Internal compatibility:** legacy DB columns may exist — never expose in UI or product docs. On edit, preserve existing internal data without surfacing it.
+
+**Never add** without project owner approval: GST %, HSN, brand, description, images, barcode, SKU, weight, or other inventory/business-management fields.
+
+## Item creation (inline — 2 fields)
+**Item Name** + **Unit** only — a shortcut for faster entry, **not inventory**.
 
 ## Party creation (up to 3 fields)
 **Name** (required) · **Mobile** (optional) · **Previous Balance** (optional). One Party for buyer and seller.

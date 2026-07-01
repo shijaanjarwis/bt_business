@@ -1,4 +1,7 @@
-/// A single product in the item master — no groups or categories.
+/// A sale/purchase line-item shortcut — name, unit, and optional default rates.
+///
+/// Legacy DB-mapped fields ([openingStock], [gstRate], [hsnSac]) exist for
+/// internal data compatibility only. Never show them in Item Master UI.
 class Item {
   const Item({
     required this.id,
@@ -22,7 +25,7 @@ class Item {
   final String? hsnSac;
   final bool isActive;
 
-  /// Backward-compatible alias used by invoice modules.
+  /// Internal alias for legacy [ItemsTable.qtyOnHand] — not shown in UI.
   double get qtyOnHand => openingStock;
   double get purchaseRate => purchasePrice;
   double get saleRate => salePrice;

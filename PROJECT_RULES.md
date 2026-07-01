@@ -242,6 +242,7 @@ Use register language in all user-facing text. Internal code may use accounting 
 | Payment paid | **Paisa diya** |
 | Expense | **Kharch** |
 | Receivable / Payable | **Lena Hai** / **Dena Hai** |
+| Stock, Inventory, SKU, Barcode, Warehouse | **Never show in UI** |
 | Journal, Voucher, Debit, Credit, HSN, GSTIN, Stock Group, Item Code | **Never show in UI** |
 
 ---
@@ -290,7 +291,7 @@ Five bottom tabs — the shopkeeper's daily workflow:
 |-----|-------|---------|
 | 1 | Dashboard | Today's summary, quick write, history link |
 | 2 | Hisaab | All parties and balances in one list |
-| 3 | Items | Flat item master (Maal) |
+| 3 | Maal | Item shortcuts for faster Bikri/Kharid (not inventory) |
 | 4 | Sale | Record sales (Bikri) |
 | 5 | Purchase | Record purchases (Kharid) |
 
@@ -317,33 +318,50 @@ Voice button on home dashboard — voice-first workflow; typing remains optional
 
 ---
 
-## Item rules
+## Item rules (Maal — register shortcuts only)
 
 ### Purpose
 
-**Maal / Items** are a **name + unit shortcut** for faster Bikri and Kharid entry — not an inventory system.
+**Maal / Items** exist **only** to speed up Bikri and Kharid entry. They are **simple shortcuts** — not an inventory system.
 
-Never show stock levels, stock alerts, or inventory valuation anywhere in the UI.
-
-### Creation — 2 fields only
-
-When creating an item (including inline from Sale/Purchase):
+Each item in the product sense contains only:
 
 | Field | Required |
 |-------|----------|
 | **Item Name** | Yes |
-| **Unit** (Piece, Kg, Gram, Litre, Packet, Box, Meter, Dozen, etc.) | Yes |
+| **Unit** (Piece, Kg, Packet, Box, Litre, Dozen, Nos, etc.) | Yes |
+| **Purchase Rate** (default suggestion for Kharid) | Optional |
+| **Sale Rate** (default suggestion for Bikri) | Optional |
 
-**Nothing else** in the create flow:
+Nothing else is required in Item Master: no category, item code, HSN, GST %, brand, description, images, barcode, SKU, weight, warehouse, or quantity fields.
 
-- No category, item code, HSN, GST, opening stock, stock group, purchase price, or sale price on create.
-- No barcode, SKU, warehouse, or stock quantity fields.
+Never show stock levels, stock alerts, or inventory valuation anywhere in the UI.
 
-During Sale/Purchase, if an item name does not exist, **auto-create** it inline and continue — no blocking dialogs.
+### Inline create (from Sale / Purchase)
 
-### Items list
+When creating an item **inline** while recording an entry — **2 fields only**: Item Name + Unit. No rates required in that flow; continue the entry immediately.
 
-Show **name** and **unit** only. Do not show stock, GST, buy rate, or sell rate on the master list.
+### Item Master list
+
+Show **name** and **unit** only. Do not show quantity, balance, price history, barcode, or SKU on the list.
+
+Tap a row to edit. Search instantly by name or unit.
+
+### Item Master add / edit form
+
+- Required: Item Name, Unit
+- Optional: Purchase Rate, Sale Rate (defaults only — user can change rates on each Sale/Purchase)
+- Delete requires confirmation
+
+### Internal compatibility (developers)
+
+Older database columns may still exist for backward compatibility (e.g. legacy quantity or tax fields). **Never expose or document these as product features.** When editing an item, save logic may preserve existing internal row data without showing it in the UI.
+
+Use wording like *“preserves existing internal data compatibility”* — never *“preserves stock fields”* in docs or comments aimed at product scope.
+
+### GST and extra fields
+
+Do **not** introduce GST %, HSN, tax category, brand, description, images, barcode, SKU, or weight in Item Master unless explicitly approved by the project owner.
 
 ---
 
@@ -458,4 +476,4 @@ The codebase may retain double-entry posting, GST calculation, and SQLite accoun
 - `.cursor/rules/digital-register.mdc` mirrors these rules for AI-assisted development in Cursor.
 - If this file and the codebase disagree, **update the codebase to match this file** — not the other way around.
 
-*Last updated: June 2026 — Permanent UX, branding, development guidelines, and no-inventory scope.*
+*Last updated: June 2026 — Digital register scope, Item Master terminology cleanup, and permanent no-inventory product rule (Section 12).*

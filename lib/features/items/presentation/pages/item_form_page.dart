@@ -92,10 +92,10 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
       id: _existingItem?.id,
       name: _nameController.text,
       unit: _unit,
-      openingStock: _existingItem?.openingStock ?? 0,
+      openingStock: _existingItem?.openingStock ?? 0, // internal compatibility
       purchasePrice: _parseRate(_purchaseRateController),
       salePrice: _parseRate(_saleRateController),
-      gstRate: _existingItem?.gstRate ?? 0,
+      gstRate: _existingItem?.gstRate ?? 0, // internal compatibility
     );
   }
 

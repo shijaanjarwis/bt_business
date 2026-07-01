@@ -361,7 +361,7 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Yeh bikri delete karein?'),
-        content: const Text('Entry hat jayegi aur stock wapas aa jayega.'),
+        content: const Text('Yeh entry delete ho jayegi.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Rahne dein')),
           TextButton(

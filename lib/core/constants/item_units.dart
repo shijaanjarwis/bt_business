@@ -1,4 +1,4 @@
-/// Common units for the item master — shopkeeper-friendly presets.
+/// Unit presets for Maal shortcuts (Bikri/Kharid entry helpers).
 abstract final class ItemUnits {
   static const presets = [
     'Kg',

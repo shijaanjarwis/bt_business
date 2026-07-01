@@ -1,7 +1,7 @@
 import '../../../../data/local/database/tables/accounting_tables.dart';
 import '../../domain/entities/item.dart';
 
-/// Maps between [Item] entities and SQLite rows.
+/// Maps [Item] to SQLite rows, including legacy columns for internal compatibility.
 final class ItemModel {
   const ItemModel({required this.item});
 

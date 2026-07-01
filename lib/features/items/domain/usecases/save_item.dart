@@ -5,6 +5,7 @@ import '../../../../core/utils/validators.dart';
 import '../entities/item.dart';
 import '../repositories/item_repository.dart';
 
+/// Validates and saves a Maal shortcut (name, unit, optional default rates).
 final class SaveItemUseCase implements UseCase<Item, SaveItemInput> {
   const SaveItemUseCase(this._repository);
 
@@ -48,7 +49,7 @@ final class SaveItemUseCase implements UseCase<Item, SaveItemInput> {
     if (unitError != null) return ValidationFailure(unitError);
 
     if (input.openingStock < 0) {
-      return const ValidationFailure('Opening stock cannot be negative');
+      return const ValidationFailure('Item data is invalid');
     }
     if (input.purchasePrice < 0 || input.salePrice < 0) {
       return const ValidationFailure('Prices cannot be negative');

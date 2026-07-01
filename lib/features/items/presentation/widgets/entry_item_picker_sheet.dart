@@ -60,7 +60,10 @@ class _EntryItemPickerSheetState extends ConsumerState<EntryItemPickerSheet> {
     final price = widget.mode == EntryItemMode.sale
         ? item.salePrice
         : item.purchasePrice;
-    return 'Stock: ${item.openingStock} ${item.unit} · ₹$price';
+    if (price > 0) {
+      return '${item.unit} · ₹${price.toStringAsFixed(price % 1 == 0 ? 0 : 2)}';
+    }
+    return item.unit;
   }
 
   @override

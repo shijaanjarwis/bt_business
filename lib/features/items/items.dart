@@ -1,4 +1,5 @@
-/// Flat item master — one list, no Tally-style groups or categories.
+/// Maal (item shortcuts) — one flat list for faster Bikri/Kharid entry.
+/// Not an inventory module; no stock UI or quantity management.
 library;
 
 export 'domain/entities/item.dart';

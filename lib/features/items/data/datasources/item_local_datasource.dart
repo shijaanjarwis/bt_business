@@ -5,7 +5,7 @@ import '../../../../features/business/data/datasources/business_table.dart';
 import '../../domain/entities/item.dart';
 import '../models/item_model.dart';
 
-/// SQLite operations for the flat item master.
+/// SQLite access for Maal shortcuts — not inventory operations.
 final class ItemLocalDataSource {
   const ItemLocalDataSource(this._db);
 
