@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/errors/user_error_messages.dart';
+import '../../../../core/logging/startup_trace.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/app_branding.dart';
@@ -17,13 +21,19 @@ class SplashPage extends ConsumerStatefulWidget {
 
 class _SplashPageState extends ConsumerState<SplashPage>
     with SingleTickerProviderStateMixin {
+  static const _startupTimeout = Duration(seconds: 45);
+
   late final AnimationController _fadeController;
   late final Animation<double> _contentOpacity;
   late final Animation<double> _logoScale;
 
+  bool _navigating = false;
+  String? _startupError;
+
   @override
   void initState() {
     super.initState();
+    StartupTrace.log('START splash');
     _fadeController = AnimationController(
       vsync: this,
       duration: AppBranding.splashFadeDuration,
@@ -40,27 +50,60 @@ class _SplashPageState extends ConsumerState<SplashPage>
       ),
     );
     _fadeController.forward(from: 0);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _finishSplash());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_finishSplash());
+    });
   }
 
   Future<void> _finishSplash() async {
-    final gateFuture = ref.read(businessGateProvider.future);
-    await Future.wait<void>([
-      Future<void>.delayed(AppBranding.splashDuration),
-      gateFuture.then((_) {}),
-    ]);
+    if (_navigating) return;
 
-    if (!mounted) return;
+    if (mounted) {
+      setState(() => _startupError = null);
+    }
+
+    try {
+      final gateFuture = ref.read(businessGateProvider.future);
+      await Future.wait<Object?>([
+        Future<void>.delayed(AppBranding.splashDuration),
+        gateFuture,
+      ]).timeout(_startupTimeout);
+
+      if (!mounted) return;
+
+      final hasBusiness = await gateFuture;
+      await _navigateAway(hasBusiness);
+    } catch (error, stackTrace) {
+      StartupTrace.log('FAIL splash startup: $error\n$stackTrace');
+      if (!mounted) return;
+      setState(() => _startupError = UserErrorMessages.from(error));
+    }
+  }
+
+  Future<void> _navigateAway(bool hasBusiness) async {
+    if (_navigating) return;
+    _navigating = true;
 
     _fadeController.reverse(from: 1);
     await Future<void>.delayed(AppBranding.splashFadeDuration);
     if (!mounted) return;
 
     final router = GoRouter.maybeOf(context);
-    if (router == null) return;
+    if (router == null) {
+      _navigating = false;
+      return;
+    }
 
-    final hasBusiness = ref.read(businessGateProvider).valueOrNull ?? false;
+    StartupTrace.log(
+      hasBusiness ? 'START dashboard navigation' : 'START onboarding navigation',
+    );
     context.go(hasBusiness ? RouteNames.home : RouteNames.businessProfile);
+  }
+
+  void _retryStartup() {
+    _navigating = false;
+    _fadeController.forward(from: 0);
+    unawaited(_finishSplash());
   }
 
   @override
@@ -78,50 +121,123 @@ class _SplashPageState extends ConsumerState<SplashPage>
         child: Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ScaleTransition(
-                  scale: _logoScale,
-                  child: const _SplashLogo(),
-                ),
-                const SizedBox(height: 28),
-                const Text(
-                  AppBranding.appName,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.6,
-                    color: Colors.white,
-                    height: 1.1,
+            child: _startupError == null
+                ? _SplashContent(logoScale: _logoScale)
+                : _SplashErrorContent(
+                    message: _startupError!,
+                    onRetry: _retryStartup,
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  AppBranding.splashTagline,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white70,
-                    height: 1.3,
-                  ),
-                ),
-                const SizedBox(height: 40),
-                const SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SplashContent extends StatelessWidget {
+  const _SplashContent({required this.logoScale});
+
+  final Animation<double> logoScale;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        ScaleTransition(
+          scale: logoScale,
+          child: const _SplashLogo(),
+        ),
+        const SizedBox(height: 28),
+        const Text(
+          AppBranding.appName,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.6,
+            color: Colors.white,
+            height: 1.1,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          AppBranding.splashTagline,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: Colors.white70,
+            height: 1.3,
+          ),
+        ),
+        const SizedBox(height: 40),
+        const SizedBox(
+          width: 32,
+          height: 32,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.5,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SplashErrorContent extends StatelessWidget {
+  const _SplashErrorContent({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(
+          Icons.error_outline_rounded,
+          size: 48,
+          color: Colors.white,
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Shuru nahi ho paya',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 15,
+            color: Colors.white70,
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 28),
+        FilledButton(
+          onPressed: onRetry,
+          style: FilledButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: ColorPalette.purple,
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+          ),
+          child: const Text(
+            'Phir se try karein',
+            style: TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../logging/startup_trace.dart';
 import '../../features/business/presentation/pages/business_profile_page.dart';
 import '../../features/business/presentation/providers/business_providers.dart';
 import '../../features/home/presentation/pages/home_dashboard_page.dart';
@@ -33,6 +34,7 @@ import 'route_names.dart';
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouterProvider = Provider<GoRouter>((ref) {
+  StartupTrace.logOnce('START router provider');
   final refreshNotifier = ref.watch(routerRefreshNotifierProvider);
 
   // Defer refresh so GoRouter is never re-entered synchronously during redirect.
@@ -54,9 +56,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final onProfileRoute = state.matchedLocation == RouteNames.businessProfile;
       final isEditProfile = state.uri.queryParameters['mode'] == 'edit';
 
-      // Stay on splash while onboarding state loads — avoids profile flash.
+      // Splash owns startup; never redirect back to splash while gate loads.
       if (gate.isLoading) {
-        return onSplash ? null : RouteNames.splash;
+        return null;
       }
 
       final hasBusiness = gate.valueOrNull ?? false;

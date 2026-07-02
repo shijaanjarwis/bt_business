@@ -2,7 +2,7 @@ name: bt_business
 description: BT Business — production business accounting application.
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.0+5
 
 environment:
   sdk: ^3.12.2
@@ -43,10 +43,21 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+  image: ^4.8.0
   riverpod_generator: ^2.6.5
   build_runner: ^2.4.15
   custom_lint: ^0.7.5
   riverpod_lint: ^2.6.5
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/images/app_icon_bt_sun.png
+  remove_alpha_ios: true
+  background_color_ios: "#FFFFFF"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: assets/images/app_icon_bt_sun.png
 
 flutter:
   uses-material-design: true

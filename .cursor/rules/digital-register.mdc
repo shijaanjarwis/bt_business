@@ -14,6 +14,8 @@ Shopkeepers and wholesalers who **write everything in a notebook** today. **Zero
 If a feature feels like **Tally or accounting software**, remove it or hide it from the user.
 The app must always feel like **writing in a paper register**.
 
+**Permanent Product Philosophy:** BT Business is a **Digital Business Register** — never a full accounting ERP. Save time · understandable without accounting knowledge · reject complexity over value · one-screen flows · minimum taps · Hindi-first · no technical words · improve existing workflows · speed/simplicity/reliability over feature count · digital notebook only.
+
 ---
 
 ## 1. Simplicity First
@@ -115,7 +117,15 @@ Each item: **Item Name** + **Unit** (required) · **Purchase Rate** + **Sale Rat
 
 **Internal compatibility:** legacy DB columns may exist — never expose in UI or product docs. On edit, preserve existing internal data without surfacing it.
 
-**Never add** without project owner approval: GST %, HSN, brand, description, images, barcode, SKU, weight, or other inventory/business-management fields.
+**Never add** to Item Master without project owner approval: GST %, HSN, brand, description, images, barcode, SKU, weight, or other inventory/business-management fields.
+
+**Phase C 🔒 FROZEN (docs only):** optional GST **entry helper** spec in `PROJECT_RULES.md` — **do not implement** (no code, UI, DB, routes, calculations, migrations) until production gates pass: real-world testing → bug fixes → performance → production APK → user feedback → proven daily stability. Default OFF · manual GST % · GST Extra / GST Included · transaction-only · not GST accounting.
+
+## Development priority (permanent — do not skip)
+```
+Phase A ✅  →  Phase B ✅  →  Real-world Testing  →  Bug Fixes  →  Performance  →  Production APK  →  User Feedback  →  Phase C (optional, frozen)
+```
+Workflow fixes from user feedback **beat** new features. Phase C never delays bug fixing or production readiness.
 
 ## Item creation (inline — 2 fields)
 **Item Name** + **Unit** only — a shortcut for faster entry, **not inventory**.
@@ -141,7 +151,30 @@ No invoice printing, PDF bills, or e-way.
 Stay fast at 100,000+ transactions. Paginate lists; index `date`, `party_id`, `type`, name search.
 
 ## Out of scope
-Inventory/stock management (Section 12), Tally-style accounting UI, invoice/GST screens, item codes, stock groups — unless project owner revises rules in `PROJECT_RULES.md`.
+Inventory/stock management (Section 12), Tally-style accounting UI, GST return filing, tax invoices, HSN screens, item codes, stock groups — unless project owner revises rules in `PROJECT_RULES.md`.
+
+## Development priority (permanent — follow unless owner says otherwise)
+1. Finish remaining approved Phase B → 2. Clean commits → 3. Release APK → 4. Real shop testing → 5. Bug fixes → 6. Performance/startup/scrolling → 7. UX polish (no workflow changes without approval) → 8. Production release → 9. User feedback → 10. Phase C only after stability + owner approval
+
+**Permanent dev rules:** no feature creep · no unnecessary refactoring · no UI redesign without approval · no workflow changes without approval · clear business purpose per change · stability > features · simplicity > feature count · user feedback > assumptions · never change approved business rules without owner · wait for owner review before next major phase
+
+**Documentation FROZEN.** Do not write new rules, roadmaps, architecture, or planning docs unless owner explicitly asks. **Assume implementation only.**
+
+Entry-time GST helper (**Phase C — frozen, docs only**) is **not** GST accounting. Never implement Phase C until production gates pass and owner approves.
+
+## Roadmap (summary — frozen)
+- **Phase A** ✅
+- **Phase B** 🔄 finish remaining approved work
+- **Then:** commits → release APK → shop testing → bug fixes → performance/polish → production → feedback
+- **Phase C 🔒** frozen docs only until stability + owner approval
+
+## Documentation & workflow (FROZEN)
+
+**Do not add** new permanent rules, philosophy, roadmap, architecture, or planning docs unless the project owner **explicitly requests** documentation.
+
+**Default mode:** **implementation only** — code, tests, bug fixes, performance, polish. No feature creep · no unnecessary refactoring · no UI redesign or workflow changes without approval · stability over features · wait for owner review before next major phase.
+
+Full workflow: `PROJECT_RULES.md` → Development priority (permanent workflow).
 
 ## Authority
 `PROJECT_RULES.md` is the full source of truth. If code disagrees with rules, **update the code**.

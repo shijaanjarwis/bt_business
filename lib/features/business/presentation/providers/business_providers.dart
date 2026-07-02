@@ -37,6 +37,8 @@ final deleteBusinessUseCaseProvider = Provider<DeleteBusinessUseCase>((ref) {
 
 /// Whether a business profile exists — drives onboarding redirect.
 final businessGateProvider = FutureProvider<bool>((ref) async {
+  // Database must be open before local datasource providers can resolve.
+  await ref.read(appDatabaseProvider.future);
   final result = await ref.read(getBusinessUseCaseProvider)(const NoParams());
   return result.isSuccess && result.valueOrNull != null;
 });

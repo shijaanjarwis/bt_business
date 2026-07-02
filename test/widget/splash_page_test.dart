@@ -104,4 +104,26 @@ void main() {
     expect(find.text('Onboarding'), findsOneWidget);
     expect(find.text('Dashboard'), findsNothing);
   });
+
+  testWidgets('splash shows retry when startup fails', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          businessGateProvider.overrideWith(
+            (ref) async => throw StateError('db failed'),
+          ),
+        ],
+        child: MaterialApp(
+          home: const SplashPage(),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Shuru nahi ho paya'), findsOneWidget);
+    expect(find.text('Phir se try karein'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
 }

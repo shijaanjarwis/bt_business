@@ -10,9 +10,15 @@ final class V7SchemaMigration implements Migration {
 
   @override
   Future<void> up(Database db) async {
-    await db.execute(
-      'ALTER TABLE ${TransactionsTable.tableName} ADD COLUMN ${TransactionsTable.reminderDate} TEXT',
+    final columns = await db.rawQuery(
+      'PRAGMA table_info(${TransactionsTable.tableName})',
     );
+    final names = columns.map((row) => row['name']! as String).toSet();
+    if (!names.contains(TransactionsTable.reminderDate)) {
+      await db.execute(
+        'ALTER TABLE ${TransactionsTable.tableName} ADD COLUMN ${TransactionsTable.reminderDate} TEXT',
+      );
+    }
     await db.execute(
       'CREATE INDEX IF NOT EXISTS idx_transactions_reminder_date ON ${TransactionsTable.tableName}(${TransactionsTable.businessId}, ${TransactionsTable.reminderDate})',
     );

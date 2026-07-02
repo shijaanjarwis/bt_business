@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart' hide DatabaseException;
 
 import '../../../core/constants/app_constants.dart';
@@ -17,6 +20,7 @@ abstract final class AppDatabase {
 
     try {
       final path = await DatabasePaths.resolve();
+      await _ensureDatabaseDirectory(path);
       _logger.info('Opening database at $path');
 
       _instance = await openDatabase(
@@ -39,9 +43,44 @@ abstract final class AppDatabase {
     _logger.info('Database closed');
   }
 
+  static Future<void> _ensureDatabaseDirectory(String path) async {
+    final directory = Directory(p.dirname(path));
+    if (!await directory.exists()) {
+      await directory.create(recursive: true);
+    }
+  }
+
   static Future<void> _onConfigure(Database db) async {
     await db.execute('PRAGMA foreign_keys = ON');
-    await db.execute('PRAGMA journal_mode = WAL');
-    await db.execute('PRAGMA synchronous = NORMAL');
+    await _configureJournalMode(db);
+    await _configureSynchronous(db);
+  }
+
+  /// sqflite_darwin rejects [Database.execute] for PRAGMA journal_mode because
+  /// it returns rows ("not an error"). Use [Database.rawQuery] and never crash
+  /// bootstrap if WAL is unavailable on device storage.
+  static Future<void> _configureJournalMode(Database db) async {
+    for (final mode in ['WAL', 'DELETE']) {
+      try {
+        final result = await db.rawQuery('PRAGMA journal_mode = $mode');
+        final applied = result.isNotEmpty
+            ? result.first.values.first?.toString().toLowerCase()
+            : null;
+        _logger.info('Database journal mode set to ${applied ?? mode}');
+        return;
+      } catch (error) {
+        _logger.warning('Could not set journal mode $mode: $error');
+      }
+    }
+
+    _logger.warning('Continuing with SQLite default journal mode');
+  }
+
+  static Future<void> _configureSynchronous(Database db) async {
+    try {
+      await db.execute('PRAGMA synchronous = NORMAL');
+    } catch (error) {
+      _logger.warning('Could not set synchronous mode: $error');
+    }
   }
 }

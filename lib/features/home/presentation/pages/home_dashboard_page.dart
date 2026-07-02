@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/logging/startup_trace.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_spacing.dart';
@@ -33,6 +34,7 @@ class HomeDashboardPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    StartupTrace.logOnce('START dashboard');
     final dashboardAsync = ref.watch(dashboardProvider);
     final businessAsync = ref.watch(businessProfileProvider);
     final recentAsync = ref.watch(dashboardRecentActivityProvider);
