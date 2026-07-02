@@ -11,20 +11,13 @@ const dashboardLowStockThreshold = 5.0;
 
 /// Recent register entries for the dashboard (last five, any date).
 final dashboardRecentActivityProvider =
-    FutureProvider<List<TransactionHistoryEntry>>((ref) async {
+    FutureProvider.autoDispose<List<TransactionHistoryEntry>>((ref) async {
   ref.watch(dataRevisionProvider);
-
-  final now = DateTime.now();
-  final start = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 365));
-  final entries = await ref.watch(transactionHistoryDataSourceProvider).fetchHistory(
-        start: start,
-        end: now,
-      );
-  return entries.take(5).toList();
+  return ref.watch(transactionHistoryDataSourceProvider).fetchRecentActivity();
 });
 
 /// Active items with low stock — hidden when empty.
-final dashboardLowStockProvider = FutureProvider<List<Item>>((ref) async {
+final dashboardLowStockProvider = FutureProvider.autoDispose<List<Item>>((ref) async {
   final items = await ref.watch(itemListProvider.future);
   final lowStock = items
       .where((item) => item.isActive && item.openingStock <= dashboardLowStockThreshold)

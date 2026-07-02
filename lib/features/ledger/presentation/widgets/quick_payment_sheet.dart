@@ -95,14 +95,16 @@ class _QuickPaymentSheetState extends ConsumerState<QuickPaymentSheet> {
             ),
             const SizedBox(height: 16),
             AppTextField(
+              english: 'Amount',
+              hindi: 'Kitna',
               controller: _amountController,
-              label: 'Amount · Kitna',
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: Validators.positiveAmount,
             ),
             const SizedBox(height: 20),
             AppPrimaryButton(
-              label: 'Save · Save karein',
+              english: 'Save',
+              hindi: 'Save Karein',
               isLoading: _isSaving,
               onPressed: _save,
             ),

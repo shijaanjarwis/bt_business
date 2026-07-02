@@ -56,6 +56,7 @@ abstract final class TransactionsTable {
   static const String totalAmount = 'total_amount';
   static const String paidAmount = 'paid_amount';
   static const String dueAmount = 'due_amount';
+  static const String reminderDate = 'reminder_date';
   static const String parentTransactionId = 'parent_transaction_id';
   static const String paymentMode = 'payment_mode';
   static const String gstType = 'gst_type';

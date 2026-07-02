@@ -15,12 +15,21 @@ class _FakeSaleRepository implements SaleRepository {
     DateTime? fromDate,
     DateTime? toDate,
     PaymentMode? paymentMode,
+    double? minDueAmount,
+    double? minPaidAmount,
   }) {
     throw UnimplementedError();
   }
 
   @override
-  Future<Result<List<SaleEntry>>> searchSales(String query) {
+  Future<Result<List<SaleEntry>>> searchSales(
+    String query, {
+    DateTime? fromDate,
+    DateTime? toDate,
+    PaymentMode? paymentMode,
+    double? minDueAmount,
+    double? minPaidAmount,
+  }) {
     throw UnimplementedError();
   }
 

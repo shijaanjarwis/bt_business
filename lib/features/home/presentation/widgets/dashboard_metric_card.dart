@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/widgets/animations/animated_counter.dart';
@@ -144,7 +145,7 @@ class _StandardCard extends StatelessWidget {
     const valueStyle = TextStyle(
       fontSize: 21,
       fontWeight: FontWeight.w700,
-      color: Color(0xFF1C1C1E),
+      color: ColorPalette.labelPrimary,
       letterSpacing: -0.6,
       height: 1,
     );
@@ -153,8 +154,8 @@ class _StandardCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: ColorPalette.cardSurface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
+        borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+        border: Border.all(color: ColorPalette.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),

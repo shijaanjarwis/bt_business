@@ -27,8 +27,8 @@ class PartyQuickActions extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _QuickActionButton(
-          english: 'Sell',
-          hindi: 'Maal Becha',
+          english: 'Sale',
+          hindi: 'Bikri Likho',
           icon: Icons.edit_note_rounded,
           color: ColorPalette.purple,
           onTap: () => context.push('${RouteNames.salesNew}?partyId=${party.id}'),
@@ -38,7 +38,7 @@ class PartyQuickActions extends StatelessWidget {
           english: 'Purchase',
           hindi: 'Maal Kharida',
           icon: Icons.shopping_bag_outlined,
-          color: const Color(0xFF007AFF),
+          color: ColorPalette.accentBlue,
           onTap: () => context.push('${RouteNames.purchasesNew}?partyId=${party.id}'),
         ),
         const SizedBox(height: 10),
@@ -46,7 +46,7 @@ class PartyQuickActions extends StatelessWidget {
           english: 'Cash Received',
           hindi: 'Paise Mile',
           icon: Icons.call_received_rounded,
-          color: const Color(0xFF34C759),
+          color: ColorPalette.accentGreen,
           onTap: () => context.push('${RouteNames.paymentsReceived}?partyId=${party.id}'),
         ),
         const SizedBox(height: 10),
@@ -54,7 +54,7 @@ class PartyQuickActions extends StatelessWidget {
           english: 'Payment',
           hindi: 'Paise Diya',
           icon: Icons.call_made_rounded,
-          color: const Color(0xFFFF9500),
+          color: ColorPalette.accentOrange,
           onTap: () => context.push('${RouteNames.paymentsPaid}?partyId=${party.id}'),
         ),
       ],
@@ -80,7 +80,7 @@ class _QuickActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: ColorPalette.cardSurface,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: InkWell(

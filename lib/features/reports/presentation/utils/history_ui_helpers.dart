@@ -5,17 +5,46 @@ import '../../../../core/accounting/transaction_types.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../data/local/database/seeders/cash_customer_seeder.dart';
 import '../../data/datasources/transaction_history_local_datasource.dart';
 import '../../domain/history_models.dart';
 
 /// Register-style labels, icons, grouping and search for history UI.
 abstract final class HistoryUiHelpers {
+  static String typeLabelEnglish(TransactionHistoryEntry entry) {
+    if (entry.type == HistoryEntryTypes.partyCreated) return 'Party Added';
+    if (entry.type == HistoryEntryTypes.partyUpdated) return 'Party Updated';
+    return switch (entry.type) {
+      TransactionTypes.paymentPaid => 'Payment',
+      TransactionTypes.paymentReceived => 'Receive',
+      TransactionTypes.sale => 'Sale',
+      TransactionTypes.purchase => 'Purchase',
+      TransactionTypes.expense => entry.label,
+      _ => entry.label,
+    };
+  }
+
+  static String displayPartyTitle(TransactionHistoryEntry entry) {
+    final partyName = entry.partyName?.trim();
+    if (partyName == null || partyName.isEmpty) {
+      return typeLabelEnglish(entry);
+    }
+    if (partyName == CashCustomerSeeder.displayName) {
+      return switch (entry.type) {
+        TransactionTypes.sale => 'Cash Sale',
+        TransactionTypes.purchase => 'Cash Purchase',
+        _ => partyName,
+      };
+    }
+    return partyName;
+  }
+
   static String typeLabel(TransactionHistoryEntry entry) {
     if (entry.type == HistoryEntryTypes.partyCreated) return 'Naam Joda';
     if (entry.type == HistoryEntryTypes.partyUpdated) return 'Naam Badla';
     return switch (entry.type) {
       TransactionTypes.paymentPaid => 'Paise Diya',
-      TransactionTypes.paymentReceived => 'Jama',
+      TransactionTypes.paymentReceived => 'Receive',
       TransactionTypes.sale => 'Bikri',
       TransactionTypes.purchase => 'Kharid',
       TransactionTypes.expense => entry.label,

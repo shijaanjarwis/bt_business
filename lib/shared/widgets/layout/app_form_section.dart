@@ -1,49 +1,66 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_dimensions.dart';
+import '../../../core/constants/app_spacing.dart';
 import '../../../core/theme/color_palette.dart';
+import '../labels/bilingual_label.dart';
 
-/// Apple-style grouped section container for form screens.
+/// Grouped form section with bilingual heading and card container.
 class AppFormSection extends StatelessWidget {
   const AppFormSection({
     super.key,
-    required this.title,
+    required this.english,
+    required this.hindi,
     required this.child,
+    this.helper,
   });
 
-  final String title;
+  final String english;
+  final String hindi;
   final Widget child;
+  final String? helper;
+
+  /// Legacy single-line title — maps to english with empty hindi helper line hidden.
+  factory AppFormSection.legacyTitle({
+    required String title,
+    required Widget child,
+  }) {
+    return AppFormSection(
+      english: title,
+      hindi: title,
+      child: child,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            title.toUpperCase(),
+        BilingualLabel(
+          english: english,
+          hindi: hindi,
+          compact: true,
+        ),
+        if (helper != null && helper!.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            helper!,
             style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
               color: ColorPalette.labelSecondary,
-              letterSpacing: 0.4,
             ),
           ),
-        ),
+        ],
+        const SizedBox(height: AppSpacing.sm),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             color: ColorPalette.cardSurface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.black.withValues(alpha: 0.04)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+            border: Border.all(color: ColorPalette.border),
           ),
           child: child,
         ),

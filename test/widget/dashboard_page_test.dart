@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:bt_business/core/reminders/reminder_models.dart';
+import 'package:bt_business/core/reminders/reminder_providers.dart';
 import 'package:bt_business/features/home/domain/entities/dashboard_summary.dart';
 import 'package:bt_business/features/home/presentation/pages/home_dashboard_page.dart';
 import 'package:bt_business/features/home/presentation/providers/dashboard_extras_provider.dart';
@@ -44,6 +46,10 @@ void main() {
             ],
           ),
           dashboardLowStockProvider.overrideWith((ref) async => []),
+          dashboardDueRemindersProvider.overrideWith((ref) async => []),
+          reminderSummaryProvider.overrideWith(
+            (ref) async => ReminderDashboardSummary.zero,
+          ),
         ],
         child: const MaterialApp(home: HomeDashboardPage()),
       ),
@@ -52,24 +58,26 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Ram Kirana'), findsOneWidget);
+    expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text('(Home)'), findsOneWidget);
     expect(find.text("Today's Sale"), findsOneWidget);
-    expect(find.text('Aaj Ki Bikri'), findsOneWidget);
+    expect(find.text('(Aaj Ki Bikri)'), findsOneWidget);
     expect(find.text("Today's Cash"), findsOneWidget);
-    expect(find.text('Aaj Cash Mila'), findsOneWidget);
+    expect(find.text('(Aaj Cash Mila)'), findsOneWidget);
     expect(find.text("Today's Credit"), findsOneWidget);
-    expect(find.text('Aaj Udhaar Bana'), findsOneWidget);
+    expect(find.text('(Aaj Udhaar Bana)'), findsOneWidget);
     expect(find.text('Cash In Hand'), findsOneWidget);
-    expect(find.text('Haath Mein Cash'), findsOneWidget);
-    expect(find.text('Sell'), findsOneWidget);
-    expect(find.text('Maal Becha'), findsOneWidget);
+    expect(find.text('(Haath Mein Cash)'), findsOneWidget);
+    expect(find.text('Sale'), findsOneWidget);
+    expect(find.text('(Bikri Likho)'), findsOneWidget);
     expect(find.text('Purchase'), findsOneWidget);
-    expect(find.text('Maal Kharida'), findsOneWidget);
-    expect(find.text('Cash Received'), findsOneWidget);
-    expect(find.text('Paise Mile'), findsOneWidget);
+    expect(find.text('(Kharid Likho)'), findsOneWidget);
+    expect(find.text('Receive'), findsOneWidget);
+    expect(find.text('(Paise Mile)'), findsOneWidget);
     expect(find.text('Payment'), findsOneWidget);
-    expect(find.text('Paise Diya'), findsOneWidget);
+    expect(find.text('(Paise Diye)'), findsOneWidget);
     expect(find.text('Expense'), findsOneWidget);
-    expect(find.text('Kharcha'), findsOneWidget);
+    expect(find.text('(Kharcha Likho)'), findsOneWidget);
     expect(find.text('Suresh'), findsOneWidget);
     expect(find.text('Developed by Mohd Anas Mansoori'), findsOneWidget);
   });

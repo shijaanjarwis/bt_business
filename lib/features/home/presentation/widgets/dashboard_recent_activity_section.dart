@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../reports/data/datasources/transaction_history_local_datasource.dart';
@@ -28,39 +30,40 @@ class DashboardRecentActivitySection extends StatelessWidget {
           hindi: 'Abhi Ka Kaam',
           compact: true,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         if (entries.isEmpty)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE5E5EA)),
+              color: ColorPalette.cardSurface,
+              borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+              border: Border.all(color: ColorPalette.border),
             ),
-            child: const Text(
-              'Abhi koi entry nahi · Pehla maal becho',
-              style: TextStyle(
-                fontSize: 14,
-                color: ColorPalette.labelSecondary,
-              ),
+            child: const BilingualLabel(
+              english: 'No entries yet',
+              hindi: 'Pehli sale likho',
+              compact: true,
             ),
           )
         else
           ...entries.map(
             (entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: Material(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                color: ColorPalette.cardSurface,
+                borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: () => DashboardActivityNavigation.open(context, entry),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                      vertical: AppSpacing.md,
+                    ),
                     decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFFE5E5EA)),
-                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: ColorPalette.border),
+                      borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
                     ),
                     child: Row(
                       children: [
@@ -74,15 +77,16 @@ class DashboardRecentActivitySection extends StatelessWidget {
                                     : 'Cash / Kharch',
                                 style: const TextStyle(
                                   fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1C1C1E),
+                                  fontWeight: FontWeight.w700,
+                                  color: ColorPalette.labelPrimary,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: AppSpacing.xs),
                               Text(
                                 entry.label,
                                 style: const TextStyle(
                                   fontSize: 13,
+                                  fontWeight: FontWeight.w500,
                                   color: ColorPalette.labelSecondary,
                                 ),
                               ),
@@ -97,14 +101,15 @@ class DashboardRecentActivitySection extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF1C1C1E),
+                                color: ColorPalette.labelPrimary,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: AppSpacing.xs),
                             Text(
                               _timeFormat.format(entry.createdAt),
                               style: const TextStyle(
                                 fontSize: 12,
+                                fontWeight: FontWeight.w500,
                                 color: ColorPalette.labelSecondary,
                               ),
                             ),

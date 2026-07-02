@@ -63,7 +63,7 @@ class _SummaryCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFE5E5EA)),
+            border: Border.all(color: ColorPalette.border),
             borderRadius: BorderRadius.circular(18),
           ),
           child: Column(
@@ -82,7 +82,7 @@ class _SummaryCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1C1C1E),
+                  color: ColorPalette.labelPrimary,
                   letterSpacing: -0.5,
                   height: 1,
                 ),

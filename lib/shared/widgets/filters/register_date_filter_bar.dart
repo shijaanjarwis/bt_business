@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/color_palette.dart';
-import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/register_date_period.dart';
+import '../chips/app_filter_chip.dart';
+import '../sheets/register_date_filter_sheet.dart';
 
 typedef RegisterDateFilterChanged = void Function(RegisterDatePeriod period);
 
-/// Today · This Week · This Month · More — shared register date chips.
+/// Today · This Week · This Month · Custom — shared register date chips.
 class RegisterDateFilterBar extends ConsumerWidget {
   const RegisterDateFilterBar({
     super.key,
@@ -24,104 +25,26 @@ class RegisterDateFilterBar extends ConsumerWidget {
   final RegisterDateFilterChanged onPeriodChanged;
   final void Function(DateTime start, DateTime end) onCustomRangeChanged;
 
-  Future<void> _openMoreSheet(BuildContext context) async {
-    var start = customStart ?? DateTime.now();
-    var end = customEnd ?? DateTime.now();
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            20,
-            20,
-            MediaQuery.viewPaddingOf(context).bottom + 20,
-          ),
-          child: StatefulBuilder(
-            builder: (context, setModalState) {
-              Future<void> pickStart() async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: start,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime.now(),
-                );
-                if (picked != null) {
-                  setModalState(() => start = picked);
-                }
-              }
-
-              Future<void> pickEnd() async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: end,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime.now(),
-                );
-                if (picked != null) {
-                  setModalState(() => end = picked);
-                }
-              }
-
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    'Date Range',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1C1C1E),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Tareekh chunein',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF48484A)),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _DatePickTile(
-                          label: 'Se',
-                          date: start,
-                          onTap: pickStart,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _DatePickTile(
-                          label: 'Tak',
-                          date: end,
-                          onTap: pickEnd,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: () {
-                      onPeriodChanged(RegisterDatePeriod.custom);
-                      onCustomRangeChanged(start, end);
-                      Navigator.pop(context);
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: ColorPalette.purple,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: const Text('Apply'),
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      },
+  Future<void> _openFilterSheet(BuildContext context) async {
+    final result = await RegisterDateFilterSheet.show(
+      context,
+      currentPeriod: period,
+      customStart: customStart,
+      customEnd: customEnd,
     );
+    if (result == null) return;
+
+    if (result.cleared) {
+      onPeriodChanged(RegisterDatePeriod.today);
+      return;
+    }
+
+    onPeriodChanged(result.period);
+    if (result.period == RegisterDatePeriod.custom &&
+        result.customStart != null &&
+        result.customEnd != null) {
+      onCustomRangeChanged(result.customStart!, result.customEnd!);
+    }
   }
 
   @override
@@ -137,60 +60,31 @@ class RegisterDateFilterBar extends ConsumerWidget {
           ])
             Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                label: Text(value.hindiLabel),
+              child: AppFilterChip(
+                label: value.englishLabel,
                 selected: period == value,
-                onSelected: (_) => onPeriodChanged(value),
-                selectedColor: ColorPalette.purple.withValues(alpha: 0.15),
-                checkmarkColor: ColorPalette.purple,
+                onSelected: () => onPeriodChanged(value),
               ),
             ),
-          FilterChip(
-            label: const Text('Aur…'),
+          AppFilterChip(
+            label: period == RegisterDatePeriod.custom
+                ? 'Custom'
+                : RegisterDatePeriod.custom.englishLabel,
             selected: period == RegisterDatePeriod.custom,
-            onSelected: (_) => _openMoreSheet(context),
-            selectedColor: ColorPalette.purple.withValues(alpha: 0.15),
-            checkmarkColor: ColorPalette.purple,
+            onSelected: () => _openFilterSheet(context),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: IconButton(
+              tooltip: 'Date filter',
+              onPressed: () => _openFilterSheet(context),
+              icon: const Icon(
+                Icons.calendar_month_outlined,
+                color: ColorPalette.iconPrimary,
+              ),
+            ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _DatePickTile extends StatelessWidget {
-  const _DatePickTile({
-    required this.label,
-    required this.date,
-    required this.onTap,
-  });
-
-  final String label;
-  final DateTime date;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF48484A))),
-              const SizedBox(height: 4),
-              Text(
-                DateFormatter.shortDate(date),
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

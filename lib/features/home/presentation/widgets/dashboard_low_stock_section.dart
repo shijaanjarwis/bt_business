@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../items/domain/entities/item.dart';
@@ -25,41 +27,45 @@ class DashboardLowStockSection extends StatelessWidget {
           hindi: 'Kam Stock',
           compact: true,
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.xs),
         const Text(
           'Ye maal jaldi khatam ho sakta hai',
           style: TextStyle(
             fontSize: 13,
+            fontWeight: FontWeight.w500,
             color: ColorPalette.labelSecondary,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         ...items.map(
           (item) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF4E5),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFFFD9A0)),
+                color: ColorPalette.warningSurface,
+                borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+                border: Border.all(color: ColorPalette.warningBorder),
               ),
               child: Row(
                 children: [
                   const Icon(
                     Icons.inventory_2_outlined,
-                    color: Color(0xFFFF9500),
-                    size: 20,
+                    color: ColorPalette.accentOrange,
+                    size: AppDimensions.iconSizeSm,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
                       item.name,
                       style: const TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1C1C1E),
+                        fontWeight: FontWeight.w700,
+                        color: ColorPalette.labelPrimary,
                       ),
                     ),
                   ),
@@ -68,7 +74,7 @@ class DashboardLowStockSection extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFFBF5F00),
+                      color: ColorPalette.warningText,
                     ),
                   ),
                 ],

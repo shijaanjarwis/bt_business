@@ -42,7 +42,7 @@ class TabPlaceholderPage extends StatelessWidget {
                     fontSize: 24,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.5,
-                    color: Color(0xFF1C1C1E),
+                    color: ColorPalette.labelPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),

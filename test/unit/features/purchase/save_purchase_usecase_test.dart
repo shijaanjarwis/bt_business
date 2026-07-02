@@ -13,12 +13,21 @@ class _FakePurchaseRepository implements PurchaseRepository {
     DateTime? fromDate,
     DateTime? toDate,
     PaymentMode? paymentMode,
+    double? minDueAmount,
+    double? minPaidAmount,
   }) {
     throw UnimplementedError();
   }
 
   @override
-  Future<Result<List<PurchaseInvoice>>> searchPurchases(String query) {
+  Future<Result<List<PurchaseInvoice>>> searchPurchases(
+    String query, {
+    DateTime? fromDate,
+    DateTime? toDate,
+    PaymentMode? paymentMode,
+    double? minDueAmount,
+    double? minPaidAmount,
+  }) {
     throw UnimplementedError();
   }
 

@@ -1,3 +1,4 @@
+import 'package:bt_business/core/errors/user_error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +9,7 @@ import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
+import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../domain/entities/party.dart';
 import '../providers/party_providers.dart';
 import '../utils/party_ledger_ui_helpers.dart';
@@ -33,8 +35,8 @@ class PartyDetailPage extends ConsumerWidget {
       error: (error, _) => Scaffold(
         body: AppErrorView(
           title: 'Hisaab load nahi ho paya',
-          message: error.toString(),
-          actionLabel: 'Wapas',
+          message: UserErrorMessages.from(error),
+          actionEnglish: 'Back', actionHindi: 'Wapas',
           onAction: () => context.pop(),
         ),
       ),
@@ -44,7 +46,7 @@ class PartyDetailPage extends ConsumerWidget {
             body: AppErrorView(
               title: 'Party nahi mili',
               message: 'Yeh naam hisaab mein nahi mila.',
-              actionLabel: 'Wapas',
+              actionEnglish: 'Back', actionHindi: 'Wapas',
               onAction: () => context.pop(),
             ),
           );
@@ -52,26 +54,17 @@ class PartyDetailPage extends ConsumerWidget {
 
         return Scaffold(
           backgroundColor: ColorPalette.background,
-          appBar: AppBar(
-            backgroundColor: ColorPalette.background,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_rounded),
-              onPressed: () => context.pop(),
-            ),
-            title: Text(
-              party.name,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
-            ),
+          appBar: AppRegisterAppBar(
+            english: party.name,
+            hindi: 'Party Hisaab',
           ),
           body: SafeArea(
             child: historyAsync.when(
               loading: () => const AppLoadingView(),
               error: (error, _) => AppErrorView(
                 title: 'History load nahi ho payi',
-                message: error.toString(),
-                actionLabel: 'Phir try karein',
+                message: UserErrorMessages.from(error),
+                actionEnglish: 'Try Again', actionHindi: 'Phir Try Karein',
                 onAction: () => ref.invalidate(partyHistoryProvider(partyId)),
               ),
               data: (entries) {
@@ -104,7 +97,7 @@ class PartyDetailPage extends ConsumerWidget {
                       const SizedBox(height: 4),
                       const Text(
                         'Sabse nayi entry upar · tap karke badlein',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF636366)),
+                        style: TextStyle(fontSize: 12, color: ColorPalette.labelSecondary),
                       ),
                       const SizedBox(height: 12),
                       if (timeline.isEmpty)
@@ -117,7 +110,7 @@ class PartyDetailPage extends ConsumerWidget {
                           child: const Center(
                             child: Text(
                               'Abhi koi entry nahi — upar se shuru karein',
-                              style: TextStyle(color: Color(0xFF636366)),
+                              style: TextStyle(color: ColorPalette.labelSecondary),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -177,7 +170,7 @@ class _PartyHeaderCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1C1C1E),
+                        color: ColorPalette.labelPrimary,
                       ),
                     ),
                   ),
@@ -190,7 +183,7 @@ class _PartyHeaderCard extends StatelessWidget {
                   party.phone,
                   style: const TextStyle(
                     fontSize: 15,
-                    color: Color(0xFF636366),
+                    color: ColorPalette.labelSecondary,
                   ),
                 ),
               ],

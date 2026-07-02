@@ -18,7 +18,7 @@ class RouterErrorPage extends StatelessWidget {
     return AppErrorView(
       title: 'Page not found',
       message: state.uri.toString(),
-      actionLabel: 'Go Home',
+      actionEnglish: 'Home', actionHindi: 'Ghar Jayein',
       onAction: () => context.go(RouteNames.home),
     );
   }

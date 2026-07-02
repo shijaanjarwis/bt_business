@@ -9,9 +9,18 @@ abstract interface class SaleRepository {
     DateTime? fromDate,
     DateTime? toDate,
     PaymentMode? paymentMode,
+    double? minDueAmount,
+    double? minPaidAmount,
   });
 
-  Future<Result<List<SaleEntry>>> searchSales(String query);
+  Future<Result<List<SaleEntry>>> searchSales(
+    String query, {
+    DateTime? fromDate,
+    DateTime? toDate,
+    PaymentMode? paymentMode,
+    double? minDueAmount,
+    double? minPaidAmount,
+  });
 
   Future<Result<SaleEntry?>> getSale(String id);
 
@@ -30,7 +39,9 @@ class SaveSaleInput {
     required this.paymentMode,
     required this.gstType,
     required this.lines,
+    this.paidAmount,
     this.notes,
+    this.reminderDate,
     this.existingCreatedAt,
   });
 
@@ -41,6 +52,8 @@ class SaveSaleInput {
   final PaymentMode paymentMode;
   final GstType gstType;
   final List<SaleLineInput> lines;
+  final double? paidAmount;
   final String? notes;
+  final DateTime? reminderDate;
   final DateTime? existingCreatedAt;
 }

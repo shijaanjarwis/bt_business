@@ -21,7 +21,12 @@ final class PartyLocalDataSource {
     return rows.first[BusinessTable.id] as String;
   }
 
-  Future<List<Party>> fetchParties({bool activeOnly = false}) async {
+  Future<List<Party>> fetchParties({
+    bool activeOnly = false,
+    bool receivableOnly = false,
+    bool payableOnly = false,
+    bool clearOnly = false,
+  }) async {
     final businessId = await currentBusinessId();
     if (businessId == null) return [];
 
@@ -30,6 +35,12 @@ final class PartyLocalDataSource {
     if (activeOnly) {
       where.write(' AND ${PartiesTable.isActive} = 1');
     }
+    _appendBalanceFilter(
+      where: where,
+      receivableOnly: receivableOnly,
+      payableOnly: payableOnly,
+      clearOnly: clearOnly,
+    );
 
     final rows = await _db.query(
       PartiesTable.tableName,
@@ -41,23 +52,40 @@ final class PartyLocalDataSource {
     return rows.map((row) => PartyModel.fromMap(row).toEntity()).toList();
   }
 
-  Future<List<Party>> searchParties(String query, {bool activeOnly = false}) async {
+  Future<List<Party>> searchParties(
+    String query, {
+    bool activeOnly = false,
+    bool receivableOnly = false,
+    bool payableOnly = false,
+    bool clearOnly = false,
+  }) async {
     final businessId = await currentBusinessId();
     if (businessId == null) return [];
 
     final trimmed = query.trim();
     if (trimmed.isEmpty) {
-      return fetchParties(activeOnly: activeOnly);
+      return fetchParties(
+        activeOnly: activeOnly,
+        receivableOnly: receivableOnly,
+        payableOnly: payableOnly,
+        clearOnly: clearOnly,
+      );
     }
 
     final pattern = '%$trimmed%';
     final where = StringBuffer(
-      '${PartiesTable.businessId} = ? AND (${PartiesTable.name} LIKE ? OR ${PartiesTable.phone} LIKE ?)',
+      '${PartiesTable.businessId} = ? AND (${PartiesTable.name} LIKE ? OR ${PartiesTable.phone} LIKE ? OR CAST(${PartiesTable.balance} AS TEXT) LIKE ?)',
     );
-    final args = <Object?>[businessId, pattern, pattern];
+    final args = <Object?>[businessId, pattern, pattern, pattern];
     if (activeOnly) {
       where.write(' AND ${PartiesTable.isActive} = 1');
     }
+    _appendBalanceFilter(
+      where: where,
+      receivableOnly: receivableOnly,
+      payableOnly: payableOnly,
+      clearOnly: clearOnly,
+    );
 
     final rows = await _db.query(
       PartiesTable.tableName,
@@ -67,6 +95,21 @@ final class PartyLocalDataSource {
     );
 
     return rows.map((row) => PartyModel.fromMap(row).toEntity()).toList();
+  }
+
+  void _appendBalanceFilter({
+    required StringBuffer where,
+    required bool receivableOnly,
+    required bool payableOnly,
+    required bool clearOnly,
+  }) {
+    if (receivableOnly) {
+      where.write(' AND ${PartiesTable.balance} > 0');
+    } else if (payableOnly) {
+      where.write(' AND ${PartiesTable.balance} < 0');
+    } else if (clearOnly) {
+      where.write(' AND ${PartiesTable.balance} = 0');
+    }
   }
 
   Future<Party?> fetchParty(String id) async {

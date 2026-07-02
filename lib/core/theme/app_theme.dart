@@ -22,7 +22,8 @@ abstract final class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         backgroundColor: ColorPalette.background,
-        foregroundColor: Colors.black,
+        foregroundColor: ColorPalette.iconPrimary,
+        iconTheme: IconThemeData(color: ColorPalette.iconPrimary),
         systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
       cardTheme: CardThemeData(

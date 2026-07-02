@@ -1,3 +1,4 @@
+import 'package:bt_business/core/errors/user_error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,8 +6,12 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
+import '../../../../shared/widgets/buttons/app_register_fab.dart';
+import '../../../../shared/widgets/chips/app_filter_chip.dart';
 import '../../../../shared/widgets/filters/register_date_filter_bar.dart';
+import '../../../../shared/widgets/inputs/app_search_field.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
+import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../models/payment_register_filter.dart';
@@ -30,6 +35,11 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
     super.dispose();
   }
 
+  void _clearSearch() {
+    _searchController.clear();
+    ref.read(paymentSearchQueryProvider.notifier).state = '';
+  }
+
   @override
   Widget build(BuildContext context) {
     final paymentsAsync = ref.watch(paymentListProvider);
@@ -40,56 +50,27 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
 
     return Scaffold(
       backgroundColor: ColorPalette.background,
-      appBar: AppBar(
-        backgroundColor: ColorPalette.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: const BilingualLabel(
-          english: 'Payment Register',
-          hindi: 'Jama Register',
-          compact: true,
-        ),
+      appBar: const AppRegisterAppBar(
+        english: 'Payment',
+        hindi: 'Paise Diye',
+      ),
+      floatingActionButton: AppRegisterFab(
+        onPressed: () => context.push(RouteNames.paymentsReceived),
+        english: 'Receive',
+        hindi: 'Paise Mile',
+        icon: Icons.call_received_rounded,
       ),
       body: SafeArea(
         child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: TextField(
+              child: AppSearchField(
                 controller: _searchController,
                 onChanged: (value) {
                   ref.read(paymentSearchQueryProvider.notifier).state = value;
-                  setState(() {});
                 },
-                decoration: InputDecoration(
-                  hintText: 'Party, mobile, rashi, tareekh…',
-                  prefixIcon: const Icon(Icons.search_rounded, color: ColorPalette.purple),
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_searchController.text.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 20),
-                          onPressed: () {
-                            _searchController.clear();
-                            ref.read(paymentSearchQueryProvider.notifier).state = '';
-                            setState(() {});
-                          },
-                        ),
-                      IconButton(
-                        icon: const Icon(Icons.mic_none_rounded, size: 22),
-                        onPressed: () {},
-                        tooltip: 'Awaz se khojo (jald)',
-                      ),
-                    ],
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
+                onClear: _clearSearch,
               ),
             ),
             Padding(
@@ -113,24 +94,24 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _FilterChip(
-                      label: 'Sab',
+                    AppFilterChip(
+                      label: 'All',
                       selected: filter == PaymentRegisterFilter.all,
                       onSelected: () => ref
                           .read(paymentRegisterFilterProvider.notifier)
                           .state = PaymentRegisterFilter.all,
                     ),
                     const SizedBox(width: 8),
-                    _FilterChip(
-                      label: 'Jama Liya',
+                    AppFilterChip(
+                      label: 'Receive',
                       selected: filter == PaymentRegisterFilter.received,
                       onSelected: () => ref
                           .read(paymentRegisterFilterProvider.notifier)
                           .state = PaymentRegisterFilter.received,
                     ),
                     const SizedBox(width: 8),
-                    _FilterChip(
-                      label: 'Paise Diye',
+                    AppFilterChip(
+                      label: 'Payment',
                       selected: filter == PaymentRegisterFilter.paid,
                       onSelected: () => ref
                           .read(paymentRegisterFilterProvider.notifier)
@@ -146,7 +127,7 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
                 children: [
                   Expanded(
                     child: _ActionButton(
-                      english: 'Cash Received',
+                      english: 'Receive',
                       hindi: 'Paise Mile',
                       color: const Color(0xFF34C759),
                       onTap: () => context.push(RouteNames.paymentsReceived),
@@ -156,7 +137,7 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
                   Expanded(
                     child: _ActionButton(
                       english: 'Payment',
-                      hindi: 'Paise Diya',
+                      hindi: 'Paise Diye',
                       color: const Color(0xFFFF9500),
                       onTap: () => context.push(RouteNames.paymentsPaid),
                     ),
@@ -170,8 +151,8 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
                 loading: () => const AppLoadingView(),
                 error: (error, _) => AppErrorView(
                   title: 'Register load nahi ho paya',
-                  message: error.toString(),
-                  actionLabel: 'Phir try karein',
+                  message: UserErrorMessages.from(error),
+                  actionEnglish: 'Try Again', actionHindi: 'Phir Try Karein',
                   onAction: () => ref.invalidate(paymentListProvider),
                 ),
                 data: (entries) {
@@ -183,7 +164,7 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
                         physics: const AlwaysScrollableScrollPhysics(
                           parent: BouncingScrollPhysics(),
                         ),
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
                         children: [
                           SizedBox(height: MediaQuery.sizeOf(context).height * 0.14),
                           const Center(
@@ -191,7 +172,7 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
                               'Pehla jama ya payment likhein',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Color(0xFF636366),
+                                color: ColorPalette.labelSecondary,
                               ),
                             ),
                           ),
@@ -208,7 +189,7 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
                       itemCount: entries.length + 1,
                       separatorBuilder: (context, index) {
                         if (index >= entries.length - 1) {
@@ -231,7 +212,7 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
                         final entry = entries[index];
                         return PaymentListTile(
                           entry: entry,
-                          onTap: () => context.push(RouteNames.paymentsEditPath(entry.id)),
+                          onTap: () => context.push(RouteNames.paymentsDetailPath(entry.id)),
                         );
                       },
                     ),
@@ -242,29 +223,6 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return FilterChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onSelected(),
-      selectedColor: ColorPalette.purple.withValues(alpha: 0.15),
-      checkmarkColor: ColorPalette.purple,
     );
   }
 }
@@ -304,8 +262,8 @@ class _ActionButton extends StatelessWidget {
                 fontSize: 14,
               ),
               hindiStyle: TextStyle(
-                fontWeight: FontWeight.w400,
-                color: color.withValues(alpha: 0.85),
+                fontWeight: FontWeight.w500,
+                color: color.withValues(alpha: 0.9),
                 fontSize: 12,
               ),
             ),

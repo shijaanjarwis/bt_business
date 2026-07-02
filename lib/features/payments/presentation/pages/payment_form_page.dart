@@ -1,3 +1,4 @@
+import 'package:bt_business/core/errors/user_error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,14 +14,16 @@ import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
+import '../../../../shared/widgets/inputs/app_party_picker_field.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
+import '../../../../shared/widgets/inputs/reminder_date_field.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
-import '../../../ledger/domain/entities/opening_balance_direction.dart';
+import '../../../../shared/widgets/layout/app_form_section.dart';
+import '../../../../shared/widgets/pickers/show_party_picker.dart';
+import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../../ledger/domain/entities/party.dart';
 import '../../../ledger/domain/entities/party_type.dart';
-import '../../../ledger/domain/repositories/party_repository.dart';
 import '../../../ledger/presentation/providers/party_providers.dart';
-import '../../../sales/presentation/providers/sale_providers.dart';
 import '../../domain/entities/payment_register_entry.dart';
 import '../providers/payment_providers.dart';
 
@@ -49,7 +52,6 @@ class PaymentFormPage extends ConsumerStatefulWidget {
 
 class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
   final _formKey = GlobalKey<FormState>();
-  final _partyQueryController = TextEditingController();
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
 
@@ -61,12 +63,12 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
   bool _editHydrated = false;
   bool _isSaving = false;
   bool _isDeleting = false;
+  DateTime? _reminderDate;
 
   bool get isReceived => _mode == PaymentFormMode.received;
 
   @override
   void dispose() {
-    _partyQueryController.dispose();
     _amountController.dispose();
     _noteController.dispose();
     super.dispose();
@@ -88,6 +90,7 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
     _dateTime = entry.createdAt;
     _amountController.text = _formatAmount(entry.amount);
     _noteController.text = entry.note ?? '';
+    _reminderDate = entry.reminderDate;
     _selectedParty = Party(
       id: entry.partyId,
       businessId: '',
@@ -101,7 +104,6 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
       createdAt: entry.createdAt,
       updatedAt: entry.createdAt,
     );
-    _partyQueryController.text = entry.partyName;
     _editHydrated = true;
   }
 
@@ -110,10 +112,7 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
     final result = await ref.read(getPartyUseCaseProvider)(widget.initialPartyId!);
     final party = result.valueOrNull;
     if (party != null && mounted) {
-      setState(() {
-        _selectedParty = party;
-        _partyQueryController.text = party.name;
-      });
+      setState(() => _selectedParty = party);
     }
   }
 
@@ -122,42 +121,8 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
     return value.toStringAsFixed(2);
   }
 
-  void _selectParty(Party party) {
-    setState(() {
-      _selectedParty = party;
-      _partyQueryController.text = party.name;
-    });
-  }
-
-  void _clearParty() {
-    setState(() {
-      _selectedParty = null;
-      _partyQueryController.clear();
-    });
-  }
-
   void _setQuickAmount(int amount) {
     setState(() => _amountController.text = amount.toString());
-  }
-
-  Future<void> _createPartyFromQuery(String name) async {
-    final result = await ref.read(savePartyUseCaseProvider)(
-      SavePartyInput(
-        name: name,
-        type: PartyType.both,
-        phone: '',
-        address: '',
-        openingAmount: 0,
-        openingDirection: OpeningBalanceDirection.receivable,
-        isActive: true,
-      ),
-    );
-    if (result.isFailure) {
-      _showMessage(result.failureOrNull!.message);
-      return;
-    }
-    notifyDataChanged(ref);
-    _selectParty(result.valueOrNull!);
   }
 
   Future<void> _pickDate() async {
@@ -221,6 +186,7 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
         dateTime: _dateTime,
         note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
         id: _existing?.id,
+        reminderDate: _reminderDate,
       );
 
       if (result.isFailure) {
@@ -251,10 +217,23 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
         title: Text(isReceived ? 'Yeh jama delete karein?' : 'Yeh payment delete karein?'),
         content: const Text('Entry hat jayegi aur hisaab wapas adjust ho jayega.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Rahne dein')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const BilingualLabel(
+              english: 'Cancel',
+              hindi: 'Cancel',
+              compact: true,
+            ),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const BilingualLabel(
+              english: 'Delete',
+              hindi: 'Delete Karein',
+              compact: true,
+              englishStyle: TextStyle(color: ColorPalette.destructive),
+              hindiStyle: TextStyle(color: ColorPalette.destructive),
+            ),
           ),
         ],
       ),
@@ -289,8 +268,8 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
         error: (error, _) => Scaffold(
           body: AppErrorView(
             title: 'Entry load nahi ho payi',
-            message: error.toString(),
-            actionLabel: 'Wapas',
+            message: UserErrorMessages.from(error),
+            actionEnglish: 'Back', actionHindi: 'Wapas',
             onAction: () => context.pop(),
           ),
         ),
@@ -300,7 +279,7 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
               body: AppErrorView(
                 title: 'Entry nahi mili',
                 message: 'Yeh payment ab available nahi hai.',
-                actionLabel: 'Wapas',
+                actionEnglish: 'Back', actionHindi: 'Wapas',
                 onAction: () => context.pop(),
               ),
             );
@@ -326,30 +305,21 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
   }
 
   Widget _buildForm() {
-    final partyQuery = _partyQueryController.text;
-    final partiesAsync = ref.watch(salePartySearchProvider(partyQuery));
     final englishTitle = widget.isEdit
         ? (isReceived ? 'Edit Cash Received' : 'Edit Payment')
         : (isReceived ? 'Cash Received' : 'Payment');
     final hindiTitle = widget.isEdit
         ? (isReceived ? 'Paise Mile Badlo' : 'Paise Diya Badlo')
         : (isReceived ? 'Paise Mile' : 'Paise Diya');
-    final saveLabel = isReceived ? 'Paise Mile Save' : 'Paise Diya Save';
 
     return Scaffold(
       backgroundColor: ColorPalette.background,
-      appBar: AppBar(
-        backgroundColor: ColorPalette.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
+      appBar: AppRegisterAppBar(
+        english: englishTitle,
+        hindi: hindiTitle,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
-        ),
-        title: BilingualLabel(
-          english: englishTitle,
-          hindi: hindiTitle,
-          compact: true,
         ),
       ),
       body: SafeArea(
@@ -361,81 +331,16 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                   children: [
-                    _SectionCard(
-                      title: 'Party',
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          TextField(
-                            controller: _partyQueryController,
-                            onChanged: (_) {
-                              if (_selectedParty != null &&
-                                  _partyQueryController.text.trim() !=
-                                      _selectedParty!.name) {
-                                _selectedParty = null;
-                              }
-                              setState(() {});
-                            },
-                            decoration: InputDecoration(
-                              hintText: 'Party chuniye',
-                              filled: true,
-                              fillColor: ColorPalette.background,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              suffixIcon: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (_selectedParty != null || partyQuery.isNotEmpty)
-                                    IconButton(
-                                      icon: const Icon(Icons.close_rounded, size: 20),
-                                      onPressed: _clearParty,
-                                    ),
-                                  IconButton(
-                                    icon: const Icon(Icons.mic_none_rounded, size: 22),
-                                    onPressed: () {},
-                                    tooltip: 'Awaz se likhein (jald)',
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          if (_selectedParty == null && partyQuery.trim().isNotEmpty)
-                            partiesAsync.when(
-                              loading: () => const SizedBox.shrink(),
-                              error: (_, _) => const SizedBox.shrink(),
-                              data: (parties) {
-                                if (parties.isEmpty) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(top: 8),
-                                    child: TextButton(
-                                      onPressed: () =>
-                                          _createPartyFromQuery(partyQuery.trim()),
-                                      child: Text('"$partyQuery" jodein · Naya party'),
-                                    ),
-                                  );
-                                }
-                                return Column(
-                                  children: parties.take(4).map((party) {
-                                    return ListTile(
-                                      dense: true,
-                                      contentPadding: EdgeInsets.zero,
-                                      title: Text(party.name),
-                                      subtitle:
-                                          party.phone.isEmpty ? null : Text(party.phone),
-                                      onTap: () => _selectParty(party),
-                                    );
-                                  }).toList(),
-                                );
-                              },
-                            ),
-                        ],
-                      ),
+                    AppPartyPickerField(
+                      party: _selectedParty,
+                      onChanged: (party) => setState(() => _selectedParty = party),
+                      scope: PartyPickerScope.register,
+                      allowClear: false,
                     ),
                     const SizedBox(height: 12),
-                    _SectionCard(
-                      title: 'Rashi',
+                    AppFormSection(
+                      english: 'Amount',
+                      hindi: 'Rashi',
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -453,7 +358,7 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
                               prefixText: '₹ ',
                               hintText: '0',
                               filled: true,
-                              fillColor: Color(0xFFF5F5F7),
+                              fillColor: ColorPalette.fieldFill,
                               border: OutlineInputBorder(
                                 borderSide: BorderSide.none,
                                 borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -477,8 +382,9 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _SectionCard(
-                      title: 'Tareekh · Samay',
+                    AppFormSection(
+                      english: 'Date · Time',
+                      hindi: 'Tareekh · Samay',
                       child: Column(
                         children: [
                           ListTile(
@@ -499,23 +405,35 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _SectionCard(
-                      title: 'Note',
+                    AppFormSection(
+                      english: 'Reminder',
+                      hindi: 'Reminder',
+                      child: ReminderDateField(
+                        reminderDate: _reminderDate,
+                        onChanged: (date) => setState(() => _reminderDate = date),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    AppFormSection(
+                      english: 'Note',
+                      hindi: 'Note',
                       child: AppTextField(
+                        english: 'Note',
+                        hindi: 'Note',
+                        helper: 'Optional',
                         controller: _noteController,
-                        label: 'Note (optional)',
                         maxLines: 2,
                       ),
                     ),
                     if (widget.isEdit) ...[
                       const SizedBox(height: 16),
-                      TextButton.icon(
+                      AppPrimaryButton(
+                        english: 'Delete',
+                        hindi: 'Delete Karein',
+                        destructive: true,
+                        compact: true,
+                        isLoading: _isDeleting,
                         onPressed: _isDeleting ? null : _handleDelete,
-                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
-                        label: Text(
-                          isReceived ? 'Jama Delete Karein' : 'Payment Delete Karein',
-                          style: const TextStyle(color: Colors.red),
-                        ),
                       ),
                     ],
                     const DeveloperFooter(),
@@ -540,7 +458,8 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
                   ],
                 ),
                 child: AppPrimaryButton(
-                  label: saveLabel,
+                  english: 'Save',
+                  hindi: 'Save Karein',
                   isLoading: _isSaving,
                   onPressed: _save,
                 ),
@@ -548,45 +467,6 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.title,
-    required this.child,
-  });
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
       ),
     );
   }

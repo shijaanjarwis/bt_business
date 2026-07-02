@@ -11,6 +11,7 @@ import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../../shared/widgets/layout/responsive_form_container.dart';
+import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../domain/repositories/expense_repository.dart';
 import '../providers/payment_providers.dart';
 
@@ -86,14 +87,9 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ColorPalette.background,
-      appBar: AppBar(
-        backgroundColor: ColorPalette.background,
-        elevation: 0,
-        title: const BilingualLabel(
-          english: 'Kharch',
-          hindi: 'Kharcha likho',
-          compact: true,
-        ),
+      appBar: const AppRegisterAppBar(
+        english: 'Expense',
+        hindi: 'Kharcha likho',
       ),
       body: SafeArea(
         child: Form(
@@ -106,8 +102,9 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     AppTextField(
+                      english: 'Expense Name',
+                      hindi: 'Naam',
                       controller: _nameController,
-                      label: 'Expense Name · Naam',
                       validator: (value) =>
                           Validators.requiredText(value, fieldName: 'Naam'),
                     ),
@@ -127,7 +124,7 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const BilingualLabel(
-                                      english: 'Date · Tareekh',
+                                      english: 'Date',
                                       hindi: 'Kab hua',
                                       compact: true,
                                     ),
@@ -153,20 +150,24 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
                     ),
                     const SizedBox(height: 16),
                     AppTextField(
+                      english: 'Amount',
+                      hindi: 'Kitna',
                       controller: _amountController,
-                      label: 'Amount · Kitna',
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       validator: Validators.positiveAmount,
                     ),
                     const SizedBox(height: 16),
                     AppTextField(
+                      english: 'Note',
+                      hindi: 'Yaad',
                       controller: _noteController,
-                      label: 'Note (optional) · Yaad',
+                      helper: 'Optional',
                       maxLines: 2,
                     ),
                     const SizedBox(height: 28),
                     AppPrimaryButton(
-                      label: 'Save · Save karein',
+                      english: 'Save',
+                      hindi: 'Save Karein',
                       isLoading: _isSaving,
                       onPressed: _save,
                     ),

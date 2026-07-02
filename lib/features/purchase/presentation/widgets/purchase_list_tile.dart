@@ -47,7 +47,7 @@ class PurchaseListTile extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1C1C1E),
+                        color: ColorPalette.labelPrimary,
                       ),
                     ),
                   ),
@@ -75,14 +75,14 @@ class PurchaseListTile extends StatelessWidget {
                     value: CurrencyFormatter.format(invoice.dueAmount),
                     color: invoice.dueAmount > 0
                         ? Colors.orange.shade800
-                        : const Color(0xFF636366),
+                        : ColorPalette.labelSecondary,
                   ),
                   const Spacer(),
                   Text(
                     '${DateFormatter.shortDate(invoice.date)} · $timeLabel',
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF636366),
+                      color: ColorPalette.labelSecondary,
                     ),
                   ),
                 ],

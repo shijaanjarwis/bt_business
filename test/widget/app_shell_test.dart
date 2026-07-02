@@ -28,18 +28,19 @@ void main() {
     );
     await tester.pump();
     await tester.pump(AppBranding.splashDuration);
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(AppBranding.splashFadeDuration);
     await tester.pumpAndSettle();
 
+    expect(find.text('Dashboard'), findsNWidgets(2));
+    expect(find.text('(Home)'), findsOneWidget);
     expect(find.text("Today's Sale"), findsOneWidget);
-    expect(find.text('Aaj Ki Bikri'), findsOneWidget);
+    expect(find.text('(Aaj Ki Bikri)'), findsOneWidget);
     expect(find.text("Today's Cash"), findsOneWidget);
-    expect(find.text('Aaj Cash Mila'), findsOneWidget);
+    expect(find.text('(Aaj Cash Mila)'), findsOneWidget);
     expect(find.text('Cash In Hand'), findsOneWidget);
-    expect(find.text('Maal Becha'), findsOneWidget);
-    expect(find.text('Kharcha'), findsOneWidget);
+    expect(find.text('(Bikri Likho)'), findsOneWidget);
+    expect(find.text('(Kharcha Likho)'), findsOneWidget);
     expect(find.text('Voice'), findsOneWidget);
-    expect(find.text('Dashboard'), findsOneWidget);
   });
 }
 

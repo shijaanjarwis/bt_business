@@ -7,7 +7,7 @@ import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/app_branding.dart';
 import '../../../../features/business/presentation/providers/business_providers.dart';
 
-/// Premium launch screen — logo, title, then dashboard.
+/// Premium launch screen — purple background, logo, fade to dashboard.
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
 
@@ -19,19 +19,27 @@ class _SplashPageState extends ConsumerState<SplashPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _fadeController;
   late final Animation<double> _contentOpacity;
+  late final Animation<double> _logoScale;
 
   @override
   void initState() {
     super.initState();
     _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: AppBranding.splashFadeDuration,
       value: 1,
     );
     _contentOpacity = CurvedAnimation(
       parent: _fadeController,
       curve: Curves.easeInOut,
     );
+    _logoScale = Tween<double>(begin: 0.92, end: 1).animate(
+      CurvedAnimation(
+        parent: _fadeController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+    _fadeController.forward(from: 0);
     WidgetsBinding.instance.addPostFrameCallback((_) => _finishSplash());
   }
 
@@ -45,7 +53,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
     if (!mounted) return;
 
     _fadeController.reverse(from: 1);
-    await Future<void>.delayed(const Duration(milliseconds: 380));
+    await Future<void>.delayed(AppBranding.splashFadeDuration);
     if (!mounted) return;
 
     final router = GoRouter.maybeOf(context);
@@ -64,7 +72,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ColorPalette.splashBackground,
       body: FadeTransition(
         opacity: _contentOpacity,
         child: Center(
@@ -73,26 +81,40 @@ class _SplashPageState extends ConsumerState<SplashPage>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _SplashLogo(),
+                ScaleTransition(
+                  scale: _logoScale,
+                  child: const _SplashLogo(),
+                ),
                 const SizedBox(height: 28),
                 const Text(
                   AppBranding.appName,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
                     letterSpacing: -0.6,
-                    color: Color(0xFF1C1C1E),
+                    color: Colors.white,
                     height: 1.1,
                   ),
                 ),
-                const SizedBox(height: 36),
-                SizedBox(
-                  width: 28,
-                  height: 28,
+                const SizedBox(height: 8),
+                const Text(
+                  AppBranding.splashTagline,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white70,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 40),
+                const SizedBox(
+                  width: 32,
+                  height: 32,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    color: ColorPalette.purple.withValues(alpha: 0.85),
+                    color: Colors.white,
                   ),
                 ),
               ],
@@ -105,25 +127,26 @@ class _SplashPageState extends ConsumerState<SplashPage>
 }
 
 class _SplashLogo extends StatelessWidget {
+  const _SplashLogo();
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 96,
-      height: 96,
+      width: 112,
+      height: 112,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE5E5EA)),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: ColorPalette.purple.withValues(alpha: 0.06),
-            blurRadius: 28,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 32,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       child: Image.asset(
         AppBranding.logoAssetPath,
         fit: BoxFit.contain,
@@ -139,7 +162,7 @@ class _SplashLogo extends StatelessWidget {
               'BT',
               style: TextStyle(
                 color: ColorPalette.purple,
-                fontSize: 28,
+                fontSize: 32,
                 fontWeight: FontWeight.w800,
               ),
             ),

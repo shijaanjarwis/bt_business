@@ -62,6 +62,7 @@ class PurchaseInvoice {
     required this.lines,
     required this.createdAt,
     required this.updatedAt,
+    this.reminderDate,
   });
 
   final String id;
@@ -85,6 +86,9 @@ class PurchaseInvoice {
   final List<PurchaseLine> lines;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime? reminderDate;
+
+  bool get isPending => dueAmount > 0;
 }
 
 /// Draft line input before persistence.

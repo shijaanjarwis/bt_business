@@ -1,3 +1,4 @@
+import 'package:bt_business/core/errors/user_error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +8,9 @@ import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
-import '../../../../shared/widgets/labels/bilingual_label.dart';
+import '../../../../shared/widgets/buttons/app_register_fab.dart';
+import '../../../../shared/widgets/inputs/app_search_field.dart';
+import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../providers/item_providers.dart';
 import '../widgets/item_list_tile.dart';
 
@@ -35,66 +38,30 @@ class _ItemListPageState extends ConsumerState<ItemListPage> {
 
     return Scaffold(
       backgroundColor: ColorPalette.background,
-      appBar: AppBar(
-        backgroundColor: ColorPalette.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: const BilingualLabel(
-          english: 'Items',
-          hindi: 'Maal',
-          compact: true,
-        ),
+      appBar: const AppRegisterAppBar(
+        english: 'Goods',
+        hindi: 'Maal',
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: AppRegisterFab(
         onPressed: () => context.push(RouteNames.stockNew),
-        backgroundColor: ColorPalette.purple,
-        icon: const Icon(Icons.add_rounded),
-        label: const BilingualLabel(
-          english: 'Add Item',
-          hindi: 'Maal Jodein',
-          compact: true,
-        ),
+        english: 'Add Item',
+        hindi: 'Maal Jodein',
+        icon: Icons.add_rounded,
       ),
       body: SafeArea(
         child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: TextField(
+              child: AppSearchField(
                 controller: _searchController,
                 onChanged: (value) {
                   ref.read(itemSearchQueryProvider.notifier).state = value;
-                  setState(() {});
                 },
-                decoration: InputDecoration(
-                  hintText: 'Naam ya unit se khojo…',
-                  prefixIcon: const Icon(Icons.search_rounded, color: ColorPalette.purple),
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_searchController.text.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 20),
-                          onPressed: () {
-                            _searchController.clear();
-                            ref.read(itemSearchQueryProvider.notifier).state = '';
-                            setState(() {});
-                          },
-                        ),
-                      IconButton(
-                        icon: const Icon(Icons.mic_none_rounded, size: 22),
-                        onPressed: () {},
-                        tooltip: 'Awaz se khojo (jald)',
-                      ),
-                    ],
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
+                onClear: () {
+                  _searchController.clear();
+                  ref.read(itemSearchQueryProvider.notifier).state = '';
+                },
               ),
             ),
             Expanded(
@@ -102,8 +69,8 @@ class _ItemListPageState extends ConsumerState<ItemListPage> {
                 loading: () => const AppLoadingView(),
                 error: (error, _) => AppErrorView(
                   title: 'Maal load nahi ho paya',
-                  message: error.toString(),
-                  actionLabel: 'Phir try karein',
+                  message: UserErrorMessages.from(error),
+                  actionEnglish: 'Try Again', actionHindi: 'Phir Try Karein',
                   onAction: () => ref.invalidate(itemSearchProvider(query)),
                 ),
                 data: (items) {
@@ -126,7 +93,7 @@ class _ItemListPageState extends ConsumerState<ItemListPage> {
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontSize: 16,
-                                color: Color(0xFF636366),
+                                color: ColorPalette.labelSecondary,
                               ),
                             ),
                           ),

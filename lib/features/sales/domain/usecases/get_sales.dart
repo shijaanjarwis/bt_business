@@ -15,6 +15,8 @@ final class GetSalesUseCase implements UseCase<List<SaleEntry>, GetSalesParams> 
       fromDate: params.fromDate,
       toDate: params.toDate,
       paymentMode: params.paymentMode,
+      minDueAmount: params.minDueAmount,
+      minPaidAmount: params.minPaidAmount,
     );
   }
 }
@@ -24,9 +26,13 @@ class GetSalesParams {
     this.fromDate,
     this.toDate,
     this.paymentMode,
+    this.minDueAmount,
+    this.minPaidAmount,
   });
 
   final DateTime? fromDate;
   final DateTime? toDate;
   final PaymentMode? paymentMode;
+  final double? minDueAmount;
+  final double? minPaidAmount;
 }

@@ -15,8 +15,9 @@ abstract final class AppTextStyles {
         letterSpacing: -0.3,
       ),
       titleSmall: base.titleSmall?.copyWith(
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
         letterSpacing: -0.2,
+        color: ColorPalette.labelPrimary,
       ),
       bodySmall: base.bodySmall?.copyWith(
         height: 1.35,

@@ -1,3 +1,4 @@
+import 'package:bt_business/core/errors/user_error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,8 +11,10 @@ import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
-import '../../../../shared/widgets/layout/responsive_form_container.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
+import '../../../../shared/widgets/layout/app_form_section.dart';
+import '../../../../shared/widgets/layout/responsive_form_container.dart';
+import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../domain/entities/opening_balance_direction.dart';
 import '../../domain/entities/party.dart';
 import '../../domain/entities/party_type.dart';
@@ -144,10 +147,23 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
         title: const Text('Delete this name?'),
         content: const Text('Yeh hisaab hamesha ke liye delete ho jayega.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const BilingualLabel(
+              english: 'Cancel',
+              hindi: 'Cancel',
+              compact: true,
+            ),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const BilingualLabel(
+              english: 'Delete',
+              hindi: 'Delete Karein',
+              compact: true,
+              englishStyle: TextStyle(color: ColorPalette.destructive),
+              hindiStyle: TextStyle(color: ColorPalette.destructive),
+            ),
           ),
         ],
       ),
@@ -190,8 +206,8 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
         error: (error, _) => Scaffold(
           body: AppErrorView(
             title: 'Load nahi ho payi',
-            message: error.toString(),
-            actionLabel: 'Back',
+            message: UserErrorMessages.from(error),
+            actionEnglish: 'Back', actionHindi: 'Wapas',
             onAction: () => context.pop(),
           ),
         ),
@@ -201,7 +217,7 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
               body: AppErrorView(
                 title: 'Not found',
                 message: 'Yeh naam nahi mila.',
-                actionLabel: 'Back',
+                actionEnglish: 'Back', actionHindi: 'Wapas',
                 onAction: () => context.pop(),
               ),
             );
@@ -225,19 +241,17 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
   Widget _buildForm(String? formKey) {
     return Scaffold(
       backgroundColor: ColorPalette.background,
-      appBar: AppBar(
-        backgroundColor: ColorPalette.background,
-        elevation: 0,
-        title: BilingualLabel(
-          english: widget.isEdit ? 'Edit Name' : 'New Name',
-          hindi: widget.isEdit ? 'Naam badlo' : 'Naya naam jodein',
-          compact: true,
-        ),
+      appBar: AppRegisterAppBar(
+        english: widget.isEdit ? 'Edit Party' : 'New Party',
+        hindi: widget.isEdit ? 'Party Badlo' : 'Naya Party',
         actions: [
           if (widget.isEdit)
             IconButton(
               onPressed: _isDeleting ? null : _handleDelete,
-              icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+              icon: const Icon(
+                Icons.delete_outline_rounded,
+                color: ColorPalette.destructive,
+              ),
             ),
         ],
       ),
@@ -252,70 +266,88 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    AppTextField(
-                      controller: _nameController,
-                      label: 'Name · Naam',
-                      textInputAction: TextInputAction.next,
-                      validator: (value) =>
-                          Validators.requiredText(value, fieldName: 'Name'),
+                    AppFormSection(
+                      english: 'Party Details',
+                      hindi: 'Party Ki Jaankari',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          AppTextField(
+                            english: 'Name',
+                            hindi: 'Naam',
+                            controller: _nameController,
+                            textInputAction: TextInputAction.next,
+                            validator: (value) =>
+                                Validators.requiredText(value, fieldName: 'Name'),
+                          ),
+                          const SizedBox(height: 16),
+                          AppTextField(
+                            english: 'Mobile (optional)',
+                            hindi: 'Mobile (optional)',
+                            controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            textInputAction: TextInputAction.next,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) return null;
+                              return Validators.indianPhone(value);
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    AppTextField(
-                      controller: _phoneController,
-                      label: 'Mobile (optional) · Mobile',
-                      keyboardType: TextInputType.phone,
-                      textInputAction: TextInputAction.next,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) return null;
-                        return Validators.indianPhone(value);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    const SizedBox(height: 4),
-                    const BilingualLabel(
+                    AppFormSection(
                       english: 'Previous balance (optional)',
                       hindi: 'Pehle se baaki (optional)',
-                      compact: true,
-                    ),
-                    const SizedBox(height: 8),
-                    IgnorePointer(
-                      ignoring: _hasOtherTransactions,
-                      child: Opacity(
-                        opacity: _hasOtherTransactions ? 0.55 : 1,
-                        child: AppTextField(
-                          controller: _previousBalanceController,
-                          label: 'Amount · Raashi',
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          validator: Validators.nonNegativeAmount,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          IgnorePointer(
+                            ignoring: _hasOtherTransactions,
+                            child: Opacity(
+                              opacity: _hasOtherTransactions ? 0.55 : 1,
+                              child: AppTextField(
+                                english: 'Amount',
+                                hindi: 'Raashi',
+                                controller: _previousBalanceController,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(decimal: true),
+                                validator: Validators.nonNegativeAmount,
+                              ),
+                            ),
+                          ),
+                          if (_hasOtherTransactions)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                'Pehle se baaki ab badla nahi ja sakta — entries ho chuki hain.',
+                                style: TextStyle(fontSize: 12, color: Colors.orange.shade800),
+                              ),
+                            ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            children: OpeningBalanceDirection.values.map((direction) {
+                              final selected = _previousDirection == direction;
+                              return ChoiceChip(
+                                label: Text(
+                                  '${direction.englishLabel} · ${direction.hindiLabel}',
+                                ),
+                                selected: selected,
+                                onSelected: _hasOtherTransactions
+                                    ? null
+                                    : (_) => setState(() => _previousDirection = direction),
+                                selectedColor: ColorPalette.purple.withValues(alpha: 0.15),
+                              );
+                            }).toList(),
+                          ),
+                        ],
                       ),
-                    ),
-                    if (_hasOtherTransactions)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          'Pehle se baaki ab badla nahi ja sakta — entries ho chuki hain.',
-                          style: TextStyle(fontSize: 12, color: Colors.orange.shade800),
-                        ),
-                      ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      children: OpeningBalanceDirection.values.map((direction) {
-                        final selected = _previousDirection == direction;
-                        return ChoiceChip(
-                          label: Text('${direction.englishLabel} · ${direction.hindiLabel}'),
-                          selected: selected,
-                          onSelected: _hasOtherTransactions
-                              ? null
-                              : (_) => setState(() => _previousDirection = direction),
-                          selectedColor: ColorPalette.purple.withValues(alpha: 0.15),
-                        );
-                      }).toList(),
                     ),
                     const SizedBox(height: 28),
                     AppPrimaryButton(
-                      label: widget.isEdit ? 'Save · Save karein' : 'Add · Jodein',
+                      english: widget.isEdit ? 'Save' : 'Add',
+                      hindi: widget.isEdit ? 'Save Karein' : 'Jodein',
                       isLoading: _isSaving,
                       onPressed: _handleSave,
                     ),

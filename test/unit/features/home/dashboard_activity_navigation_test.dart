@@ -1,5 +1,4 @@
 import 'package:bt_business/core/accounting/transaction_types.dart';
-import 'package:bt_business/core/router/route_names.dart';
 import 'package:bt_business/features/home/presentation/utils/dashboard_activity_navigation.dart';
 import 'package:bt_business/features/reports/data/datasources/transaction_history_local_datasource.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
-  testWidgets('payment activity opens edit screen not blank form', (tester) async {
+  testWidgets('payment activity opens detail screen not blank form', (tester) async {
     const paymentId = 'pay-123';
     final router = GoRouter(
       routes: [
@@ -25,7 +24,7 @@ void main() {
                       date: DateTime(2026, 6, 30),
                       createdAt: DateTime(2026, 6, 30, 10),
                       amount: 500,
-                      label: 'Paise Mile',
+                      label: 'Receive',
                       partyName: 'Ram',
                     ),
                   );
@@ -36,8 +35,8 @@ void main() {
           ),
         ),
         GoRoute(
-          path: '/payments/:id/edit',
-          builder: (_, state) => Text('edit:${state.pathParameters['id']}'),
+          path: '/payments/:id',
+          builder: (_, state) => Text('detail:${state.pathParameters['id']}'),
         ),
       ],
     );
@@ -46,7 +45,6 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    expect(find.text('edit:$paymentId'), findsOneWidget);
-    expect(find.text(RouteNames.paymentsReceived), findsNothing);
+    expect(find.text('detail:$paymentId'), findsOneWidget);
   });
 }

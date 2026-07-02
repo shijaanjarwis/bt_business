@@ -38,6 +38,8 @@ final class TransactionHistoryLocalDataSource {
   Future<List<TransactionHistoryEntry>> fetchHistory({
     required DateTime start,
     required DateTime end,
+    String searchQuery = '',
+    int limit = 500,
   }) async {
     try {
       final businessId = await _currentBusinessId();
@@ -45,6 +47,35 @@ final class TransactionHistoryLocalDataSource {
 
       final startIso = DateFormatter.isoDate(start);
       final endIso = DateFormatter.isoDate(end);
+      final trimmedSearch = searchQuery.trim();
+      final searchPattern =
+          trimmedSearch.isEmpty ? null : '%$trimmedSearch%';
+
+      final where = StringBuffer(
+        '''
+        t.${TransactionsTable.businessId} = ?
+          AND t.${TransactionsTable.date} >= ?
+          AND t.${TransactionsTable.date} <= ?
+          AND t.${TransactionsTable.deletedAt} IS NULL
+          AND (
+            t.${TransactionsTable.type} != ?
+            OR t.${TransactionsTable.notes} = 'Opening balance'
+          )
+        ''',
+      );
+      final args = <Object?>[businessId, startIso, endIso, TransactionTypes.journal];
+
+      if (searchPattern != null) {
+        where.write(
+          '''
+           AND (IFNULL(p.${PartiesTable.name}, '') LIKE ?
+             OR IFNULL(t.${TransactionsTable.notes}, '') LIKE ?
+             OR t.${TransactionsTable.date} LIKE ?
+             OR CAST(t.${TransactionsTable.totalAmount} AS TEXT) LIKE ?)
+          ''',
+        );
+        args.addAll([searchPattern, searchPattern, searchPattern, searchPattern]);
+      }
 
       final rows = await _db.rawQuery(
         '''
@@ -59,18 +90,11 @@ final class TransactionHistoryLocalDataSource {
         FROM ${TransactionsTable.tableName} t
         LEFT JOIN ${PartiesTable.tableName} p
           ON t.${TransactionsTable.partyId} = p.${PartiesTable.id}
-        WHERE t.${TransactionsTable.businessId} = ?
-          AND t.${TransactionsTable.date} >= ?
-          AND t.${TransactionsTable.date} <= ?
-          AND t.${TransactionsTable.deletedAt} IS NULL
-          AND (
-            t.${TransactionsTable.type} != ?
-            OR t.${TransactionsTable.notes} = 'Opening balance'
-          )
+        WHERE $where
         ORDER BY t.${TransactionsTable.date} DESC, t.${TransactionsTable.createdAt} DESC
-        LIMIT 500
+        LIMIT ?
         ''',
-        [businessId, startIso, endIso, TransactionTypes.journal],
+        [...args, limit],
       );
 
       final transactions = rows.map((row) {
@@ -88,11 +112,13 @@ final class TransactionHistoryLocalDataSource {
         );
       }).toList();
 
-      final partyEvents = await _fetchPartyEvents(
-        businessId: businessId,
-        start: start,
-        end: end,
-      );
+      final partyEvents = searchPattern == null
+          ? await _fetchPartyEvents(
+              businessId: businessId,
+              start: start,
+              end: end,
+            )
+          : <TransactionHistoryEntry>[];
 
       final combined = [...transactions, ...partyEvents]
         ..sort((a, b) {
@@ -104,6 +130,13 @@ final class TransactionHistoryLocalDataSource {
     } catch (error) {
       throw DatabaseException('Failed to load transaction history: $error');
     }
+  }
+
+  /// Latest register rows for dashboard — no wide date scan.
+  Future<List<TransactionHistoryEntry>> fetchRecentActivity({int limit = 5}) async {
+    final now = DateTime.now();
+    final start = DateTime(now.year - 5, now.month, now.day);
+    return fetchHistory(start: start, end: now, limit: limit);
   }
 
   Future<List<TransactionHistoryEntry>> _fetchPartyEvents({

@@ -1,18 +1,19 @@
-import '../../../../data/local/database/seeders/cash_customer_seeder.dart';
+import '../../../../shared/utils/register_party_label.dart';
 import '../../domain/entities/sale_entry.dart';
 import '../models/sale_register_filter.dart';
 
-/// Presentation helpers for sale screens — no business-rule changes.
+/// Presentation helpers for sale screens.
 abstract final class SaleUiHelpers {
   static bool isCashCustomerParty({
     required String partyId,
     required String partyName,
     String? cashCustomerPartyId,
   }) {
-    if (cashCustomerPartyId != null && partyId == cashCustomerPartyId) {
-      return true;
-    }
-    return partyName == CashCustomerSeeder.displayName;
+    return RegisterPartyLabel.isCashCustomerParty(
+      partyId: partyId,
+      partyName: partyName,
+      cashCustomerPartyId: cashCustomerPartyId,
+    );
   }
 
   static String partyLabel({
@@ -20,14 +21,11 @@ abstract final class SaleUiHelpers {
     required String partyName,
     String? cashCustomerPartyId,
   }) {
-    if (isCashCustomerParty(
+    return RegisterPartyLabel.saleTitle(
       partyId: partyId,
       partyName: partyName,
       cashCustomerPartyId: cashCustomerPartyId,
-    )) {
-      return 'Cash Bikri';
-    }
-    return partyName;
+    );
   }
 
   static bool matchesRegisterFilter(SaleEntry entry, SaleRegisterFilter filter) {

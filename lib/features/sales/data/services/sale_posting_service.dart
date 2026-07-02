@@ -7,6 +7,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/utils/gst_calculator.dart';
 import '../../../../core/utils/id_generator.dart';
+import '../../../../core/reminders/reminder_service.dart';
 import '../../../../data/local/database/tables/accounting_tables.dart';
 import '../../domain/entities/sale_entry.dart';
 import '../../domain/repositories/sale_repository.dart';
@@ -28,6 +29,20 @@ final class SalePostingService {
     if (totals.grandTotal <= 0) {
       throw const ValidationException('Sale amount must be greater than zero');
     }
+
+    final paidAmount = (input.paidAmount ?? totals.grandTotal)
+        .clamp(0, totals.grandTotal)
+        .toDouble();
+    if (paidAmount < 0) {
+      throw const ValidationException('Paid amount cannot be negative');
+    }
+
+    final dueAmount = totals.grandTotal - paidAmount;
+    final reminderDate = ReminderService.effectiveReminderDate(
+      transactionType: TransactionTypes.sale,
+      dueAmount: dueAmount,
+      requestedReminderDate: input.reminderDate,
+    );
 
     await _validateStock(input.lines, excludeTransactionId: input.id);
 
@@ -51,6 +66,9 @@ final class SalePostingService {
         TransactionsTable.invoiceNo: entryNo,
         TransactionsTable.notes: input.notes?.trim(),
         TransactionsTable.totalAmount: totals.grandTotal,
+        TransactionsTable.paidAmount: paidAmount,
+        TransactionsTable.dueAmount: dueAmount,
+        TransactionsTable.reminderDate: ReminderService.reminderDateIso(reminderDate),
         TransactionsTable.paymentMode: input.paymentMode.code,
         TransactionsTable.gstType: input.gstType.code,
         TransactionsTable.subtotal: totals.subtotal,

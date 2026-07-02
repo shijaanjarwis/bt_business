@@ -37,13 +37,13 @@ final deleteBusinessUseCaseProvider = Provider<DeleteBusinessUseCase>((ref) {
 
 /// Whether a business profile exists — drives onboarding redirect.
 final businessGateProvider = FutureProvider<bool>((ref) async {
-  final result = await ref.watch(getBusinessUseCaseProvider)(const NoParams());
+  final result = await ref.read(getBusinessUseCaseProvider)(const NoParams());
   return result.isSuccess && result.valueOrNull != null;
 });
 
 /// Current business profile for display and editing.
 final businessProfileProvider = FutureProvider((ref) async {
-  final result = await ref.watch(getBusinessUseCaseProvider)(const NoParams());
+  final result = await ref.read(getBusinessUseCaseProvider)(const NoParams());
   if (result.isFailure) {
     throw result.failureOrNull!;
   }

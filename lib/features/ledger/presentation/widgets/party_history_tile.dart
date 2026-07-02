@@ -49,7 +49,7 @@ class PartyHistoryTile extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1C1C1E),
+                        color: ColorPalette.labelPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -58,7 +58,7 @@ class PartyHistoryTile extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1C1C1E),
+                        color: ColorPalette.labelPrimary,
                       ),
                     ),
                     const SizedBox(height: 6),

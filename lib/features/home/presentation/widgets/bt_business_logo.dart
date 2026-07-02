@@ -24,7 +24,7 @@ class BtBusinessLogo extends StatelessWidget {
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.5,
-                  color: Color(0xFF1C1C1E),
+                  color: ColorPalette.labelPrimary,
                   height: 1.15,
                 ),
               ),
@@ -61,7 +61,7 @@ class _BrandLogo extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: const Color(0xFFE5E5EA),
+          color: ColorPalette.border,
           width: 1,
         ),
       ),

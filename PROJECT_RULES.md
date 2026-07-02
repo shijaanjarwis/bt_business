@@ -8,6 +8,27 @@ These rules apply to the **entire project** and must always be followed unless e
 
 ---
 
+## Permanent Product Philosophy
+
+**BT Business must always remain a Digital Business Register.** It must **never** become a full accounting ERP, Tally replacement, or inventory management system.
+
+Every feature decision, screen, and label must pass this filter:
+
+1. **Every new feature must save the shopkeeper's time.**
+2. **Every screen should be understandable** by a person who has **never used accounting software**.
+3. **If a feature increases complexity more than value, reject it.**
+4. **One-screen completion** is preferred over multi-step workflows.
+5. **Every action should require the minimum number of taps.**
+6. **Hindi-first language** remains the default across the application.
+7. **Technical words must never be exposed to users** unless absolutely necessary.
+8. **Existing workflows should be improved** instead of adding duplicate features.
+9. **Speed, simplicity, and reliability** always take priority over feature count.
+10. **BT Business should feel like a digital version of a shopkeeper's notebook** — not accounting software, not an ERP, not inventory software.
+
+When any other rule in this document conflicts with simplicity for the shopkeeper, **choose the notebook**.
+
+---
+
 # BT Business – Permanent UX & Branding Rules
 
 ## 1. Simplicity First
@@ -361,7 +382,9 @@ Use wording like *“preserves existing internal data compatibility”* — neve
 
 ### GST and extra fields
 
-Do **not** introduce GST %, HSN, tax category, brand, description, images, barcode, SKU, or weight in Item Master unless explicitly approved by the project owner.
+Do **not** introduce GST %, HSN, tax category, brand, description, images, barcode, SKU, or weight in **Item Master** unless explicitly approved by the project owner.
+
+Optional GST **calculation on Sale/Purchase entries** is a separate **Phase C** feature (see Roadmap) — not Item Master, not GST return software.
 
 ---
 
@@ -418,13 +441,137 @@ Unless product rules are deliberately revised in this file **by the project owne
 
 - **Any inventory / stock management** (see Section 12 — permanently disabled)
 - Invoice printing, PDF bills, e-way bills
-- GST breakup screens, HSN/SAC fields, tax invoices
+- **GST return filing**, GSTR reports, tax reconciliation, or compliance workflows
+- HSN/SAC fields, tax invoices, CGST/SGST/IGST breakup screens
 - Journal entries, vouchers, debit/credit UI
 - Chart of accounts, stock groups, item codes
 - Tally-style masters, ledgers, or report builders
 - Forced categorization, tags, or metadata the shopkeeper would not write in a notebook
 
-Business profile may collect GSTIN optionally for future use — **never** surface GSTIN in daily register flows.
+**Note:** Optional entry-time GST **calculation** on Sale/Purchase (Phase C — see Roadmap) is **not** GST return software. It is a register helper only.
+
+Business profile may collect GSTIN optionally for future use — **never** surface GSTIN in daily register flows unless project owner approves a specific flow.
+
+---
+
+## Roadmap
+
+Features are phased. **Phase C is frozen** — specification and rules only; **no implementation** (no code, UI, database, routes, calculations, or migrations) until all production gates below are passed.
+
+| Phase | Status | Focus |
+|-------|--------|--------|
+| **Phase A** | ✅ Complete | Register engine, SQLite, recalculation |
+| **Phase B** | 🔄 In progress | Finish remaining approved register UI work |
+| **Phase C** | 🔒 **Frozen (docs only)** | Optional GST entry helper — no implementation until production stability + owner approval |
+
+---
+
+## Development priority (permanent workflow)
+
+**Documentation is COMPLETE and FROZEN.** Do **not** add new permanent rules, philosophy, roadmap items, architecture documents, planning documents, or design documents unless the **project owner explicitly requests** them.
+
+**Primary focus from now on:** implementation, testing, polishing, and stability — not documentation.
+
+### Development lifecycle (follow in order)
+
+1. **Complete the remaining approved Phase B work.**
+2. **Commit clean and reviewable code.**
+3. **Generate Release APK builds.**
+4. **Perform real-world shop testing** with actual business usage.
+5. **Fix every bug** discovered during testing.
+6. **Improve performance** — startup speed, scrolling, responsiveness.
+7. **Polish UX** without changing approved workflows.
+8. **Prepare production-ready stable release.**
+9. **Collect real user feedback.**
+10. **Only after production stability and project owner approval** may Phase C begin.
+
+```
+Phase A                    ✅ Complete
+Phase B                    → finish remaining approved work
+Clean commits & review
+Release APK
+Real-world shop testing
+Bug fixes
+Performance & polish (no workflow changes without approval)
+Production-ready release
+User feedback
+Phase C (optional)         🔒 only after stability + owner approval
+```
+
+**Phase C implementation gate:** Steps 4–9 satisfied **and** explicit project owner approval required. Phase C spec remains **frozen documentation only** until then.
+
+### Permanent development rules
+
+- **No feature creep.**
+- **No unnecessary refactoring.**
+- **No UI redesign** unless explicitly approved.
+- **No workflow changes** without approval.
+- **Every code change must have a clear business purpose.**
+- **Stability is more important than new features.**
+- **Simplicity is more important than feature count.**
+- **Real user feedback overrides assumptions.**
+- **Never modify previously approved business rules** in this document without project owner approval.
+- **Always wait for project owner review** before starting the next major phase.
+
+### Default mode for all contributors and AI assistants
+
+Unless the project owner **explicitly requests planning or documentation**, assume they want **implementation only** — code, tests, bug fixes, performance, and polish aligned with this workflow.
+
+---
+
+### Phase C — FROZEN (documentation only)
+
+**Do not implement Phase C** in code, UI, database schema, routes, calculations, or migrations until the Development priority gates above are met.
+
+Phase C remains an **approved future specification** — not active development.
+
+**BT Business is NOT a GST accounting application.** The GST feature exists **only** to make Sale and Purchase entry easier. Phase C must remain an **optional transaction-entry helper** — never accounting software, never inventory software, never GST return software.
+
+#### Purpose (when eventually implemented)
+
+Help shopkeepers **calculate GST while creating a Sale or Purchase entry** — convenience only. BT Business remains a **Digital Register**.
+
+#### Permanent rules (Phase C GST) — frozen spec
+
+1. **GST is optional.** Default = **OFF** on every Sale and Purchase entry.
+2. **User manually enters GST %.** No predefined tax slabs, no dropdown of government rates — type any percentage.
+3. **User chooses one calculation mode:**
+   - **GST Extra** — GST added on top of taxable amount
+   - **GST Included** — GST already embedded in the amount shown
+4. **App automatically calculates** (updates instantly while typing):
+   - Taxable Amount
+   - GST Amount
+   - Final Total
+5. **GST values are stored only with that transaction** — not as master data or party/item attributes.
+6. **GST never belongs to Item Master** — no GST %, HSN, or tax fields on Maal create/edit.
+7. **No GST reports** of any kind.
+8. **No GSTR-1.**
+9. **No GSTR-3B.**
+10. **No Input Tax Credit (ITC).**
+11. **No Output Tax reports.**
+12. **No HSN management.**
+13. **No E-Invoice.**
+14. **No GST filing** — no government submission, reconciliation, or compliance workflows.
+15. **This feature must never change BT Business into accounting software** — register-style entry only.
+
+#### Entry UI spec (when GST = ON) — design reference only
+
+| Element | Behaviour |
+|---------|-------------|
+| **GST Applied?** | Toggle Yes / No — default **No** |
+| **GST %** | Manual entry only |
+| **Mode** | **GST Extra** or **GST Included** (user picks one) |
+| **Taxable Amount** | Auto-calculated |
+| **GST Amount** | Auto-calculated |
+| **Final Total** | Auto-calculated |
+
+#### Save & display spec
+
+- Persist GST fields **on the Sale/Purchase transaction row only**.
+- Register / history may show a **small indicator only**, e.g. `GST 18%`, `GST Extra`, or `GST Included`.
+- **No** invoice generation, PDF bills, or tax breakup screens.
+
+Do not expand Phase C scope beyond these permanent rules without **explicit project owner approval**.
 
 ---
 
@@ -447,7 +594,7 @@ Business profile may collect GSTIN optionally for future use — **never** surfa
 
 ## When building new features
 
-Before shipping, verify (see also Section 11 above):
+Before shipping, verify (see also **Permanent Product Philosophy** and Section 11 above):
 
 1. Can a shopkeeper finish this in **2–3 taps**?
 2. Does the form have **≤ 6 fields**?
@@ -461,6 +608,9 @@ Before shipping, verify (see also Section 11 above):
 10. Does branding stay **consistent** (logo, footer, spacing)?
 11. If it feels like Tally — **remove or simplify**.
 12. Does this introduce **inventory or stock management**? If yes — **reject** unless the project owner explicitly approves (Section 12).
+13. Is this **Phase C** work? **Stop** — Phase C is **frozen** (docs only). Do not implement until Development priority gates pass and the project owner approves (see Roadmap).
+14. Does this delay **real-world testing, bug fixes, performance work, production APK, or user feedback**? If yes — **defer** and fix stability first.
+15. Would user feedback-driven **workflow changes** be more valuable than this? If yes — **prioritize feedback** over new features.
 
 ---
 
@@ -476,4 +626,12 @@ The codebase may retain double-entry posting, GST calculation, and SQLite accoun
 - `.cursor/rules/digital-register.mdc` mirrors these rules for AI-assisted development in Cursor.
 - If this file and the codebase disagree, **update the codebase to match this file** — not the other way around.
 
-*Last updated: June 2026 — Digital register scope, Item Master terminology cleanup, and permanent no-inventory product rule (Section 12).*
+### Documentation freeze (permanent)
+
+**All project documentation is COMPLETE and FROZEN.**
+
+Do not expand `PROJECT_RULES.md`, `README.md`, cursor rules, roadmaps, architecture notes, or planning docs unless the project owner **explicitly requests** a documentation change.
+
+Future work follows the **Development priority (permanent workflow)** section above — implementation, testing, polish, and stability first.
+
+*Last updated: June 2026 — Documentation frozen; permanent development workflow active.*

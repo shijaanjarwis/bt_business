@@ -1,5 +1,6 @@
 import '../../../../core/accounting/gst_types.dart';
 import '../../../../core/accounting/payment_modes.dart';
+import '../../../../core/reminders/reminder_service.dart';
 import '../../../../data/local/database/tables/accounting_tables.dart';
 import '../../domain/entities/purchase_invoice.dart';
 
@@ -17,7 +18,7 @@ final class PurchaseInvoiceModel {
       invoice: PurchaseInvoice(
         id: map[TransactionsTable.id]! as String,
         businessId: map[TransactionsTable.businessId]! as String,
-        invoiceNo: map[TransactionsTable.invoiceNo]! as String? ?? '',
+        invoiceNo: map[TransactionsTable.invoiceNo] as String? ?? '',
         date: DateTime.parse(map[TransactionsTable.date]! as String),
         partyId: map[TransactionsTable.partyId]! as String,
         partyName: map['party_name']! as String,
@@ -37,6 +38,9 @@ final class PurchaseInvoiceModel {
         grandTotal: (map[TransactionsTable.totalAmount] as num?)?.toDouble() ?? 0,
         paidAmount: (map[TransactionsTable.paidAmount] as num?)?.toDouble() ?? 0,
         dueAmount: (map[TransactionsTable.dueAmount] as num?)?.toDouble() ?? 0,
+        reminderDate: ReminderService.parseReminderDate(
+          map[TransactionsTable.reminderDate] as String?,
+        ),
         lines: lines,
         createdAt: DateTime.parse(map[TransactionsTable.createdAt]! as String),
         updatedAt: DateTime.parse(map[TransactionsTable.updatedAt]! as String),

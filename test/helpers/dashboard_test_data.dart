@@ -12,7 +12,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 Future<Database> createTestDatabase() async {
   return openDatabase(
     inMemoryDatabasePath,
-    version: 6,
+    version: 8,
     singleInstance: false,
     onConfigure: (db) async {
       await db.execute('PRAGMA foreign_keys = ON');

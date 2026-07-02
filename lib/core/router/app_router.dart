@@ -1,4 +1,5 @@
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -12,11 +13,14 @@ import '../../features/items/presentation/pages/item_list_page.dart';
 import '../../features/ledger/presentation/pages/ledger_page.dart';
 import '../../features/ledger/presentation/pages/party_detail_page.dart';
 import '../../features/ledger/presentation/pages/party_form_page.dart';
+import '../../features/sales/presentation/pages/sale_detail_page.dart';
 import '../../features/sales/presentation/pages/sale_form_page.dart';
 import '../../features/sales/presentation/pages/sale_list_page.dart';
 import '../../features/payments/presentation/pages/expense_form_page.dart';
+import '../../features/payments/presentation/pages/payment_detail_page.dart';
 import '../../features/payments/presentation/pages/payment_form_page.dart';
 import '../../features/payments/presentation/pages/payment_register_page.dart';
+import '../../features/purchase/presentation/pages/purchase_detail_page.dart';
 import '../../features/purchase/presentation/pages/purchase_form_page.dart';
 import '../../features/purchase/presentation/pages/purchase_list_page.dart';
 import '../../features/reports/presentation/pages/transaction_history_page.dart';
@@ -24,6 +28,9 @@ import '../../shared/widgets/scaffold/keep_alive_tab.dart';
 import 'router_error_page.dart';
 import 'router_refresh_notifier.dart';
 import 'route_names.dart';
+
+/// Root navigator for notification taps and deep links.
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final refreshNotifier = ref.watch(routerRefreshNotifierProvider);
@@ -36,6 +43,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   });
 
   final router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: RouteNames.splash,
     refreshListenable: refreshNotifier,
     redirect: (context, state) {
@@ -127,6 +135,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                         builder: (context, state) => PaymentFormPage(
                           mode: PaymentFormMode.received,
                           paymentId: state.pathParameters['id'],
+                        ),
+                      ),
+                      GoRoute(
+                        path: ':id',
+                        name: RouteNames.paymentsDetailName,
+                        builder: (context, state) => PaymentDetailPage(
+                          paymentId: state.pathParameters['id']!,
                         ),
                       ),
                     ],
@@ -228,6 +243,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       saleId: state.pathParameters['id'],
                     ),
                   ),
+                  GoRoute(
+                    path: ':id',
+                    name: RouteNames.salesDetailName,
+                    builder: (context, state) => SaleDetailPage(
+                      saleId: state.pathParameters['id']!,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -255,6 +277,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) => PurchaseFormPage(
                       mode: PurchaseFormMode.edit,
                       purchaseId: state.pathParameters['id'],
+                    ),
+                  ),
+                  GoRoute(
+                    path: ':id',
+                    name: RouteNames.purchasesDetailName,
+                    builder: (context, state) => PurchaseDetailPage(
+                      purchaseId: state.pathParameters['id']!,
                     ),
                   ),
                 ],

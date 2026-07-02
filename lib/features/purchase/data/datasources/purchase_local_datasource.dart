@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart' hide DatabaseException;
 
 import '../../../../core/accounting/payment_modes.dart';
 import '../../../../core/accounting/transaction_types.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../data/local/database/tables/accounting_tables.dart';
 import '../../../../features/business/data/datasources/business_table.dart';
@@ -25,6 +26,10 @@ final class PurchaseLocalDataSource {
     DateTime? fromDate,
     DateTime? toDate,
     PaymentMode? paymentMode,
+    double? minDueAmount,
+    double? minPaidAmount,
+    int? limit,
+    int offset = 0,
   }) async {
     final businessId = await currentBusinessId();
     if (businessId == null) return [];
@@ -34,18 +39,15 @@ final class PurchaseLocalDataSource {
     );
     final args = <Object?>[businessId, TransactionTypes.purchase];
 
-    if (fromDate != null) {
-      where.write(' AND t.${TransactionsTable.date} >= ?');
-      args.add(DateFormatter.isoDate(fromDate));
-    }
-    if (toDate != null) {
-      where.write(' AND t.${TransactionsTable.date} <= ?');
-      args.add(DateFormatter.isoDate(toDate));
-    }
-    if (paymentMode != null) {
-      where.write(' AND t.${TransactionsTable.paymentMode} = ?');
-      args.add(paymentMode.code);
-    }
+    _appendFilters(
+      where: where,
+      args: args,
+      fromDate: fromDate,
+      toDate: toDate,
+      paymentMode: paymentMode,
+      minDueAmount: minDueAmount,
+      minPaidAmount: minPaidAmount,
+    );
 
     final rows = await _db.rawQuery(
       '''
@@ -54,45 +56,94 @@ final class PurchaseLocalDataSource {
       INNER JOIN ${PartiesTable.tableName} p ON t.${TransactionsTable.partyId} = p.${PartiesTable.id}
       WHERE $where
       ORDER BY t.${TransactionsTable.date} DESC, t.${TransactionsTable.createdAt} DESC
+      LIMIT ? OFFSET ?
       ''',
-      args,
+      [...args, limit ?? AppConstants.registerListLimit, offset],
     );
 
-    return _mapInvoices(rows);
+    return _mapHeaders(rows);
   }
 
-  Future<List<PurchaseInvoice>> searchPurchases(String query) async {
+  Future<List<PurchaseInvoice>> searchPurchases(
+    String query, {
+    DateTime? fromDate,
+    DateTime? toDate,
+    PaymentMode? paymentMode,
+    double? minDueAmount,
+    double? minPaidAmount,
+    int? limit,
+    int offset = 0,
+  }) async {
     final businessId = await currentBusinessId();
     if (businessId == null) return [];
 
     final trimmed = query.trim();
-    if (trimmed.isEmpty) return fetchPurchases();
+    if (trimmed.isEmpty) {
+      return fetchPurchases(
+        fromDate: fromDate,
+        toDate: toDate,
+        paymentMode: paymentMode,
+        minDueAmount: minDueAmount,
+        minPaidAmount: minPaidAmount,
+        limit: limit,
+        offset: offset,
+      );
+    }
 
     final pattern = '%$trimmed%';
-    final rows = await _db.rawQuery(
+    final where = StringBuffer(
       '''
-      SELECT t.*, p.${PartiesTable.name} AS party_name
-      FROM ${TransactionsTable.tableName} t
-      INNER JOIN ${PartiesTable.tableName} p ON t.${TransactionsTable.partyId} = p.${PartiesTable.id}
-      WHERE t.${TransactionsTable.businessId} = ?
+      t.${TransactionsTable.businessId} = ?
         AND t.${TransactionsTable.type} = ?
         AND t.${TransactionsTable.deletedAt} IS NULL
         AND (t.${TransactionsTable.invoiceNo} LIKE ?
           OR p.${PartiesTable.name} LIKE ?
           OR p.${PartiesTable.phone} LIKE ?
           OR t.${TransactionsTable.date} LIKE ?
+          OR CAST(t.${TransactionsTable.totalAmount} AS TEXT) LIKE ?
+          OR IFNULL(t.${TransactionsTable.notes}, '') LIKE ?
           OR EXISTS (
             SELECT 1 FROM ${TransactionLinesTable.tableName} tl
             WHERE tl.${TransactionLinesTable.transactionId} = t.${TransactionsTable.id}
               AND tl.${TransactionLinesTable.deletedAt} IS NULL
               AND tl.${TransactionLinesTable.itemName} LIKE ?
           ))
-      ORDER BY t.${TransactionsTable.date} DESC, t.${TransactionsTable.createdAt} DESC
       ''',
-      [businessId, TransactionTypes.purchase, pattern, pattern, pattern, pattern, pattern],
+    );
+    final args = <Object?>[businessId, TransactionTypes.purchase];
+
+    _appendFilters(
+      where: where,
+      args: args,
+      fromDate: fromDate,
+      toDate: toDate,
+      paymentMode: paymentMode,
+      minDueAmount: minDueAmount,
+      minPaidAmount: minPaidAmount,
     );
 
-    return _mapInvoices(rows);
+    args
+      ..add(pattern)
+      ..add(pattern)
+      ..add(pattern)
+      ..add(pattern)
+      ..add(pattern)
+      ..add(pattern)
+      ..add(pattern);
+
+    final rows = await _db.rawQuery(
+      '''
+      SELECT t.*, p.${PartiesTable.name} AS party_name
+      FROM ${TransactionsTable.tableName} t
+      INNER JOIN ${PartiesTable.tableName} p ON t.${TransactionsTable.partyId} = p.${TransactionsTable.id}
+      WHERE $where
+      ORDER BY t.${TransactionsTable.date} DESC, t.${TransactionsTable.createdAt} DESC
+      LIMIT ? OFFSET ?
+      ''',
+      [...args, limit ?? AppConstants.registerListLimit, offset],
+    );
+
+    return _mapHeaders(rows);
   }
 
   Future<PurchaseInvoice?> fetchPurchase(String id) async {
@@ -137,14 +188,44 @@ final class PurchaseLocalDataSource {
     return rows.map((row) => SaleItemModel.fromMap(row).item).toList();
   }
 
-  Future<List<PurchaseInvoice>> _mapInvoices(List<Map<String, Object?>> rows) async {
-    final invoices = <PurchaseInvoice>[];
-    for (final row in rows) {
-      final id = row[TransactionsTable.id]! as String;
-      final lines = await _fetchLines(id);
-      invoices.add(PurchaseInvoiceModel.fromJoinedMap(row, lines: lines).invoice);
+  List<PurchaseInvoice> _mapHeaders(List<Map<String, Object?>> rows) {
+    return rows
+        .map(
+          (row) =>
+              PurchaseInvoiceModel.fromJoinedMap(row, lines: const []).invoice,
+        )
+        .toList();
+  }
+
+  void _appendFilters({
+    required StringBuffer where,
+    required List<Object?> args,
+    DateTime? fromDate,
+    DateTime? toDate,
+    PaymentMode? paymentMode,
+    double? minDueAmount,
+    double? minPaidAmount,
+  }) {
+    if (fromDate != null) {
+      where.write(' AND t.${TransactionsTable.date} >= ?');
+      args.add(DateFormatter.isoDate(fromDate));
     }
-    return invoices;
+    if (toDate != null) {
+      where.write(' AND t.${TransactionsTable.date} <= ?');
+      args.add(DateFormatter.isoDate(toDate));
+    }
+    if (paymentMode != null) {
+      where.write(' AND t.${TransactionsTable.paymentMode} = ?');
+      args.add(paymentMode.code);
+    }
+    if (minDueAmount != null) {
+      where.write(' AND t.${TransactionsTable.dueAmount} >= ?');
+      args.add(minDueAmount);
+    }
+    if (minPaidAmount != null) {
+      where.write(' AND t.${TransactionsTable.paidAmount} >= ?');
+      args.add(minPaidAmount);
+    }
   }
 
   Future<List<PurchaseLine>> _fetchLines(String transactionId) async {

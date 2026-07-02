@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/color_palette.dart';
+import '../../../../core/theme/transaction_badge_theme.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../shared/widgets/badges/app_transaction_badge.dart';
 import '../../data/datasources/transaction_history_local_datasource.dart';
 import '../utils/history_ui_helpers.dart';
 
@@ -21,10 +23,10 @@ class HistoryListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typeColor = HistoryUiHelpers.colorFor(entry);
-    final typeLabel = HistoryUiHelpers.typeLabel(entry);
+    final badgeKind = TransactionBadgeKind.fromTransactionType(entry.type);
     final showAmount = HistoryUiHelpers.showAmountFor(entry);
     final partyName = entry.partyName?.trim();
+    final subtitle = HistoryUiHelpers.typeLabel(entry);
 
     return Material(
       color: Colors.white,
@@ -40,12 +42,12 @@ class HistoryListTile extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: typeColor.withValues(alpha: 0.12),
+                  color: badgeKind.backgroundColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   HistoryUiHelpers.iconFor(entry),
-                  color: typeColor,
+                  color: badgeKind.foregroundColor,
                   size: 22,
                 ),
               ),
@@ -55,37 +57,21 @@ class HistoryListTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      partyName?.isNotEmpty == true ? partyName! : typeLabel,
+                      partyName?.isNotEmpty == true ? partyName! : subtitle,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1C1C1E),
+                        color: ColorPalette.labelPrimary,
                       ),
                     ),
-                    if (partyName?.isNotEmpty == true) ...[
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: typeColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          typeLabel,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: typeColor,
-                          ),
-                        ),
-                      ),
-                    ],
+                    const SizedBox(height: 6),
+                    AppTransactionBadge(kind: badgeKind, compact: true),
                     const SizedBox(height: 6),
                     Text(
                       '${DateFormatter.shortDate(entry.date)} · ${_timeFormat.format(entry.createdAt)}',
                       style: const TextStyle(
                         fontSize: 12,
-                        color: ColorPalette.labelTertiary,
+                        color: ColorPalette.labelSecondary,
                       ),
                     ),
                   ],

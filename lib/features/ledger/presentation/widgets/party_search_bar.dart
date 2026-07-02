@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/color_palette.dart';
+import '../../../../shared/widgets/inputs/app_search_field.dart';
 
 class PartySearchBar extends StatelessWidget {
   const PartySearchBar({
@@ -16,35 +16,10 @@ class PartySearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    return AppSearchField(
       controller: controller,
       onChanged: onChanged,
-      decoration: InputDecoration(
-        hintText: 'Party ya mobile…',
-        prefixIcon: const Icon(Icons.search_rounded, color: ColorPalette.purple),
-        suffixIcon: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (controller.text.isNotEmpty)
-              IconButton(
-                onPressed: onClear,
-                icon: const Icon(Icons.close_rounded, size: 20),
-              ),
-            IconButton(
-              icon: const Icon(Icons.mic_none_rounded, size: 22),
-              onPressed: () {},
-              tooltip: 'Awaz se khojo (jald)',
-            ),
-          ],
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      ),
+      onClear: onClear,
     );
   }
 }

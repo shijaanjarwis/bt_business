@@ -1,18 +1,19 @@
-import '../../../../data/local/database/seeders/cash_customer_seeder.dart';
+import '../../../../shared/utils/register_party_label.dart';
 import '../../domain/entities/purchase_invoice.dart';
 import '../models/purchase_register_filter.dart';
 
-/// Presentation helpers for purchase screens — no business-rule changes.
+/// Presentation helpers for purchase screens.
 abstract final class PurchaseUiHelpers {
   static bool isDefaultCashParty({
     required String partyId,
     required String partyName,
     String? defaultPartyId,
   }) {
-    if (defaultPartyId != null && partyId == defaultPartyId) {
-      return true;
-    }
-    return partyName == CashCustomerSeeder.displayName;
+    return RegisterPartyLabel.isCashCustomerParty(
+      partyId: partyId,
+      partyName: partyName,
+      cashCustomerPartyId: defaultPartyId,
+    );
   }
 
   static String partyLabel({
@@ -20,14 +21,11 @@ abstract final class PurchaseUiHelpers {
     required String partyName,
     String? defaultPartyId,
   }) {
-    if (isDefaultCashParty(
+    return RegisterPartyLabel.purchaseTitle(
       partyId: partyId,
       partyName: partyName,
-      defaultPartyId: defaultPartyId,
-    )) {
-      return 'Cash Kharid';
-    }
-    return partyName;
+      cashCustomerPartyId: defaultPartyId,
+    );
   }
 
   static bool matchesRegisterFilter(

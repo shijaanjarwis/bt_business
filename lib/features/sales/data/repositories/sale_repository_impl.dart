@@ -18,12 +18,16 @@ final class SaleRepositoryImpl implements SaleRepository {
     DateTime? fromDate,
     DateTime? toDate,
     PaymentMode? paymentMode,
+    double? minDueAmount,
+    double? minPaidAmount,
   }) async {
     try {
       final sales = await _localDataSource.fetchSales(
         fromDate: fromDate,
         toDate: toDate,
         paymentMode: paymentMode,
+        minDueAmount: minDueAmount,
+        minPaidAmount: minPaidAmount,
       );
       return Success(sales);
     } catch (error, stackTrace) {
@@ -32,9 +36,23 @@ final class SaleRepositoryImpl implements SaleRepository {
   }
 
   @override
-  Future<Result<List<SaleEntry>>> searchSales(String query) async {
+  Future<Result<List<SaleEntry>>> searchSales(
+    String query, {
+    DateTime? fromDate,
+    DateTime? toDate,
+    PaymentMode? paymentMode,
+    double? minDueAmount,
+    double? minPaidAmount,
+  }) async {
     try {
-      final sales = await _localDataSource.searchSales(query);
+      final sales = await _localDataSource.searchSales(
+        query,
+        fromDate: fromDate,
+        toDate: toDate,
+        paymentMode: paymentMode,
+        minDueAmount: minDueAmount,
+        minPaidAmount: minPaidAmount,
+      );
       return Success(sales);
     } catch (error, stackTrace) {
       return Error(ExceptionMapper.map(error, stackTrace));

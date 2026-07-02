@@ -15,7 +15,9 @@ import '../../data/services/expense_posting_service.dart';
 import '../../domain/entities/payment_register_entry.dart';
 import '../../domain/repositories/expense_repository.dart';
 import '../../domain/usecases/record_expense.dart';
+import '../../../../core/services/party_balance_after_service.dart';
 import '../../../../core/utils/register_date_period.dart';
+import '../../../../shared/utils/register_entry_sort.dart';
 import '../models/payment_register_filter.dart';
 import '../services/payment_register_actions.dart';
 
@@ -50,14 +52,19 @@ final paymentSearchQueryProvider = StateProvider<String>((ref) => '');
 final paymentRegisterFilterProvider =
     StateProvider<PaymentRegisterFilter>((ref) => PaymentRegisterFilter.all);
 
+final partyBalanceAfterServiceProvider = Provider<PartyBalanceAfterService>((ref) {
+  return PartyBalanceAfterService(ref.watch(partyLocalDataSourceProvider));
+});
+
 final paymentRegisterDatePeriodProvider = StateProvider<RegisterDatePeriod>(
-  (ref) => RegisterDatePeriod.thisMonth,
+  (ref) => RegisterDatePeriod.today,
 );
 
 final paymentRegisterCustomStartProvider = StateProvider<DateTime?>((ref) => null);
 final paymentRegisterCustomEndProvider = StateProvider<DateTime?>((ref) => null);
 
-final paymentListProvider = FutureProvider<List<PaymentRegisterEntry>>((ref) async {
+final paymentListProvider =
+    FutureProvider.autoDispose<List<PaymentRegisterEntry>>((ref) async {
   ref.watch(dataRevisionProvider);
 
   final query = ref.watch(paymentSearchQueryProvider);
@@ -66,42 +73,79 @@ final paymentListProvider = FutureProvider<List<PaymentRegisterEntry>>((ref) asy
   final customStart = ref.watch(paymentRegisterCustomStartProvider);
   final customEnd = ref.watch(paymentRegisterCustomEndProvider);
   final datasource = ref.watch(paymentRegisterLocalDataSourceProvider);
+  final range = RegisterDateRange.resolve(
+    period: datePeriod,
+    customStart: customStart,
+    customEnd: customEnd,
+  );
 
-  List<PaymentRegisterEntry> entries;
-  if (query.trim().isNotEmpty) {
-    entries = await datasource.searchPayments(query);
-  } else {
-    entries = await datasource.fetchPayments(filter: filter);
-  }
+  final entries = query.trim().isNotEmpty
+      ? await datasource.searchPayments(
+          query,
+          filter: filter,
+          fromDate: range.start,
+          toDate: range.end,
+        )
+      : await datasource.fetchPayments(
+          filter: filter,
+          fromDate: range.start,
+          toDate: range.end,
+        );
 
-  if (query.trim().isEmpty && filter != PaymentRegisterFilter.all) {
-    entries = entries.where((entry) {
-      return switch (filter) {
-        PaymentRegisterFilter.received => entry.isReceived,
-        PaymentRegisterFilter.paid => entry.isPaid,
-        PaymentRegisterFilter.all => true,
-      };
-    }).toList();
-  }
+  final sorted = [...entries]
+    ..sort(
+      (a, b) => RegisterEntrySort.compareDates(a.date, a.createdAt, b.date, b.createdAt),
+    );
 
-  entries = entries
-      .where(
-        (entry) => RegisterDateRange.includesDate(
+  final balances = await ref.read(partyBalanceAfterServiceProvider).balancesForTransactions(
+        sorted.map((entry) => (id: entry.id, partyId: entry.partyId)),
+      );
+
+  return sorted
+      .map(
+        (entry) => PaymentRegisterEntry(
+          id: entry.id,
+          type: entry.type,
+          partyId: entry.partyId,
+          partyName: entry.partyName,
+          partyPhone: entry.partyPhone,
+          amount: entry.amount,
           date: entry.date,
-          period: datePeriod,
-          customStart: customStart,
-          customEnd: customEnd,
+          createdAt: entry.createdAt,
+          note: entry.note,
+          paymentModeLabel: entry.paymentModeLabel,
+          balanceAfterPayment: balances[entry.id],
+          reminderDate: entry.reminderDate,
         ),
       )
       .toList();
-
-  return entries;
 });
 
 final paymentDetailProvider =
-    FutureProvider.family<PaymentRegisterEntry?, String>((ref, id) async {
+    FutureProvider.autoDispose.family<PaymentRegisterEntry?, String>((ref, id) async {
   ref.watch(dataRevisionProvider);
-  return ref.watch(paymentRegisterLocalDataSourceProvider).fetchPayment(id);
+  final entry = await ref.watch(paymentRegisterLocalDataSourceProvider).fetchPayment(id);
+  if (entry == null) return null;
+
+  final balance = await ref.read(partyBalanceAfterServiceProvider).balanceAfterTransaction(
+        partyId: entry.partyId,
+        transactionId: entry.id,
+      );
+
+  return PaymentRegisterEntry(
+    id: entry.id,
+    type: entry.type,
+    partyId: entry.partyId,
+    partyName: entry.partyName,
+    partyPhone: entry.partyPhone,
+    amount: entry.amount,
+    date: entry.date,
+    createdAt: entry.createdAt,
+    note: entry.note,
+    paymentModeLabel: entry.paymentModeLabel,
+    balanceAfterPayment: balance,
+    reminderDate: entry.reminderDate,
+  );
 });
 
 final currentBusinessIdProvider = FutureProvider<String?>((ref) async {
@@ -119,6 +163,7 @@ final savePaymentProvider = Provider<
   required DateTime dateTime,
   String? note,
   String? id,
+  DateTime? reminderDate,
 })>((ref) {
   return ({
     required bool isReceived,
@@ -127,6 +172,7 @@ final savePaymentProvider = Provider<
     required DateTime dateTime,
     String? note,
     String? id,
+    DateTime? reminderDate,
   }) async {
     final businessId = await ref.read(currentBusinessIdProvider.future);
     if (businessId == null) {
@@ -140,6 +186,7 @@ final savePaymentProvider = Provider<
           dateTime: dateTime,
           note: note,
           id: id,
+          reminderDate: reminderDate,
         );
   };
 });

@@ -20,14 +20,20 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Set Up Business'), findsOneWidget);
+    expect(find.text('(Dukaan Setup)'), findsOneWidget);
     expect(find.text('Business Name'), findsOneWidget);
-    expect(find.text('GSTIN (optional)'), findsOneWidget);
+    expect(find.text('GSTIN'), findsOneWidget);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -600));
+    await tester.scrollUntilVisible(
+      find.text('Continue'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Financial Year Starts'), findsOneWidget);
     expect(find.text('Currency'), findsOneWidget);
-    expect(find.text('Save & Continue'), findsOneWidget);
+    expect(find.text('Continue'), findsOneWidget);
+    expect(find.text('(Aage Badhein)'), findsOneWidget);
   });
 }

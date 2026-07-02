@@ -9,9 +9,18 @@ abstract interface class PurchaseRepository {
     DateTime? fromDate,
     DateTime? toDate,
     PaymentMode? paymentMode,
+    double? minDueAmount,
+    double? minPaidAmount,
   });
 
-  Future<Result<List<PurchaseInvoice>>> searchPurchases(String query);
+  Future<Result<List<PurchaseInvoice>>> searchPurchases(
+    String query, {
+    DateTime? fromDate,
+    DateTime? toDate,
+    PaymentMode? paymentMode,
+    double? minDueAmount,
+    double? minPaidAmount,
+  });
 
   Future<Result<PurchaseInvoice?>> getPurchase(String id);
 
@@ -30,7 +39,9 @@ class SavePurchaseInput {
     required this.paymentMode,
     required this.gstType,
     required this.lines,
+    this.paidAmount,
     this.notes,
+    this.reminderDate,
     this.existingCreatedAt,
   });
 
@@ -41,6 +52,8 @@ class SavePurchaseInput {
   final PaymentMode paymentMode;
   final GstType gstType;
   final List<PurchaseLineInput> lines;
+  final double? paidAmount;
   final String? notes;
+  final DateTime? reminderDate;
   final DateTime? existingCreatedAt;
 }

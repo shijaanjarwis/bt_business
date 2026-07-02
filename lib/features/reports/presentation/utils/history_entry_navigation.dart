@@ -6,20 +6,24 @@ import '../../../../core/router/route_names.dart';
 import '../../data/datasources/transaction_history_local_datasource.dart';
 import '../../domain/history_models.dart';
 
-/// Opens the existing edit screen for a register history row when supported.
-void openHistoryEntry(BuildContext context, TransactionHistoryEntry entry) {
+/// Opens the read-only detail screen for a register/history row.
+void openRegisterEntryDetail(
+  BuildContext context,
+  TransactionHistoryEntry entry,
+) {
   switch (entry.type) {
     case TransactionTypes.sale:
-      context.push(RouteNames.salesEditPath(entry.id));
+      context.push(RouteNames.salesDetailPath(entry.id));
     case TransactionTypes.purchase:
-      context.push(RouteNames.purchasesEditPath(entry.id));
+      context.push(RouteNames.purchasesDetailPath(entry.id));
     case TransactionTypes.paymentReceived:
     case TransactionTypes.paymentPaid:
+      context.push(RouteNames.paymentsDetailPath(entry.id));
     case TransactionTypes.expense:
       context.push(RouteNames.paymentsEditPath(entry.id));
     case HistoryEntryTypes.partyCreated:
     case HistoryEntryTypes.partyUpdated:
-      context.push(RouteNames.ledgerPartyEditPath(entry.id));
+      context.push(RouteNames.ledgerPartyDetailPath(entry.id));
     default:
       break;
   }

@@ -16,6 +16,7 @@ final class PaymentRegisterActions {
     required DateTime dateTime,
     String? note,
     String? id,
+    DateTime? reminderDate,
   }) async {
     try {
       final dateOnly = DateTime(dateTime.year, dateTime.month, dateTime.day);
@@ -28,6 +29,7 @@ final class PaymentRegisterActions {
               note: note,
               id: id,
               existingCreatedAt: dateTime,
+              reminderDate: reminderDate,
             )
           : await _postingService.recordPaid(
               businessId: businessId,
@@ -37,6 +39,7 @@ final class PaymentRegisterActions {
               note: note,
               id: id,
               existingCreatedAt: dateTime,
+              reminderDate: reminderDate,
             );
       return Success(transactionId);
     } catch (error, stackTrace) {

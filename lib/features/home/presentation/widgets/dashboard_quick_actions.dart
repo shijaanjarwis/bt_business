@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
@@ -19,44 +21,44 @@ class DashboardQuickActions extends StatelessWidget {
           hindi: 'Jaldi Kaam',
           compact: true,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.md),
         _QuickActionButton(
-          english: 'Sell',
-          hindi: 'Maal Becha',
+          english: 'Sale',
+          hindi: 'Bikri Likho',
           icon: Icons.edit_note_rounded,
           color: ColorPalette.purple,
           onTap: () => context.push(RouteNames.salesNew),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: AppSpacing.sm),
         _QuickActionButton(
           english: 'Purchase',
-          hindi: 'Maal Kharida',
+          hindi: 'Kharid Likho',
           icon: Icons.shopping_bag_outlined,
-          color: const Color(0xFF007AFF),
+          color: ColorPalette.accentBlue,
           onTap: () => context.push(RouteNames.purchasesNew),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: AppSpacing.sm),
         _QuickActionButton(
-          english: 'Cash Received',
+          english: 'Receive',
           hindi: 'Paise Mile',
           icon: Icons.call_received_rounded,
-          color: const Color(0xFF34C759),
+          color: ColorPalette.accentGreen,
           onTap: () => context.push(RouteNames.paymentsReceived),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: AppSpacing.sm),
         _QuickActionButton(
           english: 'Payment',
-          hindi: 'Paise Diya',
+          hindi: 'Paise Diye',
           icon: Icons.call_made_rounded,
-          color: const Color(0xFFFF9500),
+          color: ColorPalette.accentOrange,
           onTap: () => context.push(RouteNames.paymentsPaid),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: AppSpacing.sm),
         _QuickActionButton(
           english: 'Expense',
-          hindi: 'Kharcha',
-          icon: Icons.receipt_long_rounded,
-          color: ColorPalette.labelSecondary,
+          hindi: 'Kharcha Likho',
+          icon: Icons.receipt_long_outlined,
+          color: ColorPalette.labelPrimary,
           onTap: () => context.push(RouteNames.paymentsExpense),
         ),
       ],
@@ -82,29 +84,32 @@ class _QuickActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
+      color: ColorPalette.cardSurface,
+      borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.lg,
+          ),
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFE5E5EA)),
-            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: ColorPalette.border),
+            borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppDimensions.chipRadius),
                 ),
-                child: Icon(icon, color: color, size: 22),
+                child: Icon(icon, color: color, size: AppDimensions.iconSize),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: BilingualLabel(
                   english: english,
@@ -112,7 +117,10 @@ class _QuickActionButton extends StatelessWidget {
                   compact: true,
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, color: color.withValues(alpha: 0.8)),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: ColorPalette.iconPrimary,
+              ),
             ],
           ),
         ),

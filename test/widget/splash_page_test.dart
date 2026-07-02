@@ -23,10 +23,11 @@ void main() {
     await tester.pump();
     expect(find.text(AppBranding.appName), findsOneWidget);
     expect(find.byType(Image), findsOneWidget);
+    expect(find.text(AppBranding.splashTagline), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
     await tester.pump(AppBranding.splashDuration);
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(AppBranding.splashFadeDuration);
     await tester.pump();
   });
 
@@ -60,7 +61,7 @@ void main() {
 
     await tester.pump();
     await tester.pump(AppBranding.splashDuration);
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(AppBranding.splashFadeDuration);
     await tester.pumpAndSettle();
 
     expect(find.text('Dashboard'), findsOneWidget);
@@ -97,7 +98,7 @@ void main() {
 
     await tester.pump();
     await tester.pump(AppBranding.splashDuration);
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(AppBranding.splashFadeDuration);
     await tester.pumpAndSettle();
 
     expect(find.text('Onboarding'), findsOneWidget);

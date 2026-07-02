@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// English heading with simple Hindi subtitle on the line below.
+import '../../../core/theme/color_palette.dart';
+
+/// English heading with simple Hindi subtitle in parentheses on the line below.
 class BilingualLabel extends StatelessWidget {
   const BilingualLabel({
     super.key,
@@ -19,6 +21,14 @@ class BilingualLabel extends StatelessWidget {
   final bool compact;
   final CrossAxisAlignment crossAxisAlignment;
 
+  String get _hindiLine {
+    final trimmed = hindi.trim();
+    if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+      return trimmed;
+    }
+    return '($trimmed)';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -31,8 +41,8 @@ class BilingualLabel extends StatelessWidget {
           english,
           style: englishStyle ??
               theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF1C1C1E),
+                fontWeight: FontWeight.w700,
+                color: ColorPalette.labelPrimary,
                 letterSpacing: -0.2,
                 fontSize: compact ? 14 : 16,
                 height: 1.2,
@@ -40,12 +50,12 @@ class BilingualLabel extends StatelessWidget {
         ),
         SizedBox(height: compact ? 2 : 4),
         Text(
-          hindi,
+          _hindiLine,
           style: hindiStyle ??
               theme.textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF48484A),
+                color: ColorPalette.hindiText,
                 fontSize: compact ? 12 : 13,
-                fontWeight: FontWeight.w400,
+                fontWeight: FontWeight.w500,
                 height: 1.35,
               ),
         ),

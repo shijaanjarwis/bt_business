@@ -4,6 +4,7 @@ import '../../../../core/accounting/account_types.dart';
 import '../../../../core/accounting/transaction_types.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/utils/date_formatter.dart';
+import '../../../../core/reminders/reminder_service.dart';
 import '../../../../core/utils/id_generator.dart';
 import '../../../../data/local/database/tables/accounting_tables.dart';
 
@@ -19,6 +20,9 @@ final class PaymentPostingService {
     required double amount,
     required DateTime date,
     String? note,
+    String? id,
+    DateTime? existingCreatedAt,
+    DateTime? reminderDate,
   }) {
     return _record(
       businessId: businessId,
@@ -30,6 +34,9 @@ final class PaymentPostingService {
       balanceDelta: -amount,
       debitAccount: AccountTypes.cash,
       creditAccount: AccountTypes.receivable,
+      id: id,
+      existingCreatedAt: existingCreatedAt,
+      reminderDate: reminderDate,
     );
   }
 
@@ -39,6 +46,9 @@ final class PaymentPostingService {
     required double amount,
     required DateTime date,
     String? note,
+    String? id,
+    DateTime? existingCreatedAt,
+    DateTime? reminderDate,
   }) {
     return _record(
       businessId: businessId,
@@ -50,6 +60,60 @@ final class PaymentPostingService {
       balanceDelta: amount,
       debitAccount: AccountTypes.payable,
       creditAccount: AccountTypes.cash,
+      id: id,
+      existingCreatedAt: existingCreatedAt,
+      reminderDate: reminderDate,
+    );
+  }
+
+  Future<void> delete(String transactionId) async {
+    await _db.transaction((txn) async {
+      await _revert(txn, transactionId);
+    });
+  }
+
+  Future<void> _revert(Transaction txn, String transactionId) async {
+    final rows = await txn.query(
+      TransactionsTable.tableName,
+      where: '${TransactionsTable.id} = ?',
+      whereArgs: [transactionId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return;
+
+    final transaction = rows.first;
+    final type = transaction[TransactionsTable.type]! as String;
+    final partyId = transaction[TransactionsTable.partyId]! as String;
+    final amount = (transaction[TransactionsTable.totalAmount] as num).toDouble();
+    final now = DateTime.now().toIso8601String();
+
+    final balanceDelta = switch (type) {
+      TransactionTypes.paymentReceived => amount,
+      TransactionTypes.paymentPaid => -amount,
+      _ => 0.0,
+    };
+
+    if (balanceDelta != 0) {
+      await txn.rawUpdate(
+        '''
+        UPDATE ${PartiesTable.tableName}
+        SET ${PartiesTable.balance} = ${PartiesTable.balance} + ?,
+            ${PartiesTable.updatedAt} = ?
+        WHERE ${PartiesTable.id} = ?
+        ''',
+        [balanceDelta, now, partyId],
+      );
+    }
+
+    await txn.delete(
+      JournalLinesTable.tableName,
+      where: '${JournalLinesTable.transactionId} = ?',
+      whereArgs: [transactionId],
+    );
+    await txn.delete(
+      TransactionsTable.tableName,
+      where: '${TransactionsTable.id} = ?',
+      whereArgs: [transactionId],
     );
   }
 
@@ -63,16 +127,23 @@ final class PaymentPostingService {
     required double balanceDelta,
     required String debitAccount,
     required String creditAccount,
+    String? id,
+    DateTime? existingCreatedAt,
+    DateTime? reminderDate,
   }) async {
     if (amount <= 0) {
       throw const ValidationException('Amount must be greater than zero');
     }
 
-    final transactionId = IdGenerator.newId();
+    final transactionId = id ?? IdGenerator.newId();
     final now = DateTime.now();
     final isoDate = DateFormatter.isoDate(date);
 
     await _db.transaction((txn) async {
+      if (id != null) {
+        await _revert(txn, id);
+      }
+
       await txn.insert(TransactionsTable.tableName, {
         TransactionsTable.id: transactionId,
         TransactionsTable.businessId: businessId,
@@ -81,7 +152,14 @@ final class PaymentPostingService {
         TransactionsTable.partyId: partyId,
         TransactionsTable.notes: note?.trim().isEmpty ?? true ? null : note!.trim(),
         TransactionsTable.totalAmount: amount,
-        TransactionsTable.createdAt: now.toIso8601String(),
+        TransactionsTable.reminderDate: ReminderService.reminderDateIso(
+          ReminderService.effectiveReminderDate(
+            transactionType: type,
+            dueAmount: 0,
+            requestedReminderDate: reminderDate,
+          ),
+        ),
+        TransactionsTable.createdAt: (existingCreatedAt ?? now).toIso8601String(),
         TransactionsTable.updatedAt: now.toIso8601String(),
       });
 

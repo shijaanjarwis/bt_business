@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/widgets/branding/app_branding.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../utils/dashboard_greeting.dart';
 
 /// Dashboard header — logo, business name, date and greeting.
@@ -27,16 +30,16 @@ class DashboardHeader extends StatelessWidget {
         Row(
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppDimensions.chipRadius),
               child: Image.asset(
                 AppBranding.logoAssetPath,
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 44,
                 fit: BoxFit.contain,
                 filterQuality: FilterQuality.high,
                 errorBuilder: (_, _, _) => Container(
-                  width: 40,
-                  height: 40,
+                  width: 44,
+                  height: 44,
                   alignment: Alignment.center,
                   color: ColorPalette.purple.withValues(alpha: 0.08),
                   child: const Text(
@@ -49,17 +52,12 @@ class DashboardHeader extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
             const Expanded(
-              child: Text(
-                AppBranding.appName,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.6,
-                  color: Color(0xFF1C1C1E),
-                  height: 1.1,
-                ),
+              child: BilingualLabel(
+                english: 'Dashboard',
+                hindi: 'Home',
+                compact: true,
               ),
             ),
             if (onProfileTap != null)
@@ -68,22 +66,22 @@ class DashboardHeader extends StatelessWidget {
                 onPressed: onProfileTap,
                 icon: const Icon(
                   Icons.storefront_rounded,
-                  color: ColorPalette.purple,
+                  color: ColorPalette.iconPrimary,
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: AppSpacing.lg),
         Text(
           businessName,
           style: const TextStyle(
             fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1C1C1E),
+            fontWeight: FontWeight.w700,
+            color: ColorPalette.labelPrimary,
             letterSpacing: -0.3,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: AppSpacing.xs),
         Text(
           DateFormatter.displayDate(today),
           style: const TextStyle(
@@ -92,11 +90,18 @@ class DashboardHeader extends StatelessWidget {
             color: ColorPalette.labelSecondary,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          '${greeting.hindi} · ${greeting.english}',
-          style: const TextStyle(
+        const SizedBox(height: AppSpacing.xs),
+        BilingualLabel(
+          english: greeting.english,
+          hindi: greeting.hindi,
+          compact: true,
+          englishStyle: const TextStyle(
             fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: ColorPalette.purple,
+          ),
+          hindiStyle: const TextStyle(
+            fontSize: 13,
             fontWeight: FontWeight.w500,
             color: ColorPalette.purple,
           ),

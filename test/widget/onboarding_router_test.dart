@@ -22,14 +22,20 @@ void main() {
 
     await tester.pump();
     await tester.pump(AppBranding.splashDuration);
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(AppBranding.splashFadeDuration);
     await tester.pumpAndSettle();
 
     expect(find.text('Set Up Business'), findsOneWidget);
+    expect(find.text('(Dukaan Setup)'), findsOneWidget);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -600));
-    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.text('Continue'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
 
-    expect(find.text('Save & Continue'), findsOneWidget);
+    expect(find.text('Continue'), findsOneWidget);
+    expect(find.text('(Aage Badhein)'), findsOneWidget);
   });
 }

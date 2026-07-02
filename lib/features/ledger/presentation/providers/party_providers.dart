@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/di/core_providers.dart';
 import '../../../../core/di/data_revision.dart';
-import '../../../../core/errors/result.dart';
 import '../../data/datasources/party_local_datasource.dart';
 import '../../data/repositories/party_repository_impl.dart';
 import '../../data/services/opening_balance_posting_service.dart';
@@ -16,7 +15,6 @@ import '../../domain/usecases/get_party.dart';
 import '../../domain/usecases/party_hisaab_usecases.dart';
 import '../../domain/usecases/save_party.dart';
 import '../../domain/usecases/search_parties.dart';
-import '../utils/party_ledger_ui_helpers.dart';
 
 final partyLocalDataSourceProvider = Provider<PartyLocalDataSource>((ref) {
   final database = ref.watch(appDatabaseProvider).requireValue;
@@ -83,38 +81,59 @@ final partyBalanceFilterProvider =
 
 final partySearchQueryProvider = StateProvider<String>((ref) => '');
 
-final partyListProvider = FutureProvider<List<Party>>((ref) async {
+({bool receivableOnly, bool payableOnly, bool clearOnly}) _balanceFlags(
+  PartyBalanceFilter filter,
+) {
+  return switch (filter) {
+    PartyBalanceFilter.all => (
+        receivableOnly: false,
+        payableOnly: false,
+        clearOnly: false,
+      ),
+    PartyBalanceFilter.lena => (
+        receivableOnly: true,
+        payableOnly: false,
+        clearOnly: false,
+      ),
+    PartyBalanceFilter.dena => (
+        receivableOnly: false,
+        payableOnly: true,
+        clearOnly: false,
+      ),
+    PartyBalanceFilter.saaf => (
+        receivableOnly: false,
+        payableOnly: false,
+        clearOnly: true,
+      ),
+  };
+}
+
+final partyListProvider = FutureProvider.autoDispose<List<Party>>((ref) async {
   ref.watch(dataRevisionProvider);
 
   final query = ref.watch(partySearchQueryProvider);
   final filter = ref.watch(partyBalanceFilterProvider);
+  final flags = _balanceFlags(filter);
+  final datasource = ref.watch(partyLocalDataSourceProvider);
 
-  final Result<List<Party>> result;
   if (query.trim().isNotEmpty) {
-    result = await ref.watch(searchPartiesUseCaseProvider)(
-      SearchPartiesParams(query: query),
-    );
-  } else {
-    result = await ref.watch(getPartiesUseCaseProvider)(
-      const GetPartiesParams(),
+    return datasource.searchParties(
+      query,
+      receivableOnly: flags.receivableOnly,
+      payableOnly: flags.payableOnly,
+      clearOnly: flags.clearOnly,
     );
   }
 
-  if (result.isFailure) {
-    throw result.failureOrNull!;
-  }
-
-  var parties = result.valueOrNull ?? [];
-  if (filter != PartyBalanceFilter.all) {
-    parties = parties
-        .where((party) => PartyLedgerUiHelpers.matchesFilter(party, filter))
-        .toList();
-  }
-  return parties;
+  return datasource.fetchParties(
+    receivableOnly: flags.receivableOnly,
+    payableOnly: flags.payableOnly,
+    clearOnly: flags.clearOnly,
+  );
 });
 
 final partyDetailProvider =
-    FutureProvider.family<Party?, String>((ref, id) async {
+    FutureProvider.autoDispose.family<Party?, String>((ref, id) async {
   ref.watch(dataRevisionProvider);
   final result = await ref.watch(getPartyUseCaseProvider)(id);
   if (result.isFailure) {
@@ -124,7 +143,7 @@ final partyDetailProvider =
 });
 
 final partyHistoryProvider =
-    FutureProvider.family<List<PartyHistoryEntry>, String>((ref, partyId) async {
+    FutureProvider.autoDispose.family<List<PartyHistoryEntry>, String>((ref, partyId) async {
   ref.watch(dataRevisionProvider);
   final result = await ref.watch(getPartyHistoryUseCaseProvider)(partyId);
   if (result.isFailure) {

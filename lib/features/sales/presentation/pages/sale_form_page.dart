@@ -1,3 +1,4 @@
+import 'package:bt_business/core/errors/user_error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/accounting/gst_types.dart';
 import '../../../../core/accounting/payment_modes.dart';
-import '../../../../core/constants/item_units.dart';
 import '../../../../core/di/data_revision.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
@@ -17,17 +17,20 @@ import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
+import '../../../../shared/widgets/inputs/app_party_picker_field.dart';
+import '../../../../shared/widgets/inputs/app_picker_field.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
+import '../../../../shared/widgets/layout/app_form_section.dart';
+import '../../../../shared/widgets/pickers/show_item_picker.dart';
+import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
+import '../../../items/presentation/widgets/entry_item_picker_sheet.dart';
 import '../../../items/domain/entities/item.dart';
-import '../../../items/domain/repositories/item_repository.dart';
-import '../../../items/presentation/providers/item_providers.dart';
 import '../../../ledger/domain/entities/party.dart';
 import '../../../ledger/domain/entities/party_type.dart';
-import '../../../ledger/domain/repositories/party_repository.dart';
-import '../../../ledger/domain/entities/opening_balance_direction.dart';
 import '../../../ledger/presentation/providers/party_providers.dart';
 import '../../domain/entities/sale_entry.dart';
+import '../../../../shared/widgets/inputs/reminder_date_field.dart';
 import '../../domain/repositories/sale_repository.dart';
 import '../providers/sale_providers.dart';
 import '../utils/sale_ui_helpers.dart';
@@ -75,8 +78,6 @@ class SaleFormPage extends ConsumerStatefulWidget {
 
 class _SaleFormPageState extends ConsumerState<SaleFormPage> {
   final _formKey = GlobalKey<FormState>();
-  final _partyQueryController = TextEditingController();
-  final _itemQueryController = TextEditingController();
   final _notesController = TextEditingController();
   final _paidController = TextEditingController();
 
@@ -92,11 +93,10 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
   bool _paidManuallyEdited = false;
   String? _cashCustomerPartyId;
   double? _lastAutoPaidTotal;
+  DateTime? _reminderDate;
 
   @override
   void dispose() {
-    _partyQueryController.dispose();
-    _itemQueryController.dispose();
     _notesController.dispose();
     _paidController.dispose();
     super.dispose();
@@ -120,6 +120,7 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
     _paidController.text = _formatAmount(entry.paidAmount);
     _paidManuallyEdited = true;
     _cashCustomerPartyId = cashCustomerId;
+    _reminderDate = entry.reminderDate;
 
     if (!SaleUiHelpers.isCashCustomerParty(
       partyId: entry.partyId,
@@ -139,7 +140,6 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
         createdAt: entry.createdAt,
         updatedAt: entry.updatedAt,
       );
-      _partyQueryController.text = entry.partyName;
     }
 
     _lines
@@ -165,10 +165,7 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
     final result = await ref.read(getPartyUseCaseProvider)(widget.initialPartyId!);
     final party = result.valueOrNull;
     if (party != null && mounted) {
-      setState(() {
-        _selectedParty = party;
-        _partyQueryController.text = party.name;
-      });
+      setState(() => _selectedParty = party);
     }
   }
 
@@ -222,6 +219,7 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
       gstType: _gstType,
       notes: _notesController.text.trim(),
       existingCreatedAt: _existing?.createdAt,
+      reminderDate: _dueAmount > 0 ? _reminderDate : null,
       lines: _lines
           .map(
             (line) => SaleLineInput(
@@ -238,80 +236,15 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
     );
   }
 
-  void _selectParty(Party party) {
-    setState(() {
-      _selectedParty = party;
-      _partyQueryController.text = party.name;
-    });
-  }
-
-  void _clearParty() {
-    setState(() {
-      _selectedParty = null;
-      _partyQueryController.clear();
-    });
-  }
-
-  Future<void> _createPartyFromQuery(String name) async {
-    final result = await ref.read(savePartyUseCaseProvider)(
-      SavePartyInput(
-        name: name,
-        type: PartyType.both,
-        phone: '',
-        address: '',
-        openingAmount: 0,
-        openingDirection: OpeningBalanceDirection.receivable,
-        isActive: true,
-      ),
-    );
-    if (result.isFailure) {
-      _showMessage(result.failureOrNull!.message);
-      return;
-    }
-    notifyDataChanged(ref);
-    _selectParty(result.valueOrNull!);
-  }
-
-  Future<void> _resolveAndAddItem(String rawName) async {
-    final name = rawName.trim();
-    if (name.isEmpty) return;
-
-    final itemRepo = ref.read(itemRepositoryProvider);
-    final existingResult = await itemRepo.findByName(name);
-    Item? item = existingResult.valueOrNull;
-
-    if (item == null) {
-      final searchResult = await itemRepo.searchItems(name);
-      final matches = searchResult.valueOrNull ?? [];
-      for (final candidate in matches) {
-        if (candidate.name.toLowerCase() == name.toLowerCase()) {
-          item = candidate;
-          break;
-        }
-      }
-      item ??= matches.length == 1 ? matches.first : null;
-    }
-
-    if (item == null) {
-      final created = await ref.read(saveItemUseCaseProvider)(
-        SaveItemInput(name: name, unit: ItemUnits.defaultUnit),
-      );
-      if (created.isFailure) {
-        _showMessage(created.failureOrNull!.message);
-        return;
-      }
-      item = created.valueOrNull!;
-      notifyDataChanged(ref);
-    }
-
-    final existingLineIndex = _lines.indexWhere((line) => line.itemId == item!.id);
+  void _addItemFromPicker(Item item) {
+    final existingLineIndex = _lines.indexWhere((line) => line.itemId == item.id);
     setState(() {
       if (existingLineIndex >= 0) {
         _lines[existingLineIndex].qty += 1;
       } else {
         _lines.add(
           DraftSaleLine(
-            itemId: item!.id,
+            itemId: item.id,
             itemName: item.name,
             hsnSac: item.hsnSac,
             rate: item.saleRate,
@@ -319,9 +252,15 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
           ),
         );
       }
-      _itemQueryController.clear();
       _syncPaidWithTotal();
     });
+  }
+
+  Future<void> _pickItem() async {
+    final item = await showItemPicker(context, ref, mode: EntryItemMode.sale);
+    if (item != null && mounted) {
+      _addItemFromPicker(item);
+    }
   }
 
   Future<void> _handleSave() async {
@@ -374,10 +313,23 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
         title: const Text('Yeh bikri delete karein?'),
         content: const Text('Yeh entry delete ho jayegi.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Rahne dein')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const BilingualLabel(
+              english: 'Cancel',
+              hindi: 'Cancel',
+              compact: true,
+            ),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const BilingualLabel(
+              english: 'Delete',
+              hindi: 'Delete Karein',
+              compact: true,
+              englishStyle: TextStyle(color: ColorPalette.destructive),
+              hindiStyle: TextStyle(color: ColorPalette.destructive),
+            ),
           ),
         ],
       ),
@@ -425,8 +377,8 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
         error: (error, _) => Scaffold(
           body: AppErrorView(
             title: 'Bikri load nahi ho payi',
-            message: error.toString(),
-            actionLabel: 'Wapas',
+            message: UserErrorMessages.from(error),
+            actionEnglish: 'Back', actionHindi: 'Wapas',
             onAction: () => context.pop(),
           ),
         ),
@@ -436,7 +388,7 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
               body: AppErrorView(
                 title: 'Bikri nahi mili',
                 message: 'Yeh entry ab available nahi hai.',
-                actionLabel: 'Wapas',
+                actionEnglish: 'Back', actionHindi: 'Wapas',
                 onAction: () => context.pop(),
               ),
             );
@@ -465,25 +417,14 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
   }
 
   Widget _buildForm() {
-    final partyQuery = _partyQueryController.text;
-    final itemQuery = _itemQueryController.text;
-    final partiesAsync = ref.watch(salePartySearchProvider(partyQuery));
-    final itemsAsync = ref.watch(itemSearchProvider(itemQuery));
-
     return Scaffold(
       backgroundColor: ColorPalette.background,
-      appBar: AppBar(
-        backgroundColor: ColorPalette.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
+      appBar: AppRegisterAppBar(
+        english: widget.isEdit ? 'Edit Sale' : 'Sale',
+        hindi: widget.isEdit ? 'Bikri Badlo' : 'Bikri Likho',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
-        ),
-        title: BilingualLabel(
-          english: widget.isEdit ? 'Edit Sale' : 'Sell',
-          hindi: widget.isEdit ? 'Bikri Badlo' : 'Maal Becha',
-          compact: true,
         ),
       ),
       body: SafeArea(
@@ -495,140 +436,39 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                   children: [
-                    _SaleSectionCard(
-                      title: 'Party',
-                      subtitle: 'Optional · Cash bikri agar khali chhodein',
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          TextField(
-                            controller: _partyQueryController,
-                            onChanged: (_) {
-                              if (_selectedParty != null &&
-                                  _partyQueryController.text.trim() !=
-                                      _selectedParty!.name) {
-                                _selectedParty = null;
-                              }
-                              setState(() {});
-                            },
-                            decoration: InputDecoration(
-                              hintText: 'Party chuniye',
-                              filled: true,
-                              fillColor: ColorPalette.background,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              suffixIcon: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (_selectedParty != null || partyQuery.isNotEmpty)
-                                    IconButton(
-                                      icon: const Icon(Icons.close_rounded, size: 20),
-                                      onPressed: _clearParty,
-                                    ),
-                                  IconButton(
-                                    icon: const Icon(Icons.mic_none_rounded, size: 22),
-                                    onPressed: () {},
-                                    tooltip: 'Awaz se likhein (jald)',
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          if (_selectedParty == null && partyQuery.trim().isNotEmpty)
-                            partiesAsync.when(
-                              loading: () => const SizedBox.shrink(),
-                              error: (_, _) => const SizedBox.shrink(),
-                              data: (parties) {
-                                if (parties.isEmpty) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(top: 8),
-                                    child: TextButton(
-                                      onPressed: () =>
-                                          _createPartyFromQuery(partyQuery.trim()),
-                                      child: Text('"$partyQuery" jodein · Naya party'),
-                                    ),
-                                  );
-                                }
-                                return Column(
-                                  children: [
-                                    ...parties.take(4).map(
-                                      (party) => ListTile(
-                                        dense: true,
-                                        contentPadding: EdgeInsets.zero,
-                                        title: Text(party.name),
-                                        subtitle: party.phone.isEmpty
-                                            ? null
-                                            : Text(party.phone),
-                                        onTap: () => _selectParty(party),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          if (_selectedParty == null && partyQuery.trim().isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 8),
-                              child: Text(
-                                'Cash Bikri',
-                                style: TextStyle(
-                                  color: ColorPalette.purple,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+                    AppPartyPickerField(
+                      party: _selectedParty,
+                      onChanged: (party) => setState(() => _selectedParty = party),
+                      helper: 'Khali chhodein to cash bikri',
+                      allowClear: true,
                     ),
+                    if (_selectedParty == null)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text(
+                          'Cash Bikri',
+                          style: TextStyle(
+                            color: ColorPalette.purple,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 12),
-                    _SaleSectionCard(
-                      title: 'Maal',
+                    AppFormSection(
+                      english: 'Goods',
+                      hindi: 'Maal',
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          TextField(
-                            controller: _itemQueryController,
-                            textInputAction: TextInputAction.done,
-                            onSubmitted: _resolveAndAddItem,
-                            onChanged: (_) => setState(() {}),
-                            decoration: InputDecoration(
-                              hintText: 'Maal ka naam likhein',
-                              filled: true,
-                              fillColor: ColorPalette.background,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              suffixIcon: IconButton(
-                                icon: const Icon(Icons.mic_none_rounded, size: 22),
-                                onPressed: () {},
-                                tooltip: 'Awaz se likhein (jald)',
-                              ),
-                            ),
+                          AppPickerField(
+                            english: 'Add Item',
+                            hindi: 'Maal Jodein',
+                            value: null,
+                            onTap: _pickItem,
+                            emptyText: 'Add item to sale',
+                            emptyHindi: 'Maal jodein',
+                            trailingIcon: Icons.add_circle_outline_rounded,
                           ),
-                          if (itemQuery.trim().isNotEmpty)
-                            itemsAsync.when(
-                              loading: () => const SizedBox.shrink(),
-                              error: (_, _) => const SizedBox.shrink(),
-                              data: (items) {
-                                if (items.isEmpty) return const SizedBox.shrink();
-                                return Column(
-                                  children: items.take(5).map((item) {
-                                    return ListTile(
-                                      dense: true,
-                                      contentPadding: EdgeInsets.zero,
-                                      title: Text(item.name),
-                                      subtitle: Text(
-                                        '₹${item.saleRate.toStringAsFixed(0)} · ${item.unit}',
-                                      ),
-                                      onTap: () => _resolveAndAddItem(item.name),
-                                    );
-                                  }).toList(),
-                                );
-                              },
-                            ),
                           if (_lines.isNotEmpty) ...[
                             const SizedBox(height: 12),
                             ..._lines.asMap().entries.map((entry) {
@@ -650,20 +490,35 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _SaleSectionCard(
-                      title: 'Tareekh · Note',
+                    AppFormSection(
+                      english: 'Date and Note',
+                      hindi: 'Tareekh aur Note',
                       child: Column(
                         children: [
                           ListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: const Text('Tareekh'),
-                            subtitle: Text(DateFormatter.shortDate(_date)),
-                            trailing: const Icon(Icons.calendar_today_rounded, size: 20),
+                            title: const Text(
+                              'Date',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            subtitle: Text(
+                              '(${DateFormatter.shortDate(_date)})',
+                              style: const TextStyle(
+                                color: ColorPalette.labelSecondary,
+                              ),
+                            ),
+                            trailing: const Icon(
+                              Icons.calendar_today_rounded,
+                              size: 20,
+                              color: ColorPalette.iconPrimary,
+                            ),
                             onTap: _pickDate,
                           ),
                           AppTextField(
+                            english: 'Note',
+                            hindi: 'Note',
                             controller: _notesController,
-                            label: 'Note (optional)',
+                            helper: 'Optional',
                             maxLines: 2,
                           ),
                         ],
@@ -671,13 +526,13 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
                     ),
                     if (widget.isEdit) ...[
                       const SizedBox(height: 16),
-                      TextButton.icon(
+                      AppPrimaryButton(
+                        english: 'Delete',
+                        hindi: 'Delete Karein',
+                        destructive: true,
+                        compact: true,
+                        isLoading: _isDeleting,
                         onPressed: _isDeleting ? null : _handleDelete,
-                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
-                        label: const Text(
-                          'Bikri Delete Karein',
-                          style: TextStyle(color: Colors.red),
-                        ),
                       ),
                     ],
                     const DeveloperFooter(),
@@ -688,10 +543,13 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
                 grandTotal: _grandTotal,
                 paidController: _paidController,
                 dueAmount: _dueAmount,
+                reminderDate: _reminderDate,
+                onReminderChanged: (date) => setState(() => _reminderDate = date),
                 onPaidChanged: (value) {
                   setState(() {
                     _paidManuallyEdited = true;
                     _paidController.text = value;
+                    if (_dueAmount <= 0) _reminderDate = null;
                   });
                 },
                 isSaving: _isSaving,
@@ -700,54 +558,6 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _SaleSectionCard extends StatelessWidget {
-  const _SaleSectionCard({
-    required this.title,
-    required this.child,
-    this.subtitle,
-  });
-
-  final String title;
-  final String? subtitle;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              subtitle!,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF636366)),
-            ),
-          ],
-          const SizedBox(height: 12),
-          child,
-        ],
       ),
     );
   }
@@ -896,6 +706,8 @@ class _PaymentSummaryBar extends StatelessWidget {
     required this.grandTotal,
     required this.paidController,
     required this.dueAmount,
+    required this.reminderDate,
+    required this.onReminderChanged,
     required this.onPaidChanged,
     required this.isSaving,
     required this.onSave,
@@ -904,6 +716,8 @@ class _PaymentSummaryBar extends StatelessWidget {
   final double grandTotal;
   final TextEditingController paidController;
   final double dueAmount;
+  final DateTime? reminderDate;
+  final ValueChanged<DateTime?> onReminderChanged;
   final ValueChanged<String> onPaidChanged;
   final bool isSaving;
   final VoidCallback onSave;
@@ -959,7 +773,7 @@ class _PaymentSummaryBar extends StatelessWidget {
                     prefixText: '₹ ',
                     isDense: true,
                     filled: true,
-                    fillColor: Color(0xFFF5F5F7),
+                    fillColor: ColorPalette.fieldFill,
                     border: OutlineInputBorder(
                       borderSide: BorderSide.none,
                       borderRadius: BorderRadius.all(Radius.circular(10)),
@@ -974,11 +788,19 @@ class _PaymentSummaryBar extends StatelessWidget {
           _SummaryRow(
             label: 'Baaki',
             value: CurrencyFormatter.format(dueAmount),
-            valueColor: dueAmount > 0 ? Colors.orange.shade800 : const Color(0xFF636366),
+            valueColor: dueAmount > 0 ? Colors.orange.shade800 : ColorPalette.labelSecondary,
           ),
+          if (dueAmount > 0) ...[
+            const SizedBox(height: 8),
+            ReminderDateField(
+              reminderDate: reminderDate,
+              onChanged: onReminderChanged,
+            ),
+          ],
           const SizedBox(height: 16),
           AppPrimaryButton(
-            label: 'Bikri Save Karein',
+            english: 'Save',
+            hindi: 'Save Karein',
             isLoading: isSaving,
             onPressed: onSave,
           ),

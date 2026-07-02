@@ -21,12 +21,14 @@ final historyCustomEndProvider = StateProvider<DateTime?>((ref) => null);
 
 final historySearchQueryProvider = StateProvider<String>((ref) => '');
 
-final transactionHistoryProvider = FutureProvider<List<TransactionHistoryEntry>>((ref) async {
+final transactionHistoryProvider =
+    FutureProvider.autoDispose<List<TransactionHistoryEntry>>((ref) async {
   ref.watch(dataRevisionProvider);
 
   final period = ref.watch(historyPeriodProvider);
   final customStart = ref.watch(historyCustomStartProvider);
   final customEnd = ref.watch(historyCustomEndProvider);
+  final query = ref.watch(historySearchQueryProvider);
 
   final range = HistoryDateRange.resolve(
     period: period,
@@ -37,20 +39,13 @@ final transactionHistoryProvider = FutureProvider<List<TransactionHistoryEntry>>
   return ref.watch(transactionHistoryDataSourceProvider).fetchHistory(
         start: range.start,
         end: range.end,
+        searchQuery: query,
       );
 });
 
 final filteredTransactionHistoryProvider =
     Provider<AsyncValue<List<TransactionHistoryEntry>>>((ref) {
-  final historyAsync = ref.watch(transactionHistoryProvider);
-  final query = ref.watch(historySearchQueryProvider);
-
-  return historyAsync.whenData((entries) {
-    if (query.trim().isEmpty) return entries;
-    return entries
-        .where((entry) => HistoryUiHelpers.matchesSearch(entry, query))
-        .toList();
-  });
+  return ref.watch(transactionHistoryProvider);
 });
 
 final groupedTransactionHistoryProvider = Provider<

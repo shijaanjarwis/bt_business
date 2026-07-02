@@ -1,4 +1,6 @@
+import 'package:bt_business/core/errors/user_error_messages.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,12 +9,16 @@ import '../../../../core/router/route_names.dart';
 import '../../../../core/router/router_refresh_notifier.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/validators.dart';
+import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
+import '../../../../shared/widgets/labels/app_form_field_label.dart';
 import '../../../../shared/widgets/layout/app_form_section.dart';
 import '../../../../shared/widgets/layout/responsive_form_container.dart';
+import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../domain/entities/business.dart';
 import '../../domain/entities/currency.dart';
 import '../../domain/entities/financial_year.dart';
@@ -55,6 +61,7 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
   bool _isSaving = false;
   bool _isDeleting = false;
   bool _initialized = false;
+  bool _initScheduled = false;
 
   @override
   void dispose() {
@@ -82,6 +89,15 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
     }
 
     _initialized = true;
+  }
+
+  void _scheduleInitializeFromBusiness(Business? business) {
+    if (_initialized || _initScheduled) return;
+    _initScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _initialized) return;
+      setState(() => _initializeFromBusiness(business));
+    });
   }
 
   SaveBusinessParams _buildParams({String? logoPath, bool? removeLogo}) {
@@ -156,7 +172,9 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
       ref.invalidate(businessGateProvider);
       ref.invalidate(businessProfileProvider);
       notifyDataChanged(ref);
-      ref.read(routerRefreshNotifierProvider).refresh();
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        ref.read(routerRefreshNotifierProvider).refresh();
+      });
 
       if (widget.mode == BusinessProfileMode.setup) {
         context.go(RouteNames.home);
@@ -184,14 +202,21 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+            child: const BilingualLabel(
+              english: 'Cancel',
+              hindi: 'Cancel',
+              compact: true,
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFFFF3B30),
+            child: const BilingualLabel(
+              english: 'Delete',
+              hindi: 'Delete Karein',
+              compact: true,
+              englishStyle: TextStyle(color: ColorPalette.destructive),
+              hindiStyle: TextStyle(color: ColorPalette.destructive),
             ),
-            child: const Text('Delete'),
           ),
         ],
       ),
@@ -217,7 +242,9 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
       ref.invalidate(businessGateProvider);
       ref.invalidate(businessProfileProvider);
       notifyDataChanged(ref);
-      ref.read(routerRefreshNotifierProvider).refresh();
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        ref.read(routerRefreshNotifierProvider).refresh();
+      });
       context.go(RouteNames.businessProfile);
     } finally {
       if (mounted) setState(() => _isDeleting = false);
@@ -242,25 +269,27 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
       canPop: widget.mode == BusinessProfileMode.edit && !_isSaving,
       child: Scaffold(
         backgroundColor: ColorPalette.background,
-        appBar: AppBar(
-          title: Text(
-            widget.mode == BusinessProfileMode.setup
-                ? 'Set Up Business'
-                : 'Business Profile',
-          ),
-          centerTitle: true,
-          automaticallyImplyLeading: widget.mode == BusinessProfileMode.edit,
+        appBar: AppRegisterAppBar(
+          english: widget.mode == BusinessProfileMode.setup
+              ? 'Set Up Business'
+              : 'Business Profile',
+          hindi: widget.mode == BusinessProfileMode.setup
+              ? 'Dukaan Setup'
+              : 'Dukaan Profile',
+          leading: widget.mode == BusinessProfileMode.setup
+              ? const SizedBox.shrink()
+              : null,
         ),
         body: profileAsync.when(
           loading: () => const AppLoadingView(),
           error: (error, _) => AppErrorView(
             title: 'Profile load nahi ho paya',
-            message: error.toString(),
-            actionLabel: 'Try Again',
+            message: UserErrorMessages.from(error),
+            actionEnglish: 'Try Again', actionHindi: 'Phir Try Karein',
             onAction: () => ref.invalidate(businessProfileProvider),
           ),
           data: (business) {
-            _initializeFromBusiness(business);
+            _scheduleInitializeFromBusiness(business);
 
             return SafeArea(
               child: ResponsiveFormContainer(
@@ -290,51 +319,53 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
                       ),
                       const SizedBox(height: 24),
                       AppFormSection(
-                        title: 'Business Details',
+                        english: 'Business Details',
+                        hindi: 'Dukaan Ki Detail',
                         child: Column(
                           children: [
                             AppTextField(
-                              label: 'Business Name',
+                              english: 'Business Name',
+                              hindi: 'Dukaan ka Naam',
                               controller: _nameController,
-                              hint: 'Bharat Traders',
                               textCapitalization: TextCapitalization.words,
                               textInputAction: TextInputAction.next,
                               validator: (value) => Validators.requiredText(
                                 value,
-                                fieldName: 'Business name',
+                                fieldName: 'Dukaan ka naam',
                               ),
                             ),
                             const SizedBox(height: 16),
                             AppTextField(
-                              label: 'Address',
+                              english: 'Address',
+                              hindi: 'Pata',
                               controller: _addressController,
-                              hint: 'Shop address',
                               maxLines: 3,
                               textInputAction: TextInputAction.next,
                             ),
                             const SizedBox(height: 16),
                             AppTextField(
-                              label: 'Phone',
+                              english: 'Phone',
+                              hindi: 'Mobile',
                               controller: _phoneController,
-                              hint: '9876543210',
                               keyboardType: TextInputType.phone,
                               textInputAction: TextInputAction.next,
                               validator: Validators.indianPhone,
                             ),
                             const SizedBox(height: 16),
                             AppTextField(
-                              label: 'Email',
+                              english: 'Email',
+                              hindi: 'Email',
                               controller: _emailController,
-                              hint: 'business@example.com',
                               keyboardType: TextInputType.emailAddress,
                               textInputAction: TextInputAction.next,
                               validator: Validators.email,
                             ),
                             const SizedBox(height: 16),
                             AppTextField(
-                              label: 'GSTIN (optional)',
+                              english: 'GSTIN',
+                              hindi: 'GSTIN',
                               controller: _gstinController,
-                              hint: '27AAPFU0939F1ZV',
+                              helper: 'Optional',
                               textCapitalization: TextCapitalization.characters,
                               textInputAction: TextInputAction.done,
                               validator: Validators.gstin,
@@ -344,17 +375,15 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
                       ),
                       const SizedBox(height: 20),
                       AppFormSection(
-                        title: 'Accounting Settings',
+                        english: 'Settings',
+                        hindi: 'Settings',
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Financial Year Starts',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: ColorPalette.labelSecondary,
-                              ),
+                            const AppFormFieldLabel(
+                              english: 'Financial Year Starts',
+                              hindi: 'Saal Kab Shuru',
+                              compact: true,
                             ),
                             const SizedBox(height: 8),
                             FinancialYearPicker(
@@ -372,13 +401,10 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            const Text(
-                              'Currency',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: ColorPalette.labelSecondary,
-                              ),
+                            const AppFormFieldLabel(
+                              english: 'Currency',
+                              hindi: 'Paisa',
+                              compact: true,
                             ),
                             const SizedBox(height: 8),
                             CurrencyPicker(
@@ -392,9 +418,12 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
                       ),
                       const SizedBox(height: 28),
                       AppPrimaryButton(
-                        label: widget.mode == BusinessProfileMode.setup
-                            ? 'Save & Continue'
-                            : 'Save Changes',
+                        english: widget.mode == BusinessProfileMode.setup
+                            ? 'Continue'
+                            : 'Update',
+                        hindi: widget.mode == BusinessProfileMode.setup
+                            ? 'Aage Badhein'
+                            : 'Badlein',
                         isLoading: _isSaving,
                         onPressed: _handleSave,
                       ),
@@ -402,12 +431,14 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
                           _existingBusiness != null) ...[
                         const SizedBox(height: 12),
                         AppPrimaryButton(
-                          label: 'Delete Business Profile',
+                          english: 'Delete',
+                          hindi: 'Delete Karein',
                           isLoading: _isDeleting,
                           destructive: true,
                           onPressed: _isSaving ? null : _handleDelete,
                         ),
                       ],
+                      const DeveloperFooter(),
                     ],
                   ),
                 ),

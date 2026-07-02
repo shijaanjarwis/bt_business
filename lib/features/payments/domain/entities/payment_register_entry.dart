@@ -12,6 +12,9 @@ class PaymentRegisterEntry {
     required this.date,
     required this.createdAt,
     this.note,
+    this.balanceAfterPayment,
+    this.paymentModeLabel = 'Cash',
+    this.reminderDate,
   });
 
   final String id;
@@ -23,9 +26,14 @@ class PaymentRegisterEntry {
   final DateTime date;
   final DateTime createdAt;
   final String? note;
+  final double? balanceAfterPayment;
+  final String paymentModeLabel;
+  final DateTime? reminderDate;
+
+  bool get isPending => reminderDate != null;
 
   bool get isReceived => type == TransactionTypes.paymentReceived;
   bool get isPaid => type == TransactionTypes.paymentPaid;
 
-  String get typeLabel => isReceived ? 'Paise Mile' : 'Paise Diya';
+  String get typeLabelEnglish => isReceived ? 'Receive' : 'Payment';
 }

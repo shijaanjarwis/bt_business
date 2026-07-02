@@ -1,16 +1,19 @@
+import 'package:bt_business/core/errors/user_error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
+import '../../../../shared/widgets/inputs/app_search_field.dart';
+import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
+import '../../../../shared/widgets/sheets/app_quick_entry_sheet.dart';
 import '../../../../shared/widgets/filters/register_date_filter_bar.dart';
-import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../data/datasources/transaction_history_local_datasource.dart';
 import '../providers/history_providers.dart';
 import '../utils/history_entry_navigation.dart';
-import '../widgets/history_list_tile.dart';
+import '../../../../shared/widgets/register/register_entry_cards.dart';
 
 /// Full register history — grouped by date, search, tap to edit.
 class TransactionHistoryPage extends ConsumerStatefulWidget {
@@ -39,15 +42,13 @@ class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage>
 
     return Scaffold(
       backgroundColor: ColorPalette.background,
-      appBar: AppBar(
-        backgroundColor: ColorPalette.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: const BilingualLabel(
-          english: 'Full Record',
-          hindi: 'Poora Record',
-          compact: true,
-        ),
+      appBar: const AppRegisterAppBar(
+        english: 'Full Record',
+        hindi: 'Poora Record',
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => AppQuickEntrySheet.show(context),
+        child: const Icon(Icons.add),
       ),
       body: SafeArea(
         child: Column(
@@ -55,41 +56,15 @@ class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage>
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: TextField(
+              child: AppSearchField(
                 controller: _searchController,
                 onChanged: (value) {
                   ref.read(historySearchQueryProvider.notifier).state = value;
-                  setState(() {});
                 },
-                decoration: InputDecoration(
-                  hintText: 'Party, type, rashi, tareekh…',
-                  prefixIcon: const Icon(Icons.search_rounded, color: ColorPalette.purple),
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_searchController.text.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 20),
-                          onPressed: () {
-                            _searchController.clear();
-                            ref.read(historySearchQueryProvider.notifier).state = '';
-                            setState(() {});
-                          },
-                        ),
-                      IconButton(
-                        icon: const Icon(Icons.mic_none_rounded, size: 22),
-                        onPressed: () {},
-                        tooltip: 'Awaz se khojo (jald)',
-                      ),
-                    ],
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
+                onClear: () {
+                  _searchController.clear();
+                  ref.read(historySearchQueryProvider.notifier).state = '';
+                },
               ),
             ),
             Padding(
@@ -112,8 +87,8 @@ class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage>
                 loading: () => const AppLoadingView(),
                 error: (error, _) => AppErrorView(
                   title: 'Record load nahi ho paya',
-                  message: error.toString(),
-                  actionLabel: 'Phir try karein',
+                  message: UserErrorMessages.from(error),
+                  actionEnglish: 'Try Again', actionHindi: 'Phir Try Karein',
                   onAction: () => ref.invalidate(transactionHistoryProvider),
                 ),
                 data: (sections) {
@@ -136,7 +111,7 @@ class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage>
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontSize: 16,
-                                color: Color(0xFF636366),
+                                color: ColorPalette.labelSecondary,
                               ),
                             ),
                           ),
@@ -199,7 +174,7 @@ class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage>
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF636366),
+              color: ColorPalette.labelSecondary,
             ),
           ),
         );
@@ -210,9 +185,9 @@ class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage>
         if (cursor == index) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: HistoryListTile(
+            child: RegisterEntryCards.history(
               entry: entry,
-              onTap: () => openHistoryEntry(context, entry),
+              onTap: () => openRegisterEntryDetail(context, entry),
             ),
           );
         }

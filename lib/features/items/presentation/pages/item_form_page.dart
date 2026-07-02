@@ -1,3 +1,4 @@
+import 'package:bt_business/core/errors/user_error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,7 +12,10 @@ import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
+import '../../../../shared/widgets/labels/app_form_field_label.dart';
+import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../../shared/widgets/layout/responsive_form_container.dart';
+import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../domain/entities/item.dart';
 import '../../domain/repositories/item_repository.dart';
 import '../providers/item_providers.dart';
@@ -131,11 +135,21 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Rahne dein'),
+            child: const BilingualLabel(
+              english: 'Cancel',
+              hindi: 'Cancel',
+              compact: true,
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const BilingualLabel(
+              english: 'Delete',
+              hindi: 'Delete Karein',
+              compact: true,
+              englishStyle: TextStyle(color: ColorPalette.destructive),
+              hindiStyle: TextStyle(color: ColorPalette.destructive),
+            ),
           ),
         ],
       ),
@@ -171,8 +185,8 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
         error: (error, _) => Scaffold(
           body: AppErrorView(
             title: 'Load nahi ho paya',
-            message: error.toString(),
-            actionLabel: 'Wapas',
+            message: UserErrorMessages.from(error),
+            actionEnglish: 'Back', actionHindi: 'Wapas',
             onAction: () => context.pop(),
           ),
         ),
@@ -182,7 +196,7 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
               body: AppErrorView(
                 title: 'Nahi mila',
                 message: 'Yeh maal nahi mila.',
-                actionLabel: 'Wapas',
+                actionEnglish: 'Back', actionHindi: 'Wapas',
                 onAction: () => context.pop(),
               ),
             );
@@ -199,19 +213,17 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
   Widget _buildForm() {
     return Scaffold(
       backgroundColor: ColorPalette.background,
-      appBar: AppBar(
-        backgroundColor: ColorPalette.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text(
-          widget.isEdit ? 'Maal Badlo' : 'Maal Jodein',
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
-        ),
+      appBar: AppRegisterAppBar(
+        english: widget.isEdit ? 'Edit Goods' : 'Goods',
+        hindi: widget.isEdit ? 'Maal Badlo' : 'Maal Jodein',
         actions: [
           if (widget.isEdit)
             IconButton(
               onPressed: _isDeleting ? null : _handleDelete,
-              icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+              icon: const Icon(
+                Icons.delete_outline_rounded,
+                color: ColorPalette.destructive,
+              ),
             ),
         ],
       ),
@@ -226,20 +238,18 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     AppTextField(
+                      english: 'Goods Name',
+                      hindi: 'Maal ka Naam',
                       controller: _nameController,
-                      label: 'Maal ka Naam',
                       textInputAction: TextInputAction.next,
                       validator: (value) =>
                           Validators.requiredText(value, fieldName: 'Maal ka naam'),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
-                      'Unit · Ikai',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: Color(0xFF636366),
-                      ),
+                    const AppFormFieldLabel(
+                      english: 'Unit',
+                      hindi: 'Ikai',
+                      compact: true,
                     ),
                     const SizedBox(height: 10),
                     Wrap(
@@ -269,16 +279,19 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
                     if (_useCustomUnit) ...[
                       const SizedBox(height: 12),
                       AppTextField(
+                        english: 'Unit',
+                        hindi: 'Unit likhein',
                         controller: _customUnitController,
-                        label: 'Unit likhein',
                         validator: (value) =>
                             Validators.requiredText(value, fieldName: 'Unit'),
                       ),
                     ],
                     const SizedBox(height: 20),
                     AppTextField(
+                      english: 'Purchase Rate',
+                      hindi: 'Kharid Daam',
                       controller: _purchaseRateController,
-                      label: 'Kharid Daam (optional)',
+                      helper: 'Optional',
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                       textInputAction: TextInputAction.next,
@@ -286,8 +299,10 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
                     ),
                     const SizedBox(height: 16),
                     AppTextField(
+                      english: 'Sale Rate',
+                      hindi: 'Bikri Daam',
                       controller: _saleRateController,
-                      label: 'Bikri Daam (optional)',
+                      helper: 'Optional',
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                       textInputAction: TextInputAction.done,
@@ -300,7 +315,8 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
                     ),
                     const SizedBox(height: 28),
                     AppPrimaryButton(
-                      label: widget.isEdit ? 'Save Karein' : 'Maal Jodein',
+                      english: widget.isEdit ? 'Save' : 'Add',
+                      hindi: widget.isEdit ? 'Save Karein' : 'Jodein',
                       isLoading: _isSaving,
                       onPressed: _handleSave,
                     ),

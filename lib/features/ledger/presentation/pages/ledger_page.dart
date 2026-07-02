@@ -1,3 +1,4 @@
+import 'package:bt_business/core/errors/user_error_messages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,9 +6,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
+import '../../../../shared/widgets/buttons/app_register_fab.dart';
+import '../../../../shared/widgets/chips/app_filter_chip.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
-import '../../../../shared/widgets/labels/bilingual_label.dart';
+import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../providers/party_ledger_extras_provider.dart';
 import '../providers/party_providers.dart';
 import '../widgets/party_list_tile.dart';
@@ -44,25 +47,15 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
 
     return Scaffold(
       backgroundColor: ColorPalette.background,
-      appBar: AppBar(
-        backgroundColor: ColorPalette.background,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: const BilingualLabel(
-          english: 'Party Ledger',
-          hindi: 'Hisaab',
-          compact: true,
-        ),
+      appBar: const AppRegisterAppBar(
+        english: 'Party',
+        hindi: 'Hisaab',
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: AppRegisterFab(
         onPressed: () => context.push(RouteNames.ledgerPartyNew),
-        backgroundColor: ColorPalette.purple,
-        icon: const Icon(Icons.person_add_alt_1_rounded),
-        label: const BilingualLabel(
-          english: 'New Party',
-          hindi: 'Naya Party',
-          compact: true,
-        ),
+        english: 'New Party',
+        hindi: 'Naya Party',
+        icon: Icons.person_add,
       ),
       body: SafeArea(
         child: Column(
@@ -73,7 +66,6 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
                 controller: _searchController,
                 onChanged: (value) {
                   ref.read(partySearchQueryProvider.notifier).state = value;
-                  setState(() {});
                 },
                 onClear: _clearSearch,
               ),
@@ -84,7 +76,7 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _FilterChip(
+                    AppFilterChip(
                       label: 'Sab',
                       selected: filter == PartyBalanceFilter.all,
                       onSelected: () => ref
@@ -92,7 +84,7 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
                           .state = PartyBalanceFilter.all,
                     ),
                     const SizedBox(width: 8),
-                    _FilterChip(
+                    AppFilterChip(
                       label: 'Lena Hai',
                       selected: filter == PartyBalanceFilter.lena,
                       onSelected: () => ref
@@ -100,7 +92,7 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
                           .state = PartyBalanceFilter.lena,
                     ),
                     const SizedBox(width: 8),
-                    _FilterChip(
+                    AppFilterChip(
                       label: 'Dena Hai',
                       selected: filter == PartyBalanceFilter.dena,
                       onSelected: () => ref
@@ -108,7 +100,7 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
                           .state = PartyBalanceFilter.dena,
                     ),
                     const SizedBox(width: 8),
-                    _FilterChip(
+                    AppFilterChip(
                       label: 'Saaf Hisaab',
                       selected: filter == PartyBalanceFilter.saaf,
                       onSelected: () => ref
@@ -125,8 +117,8 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
                 loading: () => const AppLoadingView(),
                 error: (error, _) => AppErrorView(
                   title: 'Hisaab load nahi ho paya',
-                  message: error.toString(),
-                  actionLabel: 'Phir try karein',
+                  message: UserErrorMessages.from(error),
+                  actionEnglish: 'Try Again', actionHindi: 'Phir Try Karein',
                   onAction: () => ref.invalidate(partyListProvider),
                   icon: Icons.cloud_off_rounded,
                 ),
@@ -150,7 +142,7 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
                               _emptyMessage(filter),
                               style: const TextStyle(
                                 fontSize: 16,
-                                color: Color(0xFF636366),
+                                color: ColorPalette.labelSecondary,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -210,28 +202,5 @@ class _LedgerPageState extends ConsumerState<LedgerPage> {
       PartyBalanceFilter.saaf => 'Saaf hisaab wala koi party nahi',
       PartyBalanceFilter.all => 'Pehla party jodein',
     };
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return FilterChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onSelected(),
-      selectedColor: ColorPalette.purple.withValues(alpha: 0.15),
-      checkmarkColor: ColorPalette.purple,
-    );
   }
 }
