@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/color_palette.dart';
+import '../../../core/localization/label_registry.dart';
+import '../../../core/theme/app_text_theme.dart';
 
-/// English heading with simple Hindi subtitle in parentheses on the line below.
+/// English heading with daily spoken Hindi subtitle — mandatory on every screen.
+///
+/// BT Business is not a translated app. Assistant language settings never
+/// remove or replace these labels. Use [fromKey] for [LabelRegistry] labels.
 class BilingualLabel extends StatelessWidget {
   const BilingualLabel({
     super.key,
@@ -13,6 +17,27 @@ class BilingualLabel extends StatelessWidget {
     this.compact = false,
     this.crossAxisAlignment = CrossAxisAlignment.start,
   });
+
+  /// Builds from [LabelRegistry] — English primary, daily Hindi below.
+  factory BilingualLabel.fromKey(
+    String labelKey, {
+    Key? key,
+    TextStyle? englishStyle,
+    TextStyle? hindiStyle,
+    bool compact = false,
+    CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start,
+  }) {
+    final pair = LabelRegistry.get(labelKey);
+    return BilingualLabel(
+      key: key,
+      english: pair.english,
+      hindi: pair.hindi,
+      englishStyle: englishStyle,
+      hindiStyle: hindiStyle,
+      compact: compact,
+      crossAxisAlignment: crossAxisAlignment,
+    );
+  }
 
   final String english;
   final String hindi;
@@ -31,7 +56,7 @@ class BilingualLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final appText = context.appText;
 
     return Column(
       crossAxisAlignment: crossAxisAlignment,
@@ -40,10 +65,7 @@ class BilingualLabel extends StatelessWidget {
         Text(
           english,
           style: englishStyle ??
-              theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: ColorPalette.labelPrimary,
-                letterSpacing: -0.2,
+              appText.primaryBold.copyWith(
                 fontSize: compact ? 14 : 16,
                 height: 1.2,
               ),
@@ -52,11 +74,8 @@ class BilingualLabel extends StatelessWidget {
         Text(
           _hindiLine,
           style: hindiStyle ??
-              theme.textTheme.bodySmall?.copyWith(
-                color: ColorPalette.hindiText,
+              appText.hindi.copyWith(
                 fontSize: compact ? 12 : 13,
-                fontWeight: FontWeight.w500,
-                height: 1.35,
               ),
         ),
       ],

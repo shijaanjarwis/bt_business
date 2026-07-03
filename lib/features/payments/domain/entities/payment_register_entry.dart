@@ -1,3 +1,4 @@
+import '../../../../core/accounting/payment_breakdown.dart';
 import '../../../../core/accounting/transaction_types.dart';
 
 /// One jama or paise diye row in the payment register.
@@ -13,7 +14,7 @@ class PaymentRegisterEntry {
     required this.createdAt,
     this.note,
     this.balanceAfterPayment,
-    this.paymentModeLabel = 'Cash',
+    this.paymentBreakdown = const PaymentBreakdown(),
     this.reminderDate,
   });
 
@@ -27,8 +28,22 @@ class PaymentRegisterEntry {
   final DateTime createdAt;
   final String? note;
   final double? balanceAfterPayment;
-  final String paymentModeLabel;
+  final PaymentBreakdown paymentBreakdown;
   final DateTime? reminderDate;
+
+  String get paymentModeLabel {
+    if (paymentBreakdown.upi > 0 &&
+        paymentBreakdown.cash <= 0 &&
+        paymentBreakdown.bank <= 0) {
+      return 'UPI';
+    }
+    if (paymentBreakdown.bank > 0 &&
+        paymentBreakdown.cash <= 0 &&
+        paymentBreakdown.upi <= 0) {
+      return 'Bank';
+    }
+    return 'Cash';
+  }
 
   bool get isPending => reminderDate != null;
 

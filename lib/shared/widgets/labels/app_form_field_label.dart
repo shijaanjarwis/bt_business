@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_spacing.dart';
-import '../../../core/theme/color_palette.dart';
+import '../../../core/theme/app_text_theme.dart';
 import 'bilingual_label.dart';
 
 /// Standard form label block — English title, Hindi subtitle, optional helper below.
@@ -33,12 +33,7 @@ class AppFormFieldLabel extends StatelessWidget {
           SizedBox(height: compact ? AppSpacing.xs : AppSpacing.sm),
           Text(
             helper!,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: ColorPalette.labelSecondary,
-              height: 1.35,
-            ),
+            style: context.appText.helper,
           ),
         ],
       ],

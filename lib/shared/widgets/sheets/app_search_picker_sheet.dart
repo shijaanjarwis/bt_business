@@ -152,7 +152,7 @@ class _AppSearchPickerSheetState<T> extends ConsumerState<AppSearchPickerSheet<T
                   error: (error, _) => Center(
                     child: Text(
                       UserErrorMessages.from(error),
-                      style: const TextStyle(color: ColorPalette.labelSecondary),
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),
                   data: (items) {

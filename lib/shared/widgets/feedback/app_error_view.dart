@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/theme/app_text_theme.dart';
 import '../../../core/theme/color_palette.dart';
 import '../buttons/app_primary_button.dart';
 
@@ -36,22 +37,13 @@ class AppErrorView extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: ColorPalette.labelPrimary,
-              ),
+              style: context.appText.primaryBold.copyWith(fontSize: 17),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: ColorPalette.labelSecondary,
-                height: 1.4,
-              ),
+              style: context.appText.secondary,
             ),
             if (actionEnglish != null &&
                 actionHindi != null &&

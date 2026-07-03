@@ -54,7 +54,7 @@ class ItemListTile extends StatelessWidget {
               const SizedBox(width: 4),
               const Icon(
                 Icons.chevron_right_rounded,
-                color: Color(0xFFC7C7CC),
+                color: ColorPalette.iconSecondary,
               ),
             ],
           ),

@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
+import '../../../../shared/widgets/layout/main_shell_insets.dart';
 import '../../../../shared/widgets/inputs/app_search_field.dart';
 import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
-import '../../../../shared/widgets/sheets/app_quick_entry_sheet.dart';
 import '../../../../shared/widgets/filters/register_date_filter_bar.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
@@ -45,10 +45,6 @@ class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage>
       appBar: const AppRegisterAppBar(
         english: 'Full Record',
         hindi: 'Poora Record',
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => AppQuickEntrySheet.show(context),
-        child: const Icon(Icons.add),
       ),
       body: SafeArea(
         child: Column(
@@ -100,7 +96,12 @@ class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage>
                         physics: const AlwaysScrollableScrollPhysics(
                           parent: BouncingScrollPhysics(),
                         ),
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                        padding: EdgeInsets.fromLTRB(
+                          20,
+                          0,
+                          20,
+                          MainShellInsets.scrollBottomWithFab(context),
+                        ),
                         children: [
                           SizedBox(height: MediaQuery.sizeOf(context).height * 0.14),
                           Center(
@@ -128,7 +129,12 @@ class _TransactionHistoryPageState extends ConsumerState<TransactionHistoryPage>
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                      padding: EdgeInsets.fromLTRB(
+                        20,
+                        0,
+                        20,
+                        MainShellInsets.scrollBottomWithFab(context),
+                      ),
                       itemCount: _listItemCount(sections),
                       itemBuilder: (context, index) {
                         if (index == _listItemCount(sections) - 1) {

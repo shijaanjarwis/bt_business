@@ -59,6 +59,10 @@ abstract final class TransactionsTable {
   static const String reminderDate = 'reminder_date';
   static const String parentTransactionId = 'parent_transaction_id';
   static const String paymentMode = 'payment_mode';
+  static const String cashAmount = 'cash_amount';
+  static const String upiAmount = 'upi_amount';
+  static const String bankAmount = 'bank_amount';
+  static const String chequeAmount = 'cheque_amount';
   static const String gstType = 'gst_type';
   static const String subtotal = 'subtotal';
   static const String discountTotal = 'discount_total';

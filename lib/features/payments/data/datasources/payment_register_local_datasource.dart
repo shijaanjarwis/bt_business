@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart' hide DatabaseException;
 
+import '../../../../core/accounting/payment_breakdown.dart';
 import '../../../../core/accounting/transaction_types.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/reminders/reminder_service.dart';
@@ -130,6 +131,10 @@ final class PaymentRegisterLocalDataSource {
         t.${TransactionsTable.date} AS date,
         t.${TransactionsTable.createdAt} AS created_at,
         t.${TransactionsTable.totalAmount} AS amount,
+        t.${TransactionsTable.cashAmount} AS cash_amount,
+        t.${TransactionsTable.upiAmount} AS upi_amount,
+        t.${TransactionsTable.bankAmount} AS bank_amount,
+        t.${TransactionsTable.paidAmount} AS paid_amount,
         t.${TransactionsTable.notes} AS notes,
         t.${TransactionsTable.reminderDate} AS reminder_date,
         p.${PartiesTable.name} AS party_name,
@@ -156,6 +161,10 @@ final class PaymentRegisterLocalDataSource {
         t.${TransactionsTable.date} AS date,
         t.${TransactionsTable.createdAt} AS created_at,
         t.${TransactionsTable.totalAmount} AS amount,
+        t.${TransactionsTable.cashAmount} AS cash_amount,
+        t.${TransactionsTable.upiAmount} AS upi_amount,
+        t.${TransactionsTable.bankAmount} AS bank_amount,
+        t.${TransactionsTable.paidAmount} AS paid_amount,
         t.${TransactionsTable.notes} AS notes,
         t.${TransactionsTable.reminderDate} AS reminder_date,
         p.${PartiesTable.name} AS party_name,
@@ -171,16 +180,25 @@ final class PaymentRegisterLocalDataSource {
   }
 
   PaymentRegisterEntry _mapRow(Map<String, Object?> row) {
+    final amount = (row['amount'] as num?)?.toDouble() ?? 0;
+    final breakdown = PaymentBreakdown.fromStored(
+      cashAmount: (row['cash_amount'] as num?)?.toDouble() ?? 0,
+      upiAmount: (row['upi_amount'] as num?)?.toDouble() ?? 0,
+      bankAmount: (row['bank_amount'] as num?)?.toDouble() ?? 0,
+      chequeAmount: 0,
+      paidAmount: (row['paid_amount'] as num?)?.toDouble() ?? amount,
+    );
     return PaymentRegisterEntry(
       id: row['id']! as String,
       type: row['type']! as String,
       partyId: row['party_id']! as String,
       partyName: row['party_name']! as String,
       partyPhone: row['party_phone'] as String? ?? '',
-      amount: (row['amount'] as num?)?.toDouble() ?? 0,
+      amount: amount,
       date: DateTime.parse(row['date']! as String),
       createdAt: DateTime.parse(row['created_at']! as String),
       note: row['notes'] as String?,
+      paymentBreakdown: breakdown,
       reminderDate: ReminderService.parseReminderDate(
         row['reminder_date'] as String?,
       ),

@@ -1,15 +1,8 @@
+import 'item_unit_library.dart';
+
 /// Unit presets for Maal shortcuts (Bikri/Kharid entry helpers).
 abstract final class ItemUnits {
-  static const presets = [
-    'Kg',
-    'Packet',
-    'Box',
-    'Piece',
-    'Litre',
-    'Dozen',
-    'Nos',
-    'Meter',
-  ];
+  static List<String> get presets => ItemUnitLibrary.presets;
 
-  static const defaultUnit = 'Piece';
+  static String get defaultUnit => ItemUnitLibrary.defaultUnit;
 }

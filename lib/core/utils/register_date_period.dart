@@ -1,6 +1,7 @@
 /// Shared date filter periods for register list screens.
 enum RegisterDatePeriod {
   today('Aaj', 'Today'),
+  yesterday('Kal', 'Yesterday'),
   thisWeek('Is Hafte', 'This Week'),
   thisMonth('Is Mahine', 'This Month'),
   custom('Khud Chunein', 'Custom');
@@ -23,6 +24,10 @@ abstract final class RegisterDateRange {
 
     return switch (period) {
       RegisterDatePeriod.today => (start: todayDate, end: todayDate),
+      RegisterDatePeriod.yesterday => (
+          start: todayDate.subtract(const Duration(days: 1)),
+          end: todayDate.subtract(const Duration(days: 1)),
+        ),
       RegisterDatePeriod.thisWeek => (
           start: todayDate.subtract(Duration(days: todayDate.weekday - 1)),
           end: todayDate,

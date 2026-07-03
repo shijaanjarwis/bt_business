@@ -2,18 +2,16 @@ import 'package:bt_business/core/utils/register_date_period.dart';
 import 'package:bt_business/features/home/domain/entities/dashboard_summary.dart';
 import 'package:bt_business/features/home/presentation/models/dashboard_metric.dart';
 import 'package:bt_business/features/home/presentation/models/dashboard_metrics_builder.dart';
+import 'package:bt_business/features/home/presentation/models/dashboard_summary_kind.dart';
+import 'package:bt_business/features/home/presentation/providers/dashboard_summary_providers.dart';
 import 'package:bt_business/features/home/presentation/utils/dashboard_register_navigation.dart';
-import 'package:bt_business/features/payments/presentation/models/payment_register_filter.dart';
-import 'package:bt_business/features/payments/presentation/providers/payment_providers.dart';
-import 'package:bt_business/features/sales/presentation/models/sale_register_filter.dart';
-import 'package:bt_business/features/sales/presentation/providers/sale_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
-  testWidgets('today sales card sets sale register to today', (tester) async {
+  testWidgets('today sales card opens dashboard summary detail', (tester) async {
     final metrics = DashboardMetricsBuilder.fromSummary(
       const DashboardSummary(
         todaysProfit: 0,
@@ -54,8 +52,10 @@ void main() {
           ),
         ),
         GoRoute(
-          path: '/sales',
-          builder: (_, _) => const SizedBox(key: Key('sales')),
+          path: '/summary/:kind',
+          builder: (_, state) => SizedBox(
+            key: Key('summary-${state.pathParameters['kind']}'),
+          ),
         ),
       ],
     );
@@ -73,12 +73,14 @@ void main() {
     await tester.tap(find.text('Open Sales'));
     await tester.pumpAndSettle();
 
-    expect(container.read(saleRegisterDatePeriodProvider), RegisterDatePeriod.today);
-    expect(container.read(saleRegisterFilterProvider), SaleRegisterFilter.all);
-    expect(find.byKey(const Key('sales')), findsOneWidget);
+    expect(
+      container.read(dashboardSummaryDatePeriodProvider(DashboardSummaryKind.todaySales)),
+      RegisterDatePeriod.today,
+    );
+    expect(find.byKey(const Key('summary-today-sales')), findsOneWidget);
   });
 
-  testWidgets('today cash card sets payment register to received today', (tester) async {
+  testWidgets('today cash received card opens dashboard summary detail', (tester) async {
     final metrics = DashboardMetricsBuilder.fromSummary(
       const DashboardSummary(
         todaysProfit: 0,
@@ -101,7 +103,7 @@ void main() {
       ),
     );
     final todayCash = metrics.firstWhere(
-      (m) => m.target == DashboardMetricTarget.todayCash,
+      (m) => m.target == DashboardMetricTarget.todayCashReceived,
     );
 
     final router = GoRouter(
@@ -113,14 +115,16 @@ void main() {
               return ElevatedButton(
                 onPressed: () =>
                     DashboardRegisterNavigation.open(context, ref, todayCash),
-                child: const Text('Open Payments'),
+                child: const Text('Open Cash'),
               );
             },
           ),
         ),
         GoRoute(
-          path: '/payments',
-          builder: (_, _) => const SizedBox(key: Key('payments')),
+          path: '/summary/:kind',
+          builder: (_, state) => SizedBox(
+            key: Key('summary-${state.pathParameters['kind']}'),
+          ),
         ),
       ],
     );
@@ -135,11 +139,15 @@ void main() {
       tester.element(find.byType(MaterialApp)),
     );
 
-    await tester.tap(find.text('Open Payments'));
+    await tester.tap(find.text('Open Cash'));
     await tester.pumpAndSettle();
 
-    expect(container.read(paymentRegisterDatePeriodProvider), RegisterDatePeriod.today);
-    expect(container.read(paymentRegisterFilterProvider), PaymentRegisterFilter.received);
-    expect(find.byKey(const Key('payments')), findsOneWidget);
+    expect(
+      container.read(
+        dashboardSummaryDatePeriodProvider(DashboardSummaryKind.todayCashReceived),
+      ),
+      RegisterDatePeriod.today,
+    );
+    expect(find.byKey(const Key('summary-today-cash-received')), findsOneWidget);
   });
 }

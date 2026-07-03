@@ -27,6 +27,11 @@ abstract final class RouteNames {
   static const String paymentsEdit = '/payments/:id/edit';
   static const String paymentsDetail = '/payments/:id';
   static const String history = '/history';
+  static const String reminders = '/reminders';
+  static const String dashboardSummary = '/summary';
+
+  static String reminderListPath(String slug) => '/reminders/$slug';
+  static String dashboardSummaryDetailPath(String slug) => '/summary/$slug';
 
   static String ledgerPartyDetailPath(String id) => '/ledger/party/$id';
   static String ledgerPartyEditPath(String id) => '/ledger/party/$id/edit';
@@ -53,6 +58,10 @@ abstract final class RouteNames {
   static const String paymentsEditName = 'paymentsEdit';
   static const String paymentsDetailName = 'paymentsDetail';
   static const String historyName = 'history';
+  static const String remindersName = 'reminders';
+  static const String reminderListName = 'reminderList';
+  static const String dashboardSummaryName = 'dashboardSummary';
+  static const String dashboardSummaryDetailName = 'dashboardSummaryDetail';
   static const String homeName = 'home';
   static const String splashName = 'splash';
   static const String ledgerName = 'ledger';

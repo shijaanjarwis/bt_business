@@ -13,7 +13,9 @@ import '../../../../features/ledger/presentation/utils/party_ledger_ui_helpers.d
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/register/register_detail_scaffold.dart';
+import '../../../../shared/widgets/register/register_party_link.dart';
 import '../../../../shared/utils/register_party_label.dart';
+import '../../../ledger/presentation/providers/party_providers.dart';
 import '../../../sales/presentation/providers/sale_providers.dart';
 import '../providers/payment_providers.dart';
 
@@ -55,9 +57,12 @@ class PaymentDetailPage extends ConsumerWidget {
           );
         }
 
+        final livePartyName =
+            ref.watch(partyDetailProvider(entry.partyId)).valueOrNull?.name ??
+                entry.partyName;
         final partyTitle = RegisterPartyLabel.paymentTitle(
           partyId: entry.partyId,
-          partyName: entry.partyName,
+          partyName: livePartyName,
           cashCustomerPartyId: cashCustomerId,
         );
         final timeLabel = DateFormat('h:mm a').format(entry.createdAt);
@@ -75,10 +80,11 @@ class PaymentDetailPage extends ConsumerWidget {
           hindiTitle: '$typeHindi Detail',
           onEdit: () => context.push(RouteNames.paymentsEditPath(entry.id)),
           children: [
-            RegisterDetailRow(
-              english: 'Party',
-              hindi: 'Party',
-              value: partyTitle,
+            RegisterDetailPartyRow(
+              partyId: entry.partyId,
+              partyName: livePartyName,
+              cashCustomerPartyId: cashCustomerId,
+              displayName: partyTitle,
             ),
             RegisterDetailRow(
               english: 'Date',

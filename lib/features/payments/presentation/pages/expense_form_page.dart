@@ -10,6 +10,7 @@ import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
+import '../../../../shared/widgets/layout/main_shell_insets.dart';
 import '../../../../shared/widgets/layout/responsive_form_container.dart';
 import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../domain/repositories/expense_repository.dart';
@@ -95,7 +96,7 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+            padding: EdgeInsets.fromLTRB(20, 0, 20, MainShellInsets.scrollBottom(context)),
             children: [
               ResponsiveFormContainer(
                 child: Column(

@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/localization/language_provider.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/widgets/branding/app_branding.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
-import '../utils/dashboard_greeting.dart';
 
 /// Dashboard header — logo, business name, date and greeting.
-class DashboardHeader extends StatelessWidget {
+class DashboardHeader extends ConsumerWidget {
   const DashboardHeader({
     super.key,
     required this.businessName,
@@ -20,9 +21,11 @@ class DashboardHeader extends StatelessWidget {
   final VoidCallback? onProfileTap;
 
   @override
-  Widget build(BuildContext context) {
-    final greeting = DashboardGreeting.forTime();
+  Widget build(BuildContext context, WidgetRef ref) {
     final today = DateTime.now();
+    final assistantLanguage = ref.watch(assistantLanguageProvider);
+    final localization = ref.watch(localizationServiceProvider);
+    final greeting = localization.greeting(assistantLanguage);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,12 +56,8 @@ class DashboardHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.md),
-            const Expanded(
-              child: BilingualLabel(
-                english: 'Dashboard',
-                hindi: 'Home',
-                compact: true,
-              ),
+            Expanded(
+              child: BilingualLabel.fromKey('dashboard', compact: true),
             ),
             if (onProfileTap != null)
               IconButton(
@@ -90,20 +89,15 @@ class DashboardHeader extends StatelessWidget {
             color: ColorPalette.labelSecondary,
           ),
         ),
-        const SizedBox(height: AppSpacing.xs),
-        BilingualLabel(
-          english: greeting.english,
-          hindi: greeting.hindi,
-          compact: true,
-          englishStyle: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          greeting,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
             color: ColorPalette.purple,
-          ),
-          hindiStyle: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: ColorPalette.purple,
+            letterSpacing: 0.2,
+            height: 1.35,
           ),
         ),
       ],

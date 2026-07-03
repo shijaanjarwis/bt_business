@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/theme/app_text_theme.dart';
 import '../../../core/theme/color_palette.dart';
 import '../../../core/theme/transaction_badge_theme.dart';
 import '../../../core/utils/currency_formatter.dart';
@@ -48,6 +49,7 @@ class RegisterEntryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final timeLabel = DateFormat('h:mm a').format(createdAt);
+    final appText = context.appText;
 
     return Material(
       color: ColorPalette.cardSurface,
@@ -69,11 +71,7 @@ class RegisterEntryCard extends StatelessWidget {
                       children: [
                         Text(
                           partyTitle,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: ColorPalette.labelPrimary,
-                          ),
+                          style: appText.listTitle.copyWith(fontSize: 15),
                         ),
                         if (badgeKind != null) ...[
                           const SizedBox(height: 8),
@@ -83,10 +81,7 @@ class RegisterEntryCard extends StatelessWidget {
                           const SizedBox(height: 6),
                           Text(
                             subtitle!,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: ColorPalette.labelSecondary,
-                            ),
+                            style: appText.caption,
                           ),
                         ],
                       ],
@@ -114,10 +109,7 @@ class RegisterEntryCard extends StatelessWidget {
                     const Spacer(),
                     Text(
                       '${DateFormatter.shortDate(date)} · $timeLabel',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: ColorPalette.labelSecondary,
-                      ),
+                      style: appText.caption,
                     ),
                   ],
                 ),

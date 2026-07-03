@@ -7,6 +7,7 @@ import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
+import '../../../../shared/widgets/pickers/show_unit_picker.dart';
 import '../../domain/repositories/item_repository.dart';
 import '../providers/item_providers.dart';
 
@@ -31,20 +32,24 @@ class QuickItemCreateSheet extends ConsumerStatefulWidget {
 class _QuickItemCreateSheetState extends ConsumerState<QuickItemCreateSheet> {
   final _formKey = GlobalKey<FormState>();
   late final _nameController = TextEditingController(text: widget.initialName);
-  late final _customUnitController = TextEditingController();
   String _selectedUnit = ItemUnits.defaultUnit;
-  bool _useCustomUnit = false;
+
   bool _isSaving = false;
 
   @override
   void dispose() {
     _nameController.dispose();
-    _customUnitController.dispose();
     super.dispose();
   }
 
-  String get _unit =>
-      _useCustomUnit ? _customUnitController.text.trim() : _selectedUnit;
+  bool get _isOtherUnit => !ItemUnits.presets.contains(_selectedUnit);
+
+  Future<void> _pickOtherUnit() async {
+    final picked = await showUnitPicker(context);
+    if (picked != null && mounted) {
+      setState(() => _selectedUnit = picked);
+    }
+  }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -54,7 +59,7 @@ class _QuickItemCreateSheetState extends ConsumerState<QuickItemCreateSheet> {
       final result = await ref.read(saveItemUseCaseProvider)(
         SaveItemInput(
           name: _nameController.text,
-          unit: _unit,
+          unit: _selectedUnit,
         ),
       );
 
@@ -114,30 +119,26 @@ class _QuickItemCreateSheetState extends ConsumerState<QuickItemCreateSheet> {
                 runSpacing: 8,
                 children: [
                   ...ItemUnits.presets.map((unit) {
-                    final selected = !_useCustomUnit && _selectedUnit == unit;
+                    final selected = !_isOtherUnit && _selectedUnit == unit;
                     return ChoiceChip(
                       label: Text(unit),
                       selected: selected,
-                      onSelected: (_) => setState(() {
-                        _useCustomUnit = false;
-                        _selectedUnit = unit;
-                      }),
+                      onSelected: (_) => setState(() => _selectedUnit = unit),
                     );
                   }),
                   ChoiceChip(
-                    label: const Text('Other · Aur'),
-                    selected: _useCustomUnit,
-                    onSelected: (_) => setState(() => _useCustomUnit = true),
+                    label: Text(_isOtherUnit ? _selectedUnit : 'Other · Aur'),
+                    selected: _isOtherUnit,
+                    onSelected: (_) => _pickOtherUnit(),
                   ),
                 ],
               ),
-              if (_useCustomUnit) ...[
-                const SizedBox(height: 12),
-                AppTextField(
-                  english: 'Unit',
-                  hindi: 'Ikai',
-                  controller: _customUnitController,
-                  validator: (v) => Validators.requiredText(v, fieldName: 'Unit'),
+              if (_isOtherUnit) ...[
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: _pickOtherUnit,
+                  icon: const Icon(Icons.search_rounded, size: 18),
+                  label: const Text('Unit library kholein'),
                 ),
               ],
               const SizedBox(height: 20),

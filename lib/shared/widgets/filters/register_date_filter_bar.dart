@@ -55,6 +55,7 @@ class RegisterDateFilterBar extends ConsumerWidget {
         children: [
           for (final value in [
             RegisterDatePeriod.today,
+            RegisterDatePeriod.yesterday,
             RegisterDatePeriod.thisWeek,
             RegisterDatePeriod.thisMonth,
           ])

@@ -12,6 +12,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'app.dart';
 import 'core/di/core_providers.dart';
 import 'core/di/data_revision.dart';
+import 'core/localization/localization_service.dart';
 import 'core/logging/startup_trace.dart';
 import 'core/reminders/reminder_notification_service.dart';
 import 'core/reminders/reminder_providers.dart';
@@ -30,6 +31,8 @@ Future<void> bootstrap() async {
 
   tz_data.initializeTimeZones();
   tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
+
+  await LocalizationService.instance.ensureLoaded();
 
   final container = ProviderContainer();
   final logger = container.read(loggerProvider);

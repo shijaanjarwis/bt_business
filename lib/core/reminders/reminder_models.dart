@@ -35,6 +35,7 @@ class ReminderEntry {
     required this.reminderDate,
     required this.dueAmount,
     required this.direction,
+    this.partyPhone = '',
   });
 
   final String transactionId;
@@ -45,6 +46,7 @@ class ReminderEntry {
   final DateTime reminderDate;
   final double dueAmount;
   final ReminderDirection direction;
+  final String partyPhone;
 
   bool get isOverdue {
     final today = DateTime.now();

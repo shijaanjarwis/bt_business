@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/theme/app_text_theme.dart';
 import '../../../core/theme/color_palette.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../labels/bilingual_label.dart';
@@ -41,11 +42,10 @@ class RegisterDetailRow extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: valueColor ?? ColorPalette.labelPrimary,
-              ),
+              style: (valueColor != null
+                      ? context.appText.primaryBold.copyWith(color: valueColor)
+                      : context.appText.primaryBold)
+                  .copyWith(fontSize: 15),
             ),
           ),
         ],

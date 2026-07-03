@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/theme/app_text_theme.dart';
 import '../../../core/theme/color_palette.dart';
 import '../labels/bilingual_label.dart';
 
@@ -46,11 +47,7 @@ class AppFormSection extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             helper!,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: ColorPalette.labelSecondary,
-            ),
+            style: context.appText.helper,
           ),
         ],
         const SizedBox(height: AppSpacing.sm),

@@ -1,6 +1,8 @@
 import 'package:sqflite/sqflite.dart' hide DatabaseException;
 
 import '../../../../core/accounting/account_types.dart';
+import '../../../../core/accounting/payment_breakdown.dart';
+import '../../../../core/accounting/payment_journal_helper.dart';
 import '../../../../core/accounting/payment_modes.dart';
 import '../../../../core/accounting/transaction_types.dart';
 import '../../../../core/errors/exceptions.dart';
@@ -30,21 +32,27 @@ final class SalePostingService {
       throw const ValidationException('Sale amount must be greater than zero');
     }
 
-    final paidAmount = (input.paidAmount ?? totals.grandTotal)
-        .clamp(0, totals.grandTotal)
-        .toDouble();
+    final breakdown = PaymentBreakdown.resolve(
+      breakdown: input.paymentBreakdown,
+      paymentMode: input.paymentMode,
+      grandTotal: totals.grandTotal,
+      paidAmount: input.paidAmount,
+    );
+    final paidAmount = breakdown.paidTotal;
     if (paidAmount < 0) {
       throw const ValidationException('Paid amount cannot be negative');
     }
+    if (paidAmount > totals.grandTotal) {
+      throw const ValidationException('Paid amount cannot exceed total');
+    }
 
-    final dueAmount = totals.grandTotal - paidAmount;
+    final dueAmount = breakdown.remainingCredit(totals.grandTotal);
+    final paymentMode = dueAmount > 0 ? PaymentMode.credit : PaymentMode.cash;
     final reminderDate = ReminderService.effectiveReminderDate(
       transactionType: TransactionTypes.sale,
       dueAmount: dueAmount,
       requestedReminderDate: input.reminderDate,
     );
-
-    await _validateStock(input.lines, excludeTransactionId: input.id);
 
     final transactionId = input.id ?? IdGenerator.newId();
     final now = DateTime.now();
@@ -68,8 +76,12 @@ final class SalePostingService {
         TransactionsTable.totalAmount: totals.grandTotal,
         TransactionsTable.paidAmount: paidAmount,
         TransactionsTable.dueAmount: dueAmount,
+        TransactionsTable.cashAmount: breakdown.cash,
+        TransactionsTable.upiAmount: breakdown.upi,
+        TransactionsTable.bankAmount: breakdown.bank,
+        TransactionsTable.chequeAmount: breakdown.cheque,
         TransactionsTable.reminderDate: ReminderService.reminderDateIso(reminderDate),
-        TransactionsTable.paymentMode: input.paymentMode.code,
+        TransactionsTable.paymentMode: paymentMode.code,
         TransactionsTable.gstType: input.gstType.code,
         TransactionsTable.subtotal: totals.subtotal,
         TransactionsTable.discountTotal: totals.discountTotal,
@@ -123,7 +135,15 @@ final class SalePostingService {
         );
       }
 
-      await _postJournal(txn, businessId: businessId, transactionId: transactionId, input: input, totals: totals);
+      await _postJournal(
+        txn,
+        businessId: businessId,
+        transactionId: transactionId,
+        input: input,
+        breakdown: breakdown,
+        dueAmount: dueAmount,
+        totals: totals,
+      );
     });
 
     final saved = await _fetchEntry(transactionId);
@@ -149,11 +169,8 @@ final class SalePostingService {
     if (rows.isEmpty) return;
 
     final transaction = rows.first;
-    final paymentMode = PaymentMode.fromCode(
-      transaction[TransactionsTable.paymentMode]! as String? ?? PaymentMode.cash.code,
-    );
     final partyId = transaction[TransactionsTable.partyId] as String?;
-    final grandTotal = (transaction[TransactionsTable.totalAmount] as num?)?.toDouble() ?? 0;
+    final dueAmount = (transaction[TransactionsTable.dueAmount] as num?)?.toDouble() ?? 0;
 
     final movements = await txn.query(
       StockMovementsTable.tableName,
@@ -175,7 +192,7 @@ final class SalePostingService {
       );
     }
 
-    if (paymentMode == PaymentMode.credit && partyId != null) {
+    if (dueAmount > 0 && partyId != null) {
       await txn.rawUpdate(
         '''
         UPDATE ${PartiesTable.tableName}
@@ -183,7 +200,7 @@ final class SalePostingService {
             ${PartiesTable.updatedAt} = ?
         WHERE ${PartiesTable.id} = ?
         ''',
-        [grandTotal, now, partyId],
+        [dueAmount, now, partyId],
       );
     }
 
@@ -214,6 +231,8 @@ final class SalePostingService {
     required String businessId,
     required String transactionId,
     required SaveSaleInput input,
+    required PaymentBreakdown breakdown,
+    required double dueAmount,
     required ({
       double subtotal,
       double discountTotal,
@@ -224,8 +243,6 @@ final class SalePostingService {
       double grandTotal,
     }) totals,
   }) async {
-    final cashAccountId = await _accountId(txn, businessId, AccountTypes.cash);
-    final receivableAccountId = await _accountId(txn, businessId, AccountTypes.receivable);
     final salesAccountId = await _accountId(txn, businessId, AccountTypes.sales);
     final cgstAccountId = await _accountId(txn, businessId, AccountTypes.cgstPayable);
     final sgstAccountId = await _accountId(txn, businessId, AccountTypes.sgstPayable);
@@ -233,26 +250,16 @@ final class SalePostingService {
     final stockAccountId = await _accountId(txn, businessId, AccountTypes.stock);
     final cogsAccountId = await _accountId(txn, businessId, AccountTypes.cogs);
 
-    if (input.paymentMode == PaymentMode.cash) {
-      await _insertLine(txn, transactionId, cashAccountId, debit: totals.grandTotal);
-    } else {
-      await _insertLine(
-        txn,
-        transactionId,
-        receivableAccountId,
-        partyId: input.partyId,
-        debit: totals.grandTotal,
-      );
-      await txn.rawUpdate(
-        '''
-        UPDATE ${PartiesTable.tableName}
-        SET ${PartiesTable.balance} = ${PartiesTable.balance} + ?,
-            ${PartiesTable.updatedAt} = ?
-        WHERE ${PartiesTable.id} = ?
-        ''',
-        [totals.grandTotal, DateTime.now().toIso8601String(), input.partyId],
-      );
-    }
+    await PaymentJournalHelper.postSaleReceipt(
+      txn: txn,
+      transactionId: transactionId,
+      businessId: businessId,
+      partyId: input.partyId,
+      breakdown: breakdown,
+      dueAmount: dueAmount,
+      accountId: _accountId,
+      insertLine: _insertLine,
+    );
 
     await _insertLine(txn, transactionId, salesAccountId, credit: totals.taxableTotal);
 
@@ -288,49 +295,6 @@ final class SalePostingService {
       );
       return (input: line, amounts: amounts);
     }).toList();
-  }
-
-  Future<void> _validateStock(
-    List<SaleLineInput> lines, {
-    String? excludeTransactionId,
-  }) async {
-    final requiredQty = <String, double>{};
-    for (final line in lines) {
-      requiredQty[line.itemId] = (requiredQty[line.itemId] ?? 0) + line.qty;
-    }
-
-    for (final entry in requiredQty.entries) {
-      final rows = await _db.query(
-        ItemsTable.tableName,
-        where: '${ItemsTable.id} = ?',
-        whereArgs: [entry.key],
-        limit: 1,
-      );
-      if (rows.isEmpty) {
-        throw ValidationException('Item not found: ${entry.key}');
-      }
-
-      var available = (rows.first[ItemsTable.qtyOnHand] as num?)?.toDouble() ?? 0;
-      if (excludeTransactionId != null) {
-        available += await _restoredQtyForItem(excludeTransactionId, entry.key);
-      }
-      if (available < entry.value) {
-        final name = rows.first[ItemsTable.name]! as String;
-        throw ValidationException('Insufficient stock for $name');
-      }
-    }
-  }
-
-  Future<double> _restoredQtyForItem(String transactionId, String itemId) async {
-    final rows = await _db.query(
-      StockMovementsTable.tableName,
-      columns: [StockMovementsTable.qtyDelta],
-      where:
-          '${StockMovementsTable.transactionId} = ? AND ${StockMovementsTable.itemId} = ?',
-      whereArgs: [transactionId, itemId],
-    );
-    if (rows.isEmpty) return 0;
-    return -(rows.first[StockMovementsTable.qtyDelta]! as num).toDouble();
   }
 
   Future<double> _itemPurchaseRate(Transaction txn, String itemId) async {

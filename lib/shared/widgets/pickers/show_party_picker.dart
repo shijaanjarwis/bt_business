@@ -34,10 +34,7 @@ Future<Party?> showPartyPicker(
     watchItems: watchParties,
     itemBuilder: (context, party, onSelect) {
       return ListTile(
-        title: Text(
-          party.name,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
+        title: Text(party.name),
         subtitle: party.phone.isEmpty ? null : Text(party.phone),
         onTap: onSelect,
       );

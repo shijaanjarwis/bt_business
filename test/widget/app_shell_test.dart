@@ -35,12 +35,15 @@ void main() {
     expect(find.text('(Home)'), findsOneWidget);
     expect(find.text("Today's Sale"), findsOneWidget);
     expect(find.text('(Aaj Ki Bikri)'), findsOneWidget);
-    expect(find.text("Today's Cash"), findsOneWidget);
+    expect(find.text("Today's Purchase"), findsOneWidget);
+    expect(find.text("Today's Cash Received"), findsOneWidget);
     expect(find.text('(Aaj Cash Mila)'), findsOneWidget);
     expect(find.text('Cash In Hand'), findsOneWidget);
     expect(find.text('(Bikri Likho)'), findsOneWidget);
     expect(find.text('(Kharcha Likho)'), findsOneWidget);
-    expect(find.text('Voice'), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsNWidgets(2));
+    expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
   });
 }
 

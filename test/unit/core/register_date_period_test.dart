@@ -12,6 +12,15 @@ void main() {
       expect(range.end, DateTime(2026, 6, 15));
     });
 
+    test('yesterday resolves to previous day', () {
+      final range = RegisterDateRange.resolve(
+        period: RegisterDatePeriod.yesterday,
+        now: DateTime(2026, 6, 15, 14, 30),
+      );
+      expect(range.start, DateTime(2026, 6, 14));
+      expect(range.end, DateTime(2026, 6, 14));
+    });
+
     test('thisWeek starts on Monday', () {
       final range = RegisterDateRange.resolve(
         period: RegisterDatePeriod.thisWeek,

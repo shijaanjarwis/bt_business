@@ -8,11 +8,12 @@ import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
+import '../../../../shared/widgets/dialogs/confirmation_dialog.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
-import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../../shared/widgets/layout/app_form_section.dart';
+import '../../../../shared/widgets/layout/main_shell_insets.dart';
 import '../../../../shared/widgets/layout/responsive_form_container.dart';
 import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../domain/entities/opening_balance_direction.dart';
@@ -44,6 +45,8 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _gstinController = TextEditingController();
   final _previousBalanceController = TextEditingController();
 
   Party? _existingParty;
@@ -59,6 +62,8 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _addressController.dispose();
+    _gstinController.dispose();
     _previousBalanceController.dispose();
     super.dispose();
   }
@@ -79,6 +84,8 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
     _existingParty = party;
     _nameController.text = party.name;
     _phoneController.text = party.phone;
+    _addressController.text = party.address;
+    _gstinController.text = party.gstin ?? '';
     if (party.openingAmount > 0) {
       _previousBalanceController.text = party.openingAmount.toString();
       _previousDirection = party.openingDirection;
@@ -109,7 +116,10 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
       name: _nameController.text,
       type: PartyType.both,
       phone: _phoneController.text,
-      address: '',
+      address: _addressController.text.trim(),
+      gstin: _gstinController.text.trim().isEmpty
+          ? null
+          : _gstinController.text.trim(),
       openingAmount: previousAmount,
       openingDirection: _previousDirection,
       isActive: true,
@@ -141,32 +151,10 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
     final partyId = _existingParty?.id;
     if (partyId == null) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete this name?'),
-        content: const Text('Yeh hisaab hamesha ke liye delete ho jayega.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const BilingualLabel(
-              english: 'Cancel',
-              hindi: 'Cancel',
-              compact: true,
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const BilingualLabel(
-              english: 'Delete',
-              hindi: 'Delete Karein',
-              compact: true,
-              englishStyle: TextStyle(color: ColorPalette.destructive),
-              hindiStyle: TextStyle(color: ColorPalette.destructive),
-            ),
-          ),
-        ],
-      ),
+    final confirmed = await ConfirmationDialog.show(
+      context,
+      title: 'Delete this name?',
+      message: 'Yeh hisaab hamesha ke liye delete ho jayega.',
     );
 
     if (confirmed != true || !mounted) return;
@@ -260,7 +248,7 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
           key: _formKey,
           child: ListView(
             key: formKey == null ? null : ValueKey(formKey),
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+            padding: EdgeInsets.fromLTRB(20, 0, 20, MainShellInsets.scrollBottom(context)),
             children: [
               ResponsiveFormContainer(
                 child: Column(
@@ -291,6 +279,22 @@ class _PartyFormPageState extends ConsumerState<PartyFormPage> {
                               if (value == null || value.trim().isEmpty) return null;
                               return Validators.indianPhone(value);
                             },
+                          ),
+                          const SizedBox(height: 16),
+                          AppTextField(
+                            english: 'Address (optional)',
+                            hindi: 'Pata (optional)',
+                            controller: _addressController,
+                            textInputAction: TextInputAction.next,
+                            maxLines: 2,
+                          ),
+                          const SizedBox(height: 16),
+                          AppTextField(
+                            english: 'GST (optional)',
+                            hindi: 'GST (optional)',
+                            controller: _gstinController,
+                            textInputAction: TextInputAction.next,
+                            textCapitalization: TextCapitalization.characters,
                           ),
                         ],
                       ),

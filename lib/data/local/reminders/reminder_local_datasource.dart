@@ -31,7 +31,8 @@ final class ReminderLocalDataSource {
         t.${TransactionsTable.totalAmount} AS total_amount,
         t.${TransactionsTable.dueAmount} AS due_amount,
         t.${TransactionsTable.reminderDate} AS reminder_date,
-        p.${PartiesTable.name} AS party_name
+        p.${PartiesTable.name} AS party_name,
+        p.${PartiesTable.phone} AS party_phone
       FROM ${TransactionsTable.tableName} t
       INNER JOIN ${PartiesTable.tableName} p ON t.${TransactionsTable.partyId} = p.${PartiesTable.id}
       WHERE t.${TransactionsTable.businessId} = ?

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
+import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
@@ -57,6 +58,13 @@ class PartyDetailPage extends ConsumerWidget {
           appBar: AppRegisterAppBar(
             english: party.name,
             hindi: 'Party Hisaab',
+            actions: [
+              IconButton(
+                tooltip: 'Edit',
+                onPressed: () => context.push(RouteNames.ledgerPartyEditPath(partyId)),
+                icon: const Icon(Icons.edit_outlined, color: ColorPalette.iconPrimary),
+              ),
+            ],
           ),
           body: SafeArea(
             child: historyAsync.when(
@@ -69,6 +77,7 @@ class PartyDetailPage extends ConsumerWidget {
               ),
               data: (entries) {
                 final timeline = entries.reversed.toList();
+                final stats = PartyLedgerUiHelpers.statsFrom(entries);
 
                 return RefreshIndicator(
                   color: ColorPalette.purple,
@@ -85,6 +94,11 @@ class PartyDetailPage extends ConsumerWidget {
                       _PartyHeaderCard(
                         party: party,
                         onEdit: () => context.push(RouteNames.ledgerPartyEditPath(partyId)),
+                      ),
+                      const SizedBox(height: 12),
+                      _PartyProfileSection(
+                        party: party,
+                        stats: stats,
                       ),
                       const SizedBox(height: 16),
                       PartyQuickActions(party: party),
@@ -174,7 +188,7 @@ class _PartyHeaderCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Icon(Icons.edit_outlined, size: 20, color: status.color),
+                  const Icon(Icons.edit_outlined, size: 20, color: ColorPalette.purple),
                 ],
               ),
               if (party.phone.isNotEmpty) ...[
@@ -209,6 +223,134 @@ class _PartyHeaderCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PartyProfileSection extends StatelessWidget {
+  const _PartyProfileSection({
+    required this.party,
+    required this.stats,
+  });
+
+  final Party party;
+  final PartyHistoryStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ColorPalette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const BilingualLabel(
+            english: 'Party Info',
+            hindi: 'Party Ki Jaankari',
+            compact: true,
+          ),
+          const SizedBox(height: 12),
+          _ProfileRow(
+            english: 'Address',
+            hindi: 'Pata',
+            value: party.address.trim().isEmpty ? '—' : party.address.trim(),
+          ),
+          if (party.gstin != null && party.gstin!.trim().isNotEmpty)
+            _ProfileRow(
+              english: 'GST',
+              hindi: 'GST',
+              value: party.gstin!.trim(),
+            ),
+          _ProfileRow(
+            english: 'Opening Balance',
+            hindi: 'Pehle se baaki',
+            value: PartyLedgerUiHelpers.openingBalanceLabel(party),
+          ),
+          _ProfileRow(
+            english: 'Current Balance',
+            hindi: 'Ab ka hisaab',
+            value: PartyLedgerUiHelpers.runningBalanceLabel(party.balance),
+            valueColor: PartyLedgerUiHelpers.runningBalanceColor(party.balance),
+          ),
+          if (stats.lastEntry != null)
+            _ProfileRow(
+              english: 'Last Entry',
+              hindi: 'Aakhri entry',
+              value: PartyLedgerUiHelpers.lastTransactionLabel(stats.lastEntry!),
+            ),
+          const Divider(height: 24),
+          _ProfileRow(
+            english: 'Total Sale',
+            hindi: 'Kul Bikri',
+            value: CurrencyFormatter.format(stats.totalSale),
+          ),
+          _ProfileRow(
+            english: 'Total Purchase',
+            hindi: 'Kul Kharid',
+            value: CurrencyFormatter.format(stats.totalPurchase),
+          ),
+          _ProfileRow(
+            english: 'Total Received',
+            hindi: 'Kul Jama',
+            value: CurrencyFormatter.format(stats.totalReceived),
+          ),
+          _ProfileRow(
+            english: 'Total Paid',
+            hindi: 'Kul Paisa Diya',
+            value: CurrencyFormatter.format(stats.totalPaid),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileRow extends StatelessWidget {
+  const _ProfileRow({
+    required this.english,
+    required this.hindi,
+    required this.value,
+    this.valueColor,
+  });
+
+  final String english;
+  final String hindi;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: BilingualLabel(
+              english: english,
+              hindi: hindi,
+              compact: true,
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? ColorPalette.labelPrimary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

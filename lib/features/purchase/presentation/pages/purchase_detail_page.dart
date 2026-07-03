@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/accounting/payment_modes.dart';
+import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/reminders/reminder_service.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
@@ -12,9 +12,12 @@ import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
+import '../../../../shared/widgets/inputs/payment_breakdown_fields.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../../shared/widgets/register/register_detail_scaffold.dart';
+import '../../../../shared/widgets/register/register_party_link.dart';
 import '../../../../shared/utils/register_party_label.dart';
+import '../../../ledger/presentation/providers/party_providers.dart';
 import '../../../sales/presentation/providers/sale_providers.dart';
 import '../providers/purchase_providers.dart';
 
@@ -56,42 +59,44 @@ class PurchaseDetailPage extends ConsumerWidget {
           );
         }
 
+        final livePartyName =
+            ref.watch(partyDetailProvider(invoice.partyId)).valueOrNull?.name ??
+                invoice.partyName;
         final partyTitle = RegisterPartyLabel.purchaseTitle(
           partyId: invoice.partyId,
-          partyName: invoice.partyName,
+          partyName: livePartyName,
           cashCustomerPartyId: cashCustomerId,
         );
         final timeLabel = DateFormat('h:mm a').format(invoice.createdAt);
-        final paymentMode =
-            invoice.paymentMode == PaymentMode.credit ? 'Credit' : 'Cash';
+        final notes = invoice.notes?.trim();
 
         return RegisterDetailScaffold(
           englishTitle: 'Purchase Details',
           hindiTitle: 'Kharid Detail',
           onEdit: () => context.push(RouteNames.purchasesEditPath(invoice.id)),
           children: [
-            RegisterDetailRow(
-              english: 'Party',
-              hindi: 'Party',
-              value: partyTitle,
+            RegisterPartyHeaderLink(
+              partyId: invoice.partyId,
+              partyName: livePartyName,
+              cashCustomerPartyId: cashCustomerId,
+              displayName: partyTitle,
             ),
-            RegisterDetailRow(
-              english: 'Date',
-              hindi: 'Date',
-              value: '${DateFormatter.displayDate(invoice.date)} · $timeLabel',
+            const SizedBox(height: 4),
+            Text(
+              '${DateFormatter.displayDate(invoice.date)} · $timeLabel',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: ColorPalette.labelSecondary,
+              ),
             ),
-            RegisterDetailRow(
-              english: 'Payment Mode',
-              hindi: 'Payment Mode',
-              value: paymentMode,
-            ),
-            const Divider(),
+            const SizedBox(height: AppSpacing.lg),
             const BilingualLabel(
               english: 'Items',
               hindi: 'Maal',
               compact: true,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             ...invoice.lines.map(
               (line) => RegisterLineItemTile(
                 itemName: line.itemName,
@@ -106,32 +111,31 @@ class PurchaseDetailPage extends ConsumerWidget {
               value: CurrencyFormatter.format(invoice.grandTotal),
               valueColor: ColorPalette.purple,
             ),
-            RegisterDetailRow(
-              english: 'Paid',
-              hindi: 'Diya',
-              value: CurrencyFormatter.format(invoice.paidAmount),
-              valueColor: ColorPalette.accentGreen,
+            const SizedBox(height: AppSpacing.sm),
+            PaymentBreakdownDisplay(
+              breakdown: invoice.paymentBreakdown,
+              grandTotal: invoice.grandTotal,
+              creditEnglish: 'Credit',
+              creditHindi: 'Udhaar',
             ),
-            RegisterDetailRow(
-              english: 'Remaining',
-              hindi: 'Baaki',
-              value: CurrencyFormatter.format(invoice.dueAmount),
-              valueColor: invoice.dueAmount > 0
-                  ? ColorPalette.accentOrange
-                  : ColorPalette.labelSecondary,
-            ),
-            if (invoice.reminderDate != null)
+            if (invoice.reminderDate != null) ...[
+              const SizedBox(height: AppSpacing.md),
               RegisterDetailRow(
-                english: 'Next Reminder',
-                hindi: 'Agla Reminder',
+                english: 'Reminder',
+                hindi: 'Reminder',
                 value: ReminderService.dueLabel(invoice.reminderDate!),
               ),
-            if (invoice.notes != null && invoice.notes!.trim().isNotEmpty)
-              RegisterDetailRow(
-                english: 'Notes',
-                hindi: 'Note',
-                value: invoice.notes!.trim(),
+            ],
+            if (notes != null && notes.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                notes,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: ColorPalette.labelSecondary,
+                ),
               ),
+            ],
           ],
         );
       },

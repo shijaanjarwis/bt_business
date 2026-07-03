@@ -4,8 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../logging/startup_trace.dart';
+import '../reminders/reminder_list_kind.dart';
+import '../../features/home/presentation/models/dashboard_summary_kind.dart';
 import '../../features/business/presentation/pages/business_profile_page.dart';
 import '../../features/business/presentation/providers/business_providers.dart';
+import '../../features/home/presentation/pages/dashboard_summary_detail_page.dart';
+import '../../features/home/presentation/pages/reminder_list_page.dart';
 import '../../features/home/presentation/pages/home_dashboard_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/widgets/navigation/main_shell.dart';
@@ -25,6 +29,7 @@ import '../../features/purchase/presentation/pages/purchase_detail_page.dart';
 import '../../features/purchase/presentation/pages/purchase_form_page.dart';
 import '../../features/purchase/presentation/pages/purchase_list_page.dart';
 import '../../features/reports/presentation/pages/transaction_history_page.dart';
+import '../../shared/widgets/feedback/app_error_view.dart';
 import '../../shared/widgets/scaffold/keep_alive_tab.dart';
 import 'router_error_page.dart';
 import 'router_refresh_notifier.dart';
@@ -152,6 +157,44 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'history',
                     name: RouteNames.historyName,
                     builder: (context, state) => const TransactionHistoryPage(),
+                  ),
+                  GoRoute(
+                    path: 'reminders/:kind',
+                    name: RouteNames.reminderListName,
+                    builder: (context, state) {
+                      final kind = ReminderListKind.fromRoute(
+                        state.pathParameters['kind']!,
+                      );
+                      if (kind == null) {
+                        return AppErrorView(
+                          title: 'Page not found',
+                          message: 'Yeh reminder page available nahi hai.',
+                          actionEnglish: 'Back',
+                          actionHindi: 'Wapas',
+                          onAction: () => context.pop(),
+                        );
+                      }
+                      return ReminderListPage(kind: kind);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'summary/:kind',
+                    name: RouteNames.dashboardSummaryDetailName,
+                    builder: (context, state) {
+                      final kind = DashboardSummaryKind.fromRoute(
+                        state.pathParameters['kind']!,
+                      );
+                      if (kind == null) {
+                        return AppErrorView(
+                          title: 'Page not found',
+                          message: 'Yeh summary page available nahi hai.',
+                          actionEnglish: 'Back',
+                          actionHindi: 'Wapas',
+                          onAction: () => context.pop(),
+                        );
+                      }
+                      return DashboardSummaryDetailPage(kind: kind);
+                    },
                   ),
                 ],
               ),

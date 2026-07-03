@@ -9,12 +9,14 @@ import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
+import '../../../../shared/widgets/dialogs/confirmation_dialog.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/labels/app_form_field_label.dart';
-import '../../../../shared/widgets/labels/bilingual_label.dart';
+import '../../../../shared/widgets/layout/main_shell_insets.dart';
 import '../../../../shared/widgets/layout/responsive_form_container.dart';
+import '../../../../shared/widgets/pickers/show_unit_picker.dart';
 import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../domain/entities/item.dart';
 import '../../domain/repositories/item_repository.dart';
@@ -42,13 +44,11 @@ class ItemFormPage extends ConsumerStatefulWidget {
 class _ItemFormPageState extends ConsumerState<ItemFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _customUnitController = TextEditingController();
   final _purchaseRateController = TextEditingController();
   final _saleRateController = TextEditingController();
 
   Item? _existingItem;
   String _selectedUnit = ItemUnits.defaultUnit;
-  bool _useCustomUnit = false;
   bool _isSaving = false;
   bool _isDeleting = false;
   bool _itemApplied = false;
@@ -56,7 +56,6 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
   @override
   void dispose() {
     _nameController.dispose();
-    _customUnitController.dispose();
     _purchaseRateController.dispose();
     _saleRateController.dispose();
     super.dispose();
@@ -66,13 +65,7 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
     if (_itemApplied) return;
     _existingItem = item;
     _nameController.text = item.name;
-    if (ItemUnits.presets.contains(item.unit)) {
-      _selectedUnit = item.unit;
-      _useCustomUnit = false;
-    } else {
-      _useCustomUnit = true;
-      _customUnitController.text = item.unit;
-    }
+    _selectedUnit = item.unit;
     if (item.purchasePrice > 0) {
       _purchaseRateController.text = item.purchasePrice.toString();
     }
@@ -82,8 +75,16 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
     _itemApplied = true;
   }
 
-  String get _unit =>
-      _useCustomUnit ? _customUnitController.text.trim() : _selectedUnit;
+  String get _unit => _selectedUnit;
+
+  Future<void> _pickOtherUnit() async {
+    final picked = await showUnitPicker(context);
+    if (picked != null && mounted) {
+      setState(() => _selectedUnit = picked);
+    }
+  }
+
+  bool get _isOtherUnit => !ItemUnits.presets.contains(_selectedUnit);
 
   double _parseRate(TextEditingController controller) {
     final text = controller.text.replaceAll(',', '').trim();
@@ -125,34 +126,11 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
     final itemId = _existingItem?.id;
     if (itemId == null) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Yeh maal delete karein?'),
-        content: const Text(
+    final confirmed = await ConfirmationDialog.show(
+      context,
+      title: 'Yeh maal delete karein?',
+      message:
           'Naam list se hat jayega. Purani bikri/kharid entries par asar nahi padega.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const BilingualLabel(
-              english: 'Cancel',
-              hindi: 'Cancel',
-              compact: true,
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const BilingualLabel(
-              english: 'Delete',
-              hindi: 'Delete Karein',
-              compact: true,
-              englishStyle: TextStyle(color: ColorPalette.destructive),
-              hindiStyle: TextStyle(color: ColorPalette.destructive),
-            ),
-          ),
-        ],
-      ),
     );
 
     if (confirmed != true || !mounted) return;
@@ -231,7 +209,7 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+            padding: EdgeInsets.fromLTRB(20, 0, 20, MainShellInsets.scrollBottom(context)),
             children: [
               ResponsiveFormContainer(
                 child: Column(
@@ -257,33 +235,28 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
                       runSpacing: 8,
                       children: [
                         ...ItemUnits.presets.map((unit) {
-                          final selected = !_useCustomUnit && _selectedUnit == unit;
+                          final selected = !_isOtherUnit && _selectedUnit == unit;
                           return ChoiceChip(
                             label: Text(unit),
                             selected: selected,
-                            onSelected: (_) => setState(() {
-                              _useCustomUnit = false;
-                              _selectedUnit = unit;
-                            }),
+                            onSelected: (_) => setState(() => _selectedUnit = unit),
                             selectedColor: ColorPalette.purple.withValues(alpha: 0.15),
                           );
                         }),
                         ChoiceChip(
-                          label: const Text('Aur'),
-                          selected: _useCustomUnit,
-                          onSelected: (_) => setState(() => _useCustomUnit = true),
+                          label: Text(_isOtherUnit ? _selectedUnit : 'Other · Aur'),
+                          selected: _isOtherUnit,
+                          onSelected: (_) => _pickOtherUnit(),
                           selectedColor: ColorPalette.purple.withValues(alpha: 0.15),
                         ),
                       ],
                     ),
-                    if (_useCustomUnit) ...[
-                      const SizedBox(height: 12),
-                      AppTextField(
-                        english: 'Unit',
-                        hindi: 'Unit likhein',
-                        controller: _customUnitController,
-                        validator: (value) =>
-                            Validators.requiredText(value, fieldName: 'Unit'),
+                    if (_isOtherUnit) ...[
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: _pickOtherUnit,
+                        icon: const Icon(Icons.search_rounded, size: 18),
+                        label: const Text('Unit badlein'),
                       ),
                     ],
                     const SizedBox(height: 20),

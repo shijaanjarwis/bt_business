@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
-import '../../../../shared/widgets/buttons/app_register_fab.dart';
+import '../../../../shared/widgets/layout/main_shell_insets.dart';
 import '../../../../shared/widgets/chips/app_filter_chip.dart';
 import '../../../../shared/widgets/filters/register_date_filter_bar.dart';
 import '../../../../shared/widgets/inputs/app_search_field.dart';
@@ -53,12 +53,6 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
       appBar: const AppRegisterAppBar(
         english: 'Payment',
         hindi: 'Paise Diye',
-      ),
-      floatingActionButton: AppRegisterFab(
-        onPressed: () => context.push(RouteNames.paymentsReceived),
-        english: 'Receive',
-        hindi: 'Paise Mile',
-        icon: Icons.call_received_rounded,
       ),
       body: SafeArea(
         child: Column(
@@ -164,7 +158,12 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
                         physics: const AlwaysScrollableScrollPhysics(
                           parent: BouncingScrollPhysics(),
                         ),
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
+                        padding: EdgeInsets.fromLTRB(
+                          20,
+                          0,
+                          20,
+                          MainShellInsets.scrollBottomWithFab(context),
+                        ),
                         children: [
                           SizedBox(height: MediaQuery.sizeOf(context).height * 0.14),
                           const Center(
@@ -189,7 +188,12 @@ class _PaymentRegisterPageState extends ConsumerState<PaymentRegisterPage> {
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
+                      padding: EdgeInsets.fromLTRB(
+                        20,
+                        0,
+                        20,
+                        MainShellInsets.scrollBottomWithFab(context),
+                      ),
                       itemCount: entries.length + 1,
                       separatorBuilder: (context, index) {
                         if (index >= entries.length - 1) {

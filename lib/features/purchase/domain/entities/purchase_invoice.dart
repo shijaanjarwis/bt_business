@@ -1,4 +1,5 @@
 import '../../../../core/accounting/gst_types.dart';
+import '../../../../core/accounting/payment_breakdown.dart';
 import '../../../../core/accounting/payment_modes.dart';
 
 /// One product line on a purchase invoice.
@@ -59,6 +60,7 @@ class PurchaseInvoice {
     required this.grandTotal,
     required this.paidAmount,
     required this.dueAmount,
+    required this.paymentBreakdown,
     required this.lines,
     required this.createdAt,
     required this.updatedAt,
@@ -83,6 +85,7 @@ class PurchaseInvoice {
   final double grandTotal;
   final double paidAmount;
   final double dueAmount;
+  final PaymentBreakdown paymentBreakdown;
   final List<PurchaseLine> lines;
   final DateTime createdAt;
   final DateTime updatedAt;

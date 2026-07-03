@@ -27,10 +27,7 @@ Future<Item?> showItemPicker(
           ? '${item.unit} · ₹${price.toStringAsFixed(price % 1 == 0 ? 0 : 2)}'
           : item.unit;
       return ListTile(
-        title: Text(
-          item.name,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
+        title: Text(item.name),
         subtitle: Text(priceLabel),
         onTap: onSelect,
       );

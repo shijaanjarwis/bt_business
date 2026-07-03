@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/color_palette.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../labels/bilingual_label.dart';
 
 /// Optional next reminder date — used on sale, purchase, and payment forms.
 class ReminderDateField extends StatelessWidget {
@@ -39,15 +40,18 @@ class ReminderDateField extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       enabled: enabled,
-      title: const Text(
-        'Next Reminder Date',
-        style: TextStyle(fontWeight: FontWeight.w600),
+      title: const BilingualLabel(
+        english: 'Next Reminder Date',
+        hindi: 'Agla Reminder',
+        compact: true,
       ),
       subtitle: Text(
         hasDate
             ? DateFormatter.shortDate(reminderDate!)
             : 'Optional — khali chhod sakte hain',
         style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
           color: hasDate
               ? ColorPalette.labelPrimary
               : ColorPalette.labelSecondary,

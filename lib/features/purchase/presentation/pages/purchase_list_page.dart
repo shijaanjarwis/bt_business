@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
-import '../../../../shared/widgets/buttons/app_register_fab.dart';
+import '../../../../shared/widgets/layout/main_shell_insets.dart';
 import '../../../../shared/widgets/chips/app_filter_chip.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
@@ -50,11 +50,6 @@ class _PurchaseListPageState extends ConsumerState<PurchaseListPage> {
       appBar: const AppRegisterAppBar(
         english: 'Purchase',
         hindi: 'Kharid',
-      ),
-      floatingActionButton: AppRegisterFab(
-        onPressed: () => context.push(RouteNames.purchasesNew),
-        english: 'Purchase',
-        hindi: 'Kharid Likho',
       ),
       body: SafeArea(
         child: Column(
@@ -170,7 +165,12 @@ class _PurchaseRegisterList extends StatelessWidget {
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
           ),
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            MainShellInsets.scrollBottomWithFab(context),
+          ),
           children: [
             SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
             const Center(
@@ -195,7 +195,12 @@ class _PurchaseRegisterList extends StatelessWidget {
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          0,
+          20,
+          MainShellInsets.scrollBottomWithFab(context),
+        ),
         itemCount: purchases.length + 1,
         separatorBuilder: (context, index) {
           if (index >= purchases.length - 1) return const SizedBox.shrink();

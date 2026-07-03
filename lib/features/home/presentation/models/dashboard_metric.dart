@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 enum DashboardMetricTarget {
   todaySales,
-  todayCash,
+  todayPurchase,
+  todayCashReceived,
   todayCredit,
   cashInHand,
 }

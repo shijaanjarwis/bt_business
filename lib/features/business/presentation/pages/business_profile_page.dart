@@ -11,14 +11,15 @@ import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
+import '../../../../shared/widgets/dialogs/confirmation_dialog.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
-import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../../shared/widgets/labels/app_form_field_label.dart';
 import '../../../../shared/widgets/layout/app_form_section.dart';
 import '../../../../shared/widgets/layout/responsive_form_container.dart';
 import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
+import '../../../../shared/widgets/settings/language_picker.dart';
 import '../../domain/entities/business.dart';
 import '../../domain/entities/currency.dart';
 import '../../domain/entities/financial_year.dart';
@@ -191,35 +192,12 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
     final business = _existingBusiness;
     if (business == null) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Business Profile?'),
-        content: const Text(
+    final confirmed = await ConfirmationDialog.show(
+      context,
+      title: 'Delete Business Profile?',
+      message:
           'This will remove your business details from this device. '
           'You will need to set up your profile again.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const BilingualLabel(
-              english: 'Cancel',
-              hindi: 'Cancel',
-              compact: true,
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const BilingualLabel(
-              english: 'Delete',
-              hindi: 'Delete Karein',
-              compact: true,
-              englishStyle: TextStyle(color: ColorPalette.destructive),
-              hindiStyle: TextStyle(color: ColorPalette.destructive),
-            ),
-          ),
-        ],
-      ),
     );
 
     if (confirmed != true || !mounted) return;
@@ -413,6 +391,8 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
                                 setState(() => _currency = currency);
                               },
                             ),
+                            const SizedBox(height: 20),
+                            const AssistantLanguagePicker(),
                           ],
                         ),
                       ),

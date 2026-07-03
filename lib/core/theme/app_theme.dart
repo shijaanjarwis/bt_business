@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'app_colors.dart';
+import 'app_text_theme.dart';
 import 'color_palette.dart';
 import 'text_styles.dart';
 
@@ -11,6 +13,8 @@ abstract final class AppTheme {
       seedColor: ColorPalette.seed,
       brightness: Brightness.light,
       primary: ColorPalette.purple,
+      onSurface: AppColors.textPrimary,
+      onSurfaceVariant: AppColors.textSecondary,
     );
 
     final base = ThemeData(
@@ -33,14 +37,70 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.circular(16),
         ),
       ),
+      iconTheme: const IconThemeData(
+        color: AppColors.iconPrimary,
+      ),
+      listTileTheme: const ListTileThemeData(
+        iconColor: AppColors.iconPrimary,
+        titleTextStyle: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
+          height: 1.25,
+          letterSpacing: -0.2,
+        ),
+        subtitleTextStyle: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: AppColors.textSecondary,
+          height: 1.3,
+        ),
+      ),
+      dialogTheme: const DialogThemeData(
+        titleTextStyle: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textDialogTitle,
+          height: 1.25,
+          letterSpacing: -0.3,
+        ),
+        contentTextStyle: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: AppColors.textDialogBody,
+          height: 1.45,
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: ColorPalette.cardSurface,
+      ),
     );
 
     return base.copyWith(
-      textTheme: AppTextStyles.applyPlatformAdjustments(base.textTheme),
+      textTheme: AppTextStyles.buildTextTheme(base.textTheme),
+      primaryTextTheme: AppTextStyles.buildTextTheme(base.primaryTextTheme),
+      extensions: const [AppTextTheme.standard],
       inputDecorationTheme: InputDecorationTheme(
-        hintStyle: TextStyle(color: ColorPalette.hintText),
-        labelStyle: const TextStyle(color: ColorPalette.labelTertiary),
-        floatingLabelStyle: const TextStyle(color: ColorPalette.labelSecondary),
+        hintStyle: const TextStyle(
+          color: AppColors.textHint,
+          fontWeight: FontWeight.w400,
+          fontSize: 16,
+        ),
+        labelStyle: const TextStyle(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
+        floatingLabelStyle: const TextStyle(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
+        helperStyle: const TextStyle(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w500,
+          fontSize: 13,
+        ),
       ),
     );
   }
@@ -59,7 +119,8 @@ abstract final class AppTheme {
     );
 
     return base.copyWith(
-      textTheme: AppTextStyles.applyPlatformAdjustments(base.textTheme),
+      textTheme: AppTextStyles.buildTextTheme(base.textTheme),
+      extensions: const [AppTextTheme.standard],
     );
   }
 }

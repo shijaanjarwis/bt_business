@@ -206,7 +206,7 @@ class _StandardCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 11,
                 color: ColorPalette.labelSecondary,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

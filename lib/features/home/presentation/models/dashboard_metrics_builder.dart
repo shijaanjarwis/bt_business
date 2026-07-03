@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/dashboard_summary.dart';
 import 'dashboard_metric.dart';
 
-/// Four daily summary cards for the shopkeeper dashboard.
+/// Daily summary cards for the shopkeeper dashboard.
 abstract final class DashboardMetricsBuilder {
   static List<DashboardMetric> fromSummary(DashboardSummary summary) {
     return [
@@ -15,11 +15,18 @@ abstract final class DashboardMetricsBuilder {
         target: DashboardMetricTarget.todaySales,
       ),
       DashboardMetric(
-        englishLabel: "Today's Cash",
+        englishLabel: "Today's Purchase",
+        hindiLabel: 'Aaj Ki Kharid',
+        amount: summary.todaysPurchase,
+        icon: Icons.shopping_cart_outlined,
+        target: DashboardMetricTarget.todayPurchase,
+      ),
+      DashboardMetric(
+        englishLabel: "Today's Cash Received",
         hindiLabel: 'Aaj Cash Mila',
         amount: summary.todaysCashReceived,
         icon: Icons.payments_rounded,
-        target: DashboardMetricTarget.todayCash,
+        target: DashboardMetricTarget.todayCashReceived,
       ),
       DashboardMetric(
         englishLabel: "Today's Credit",

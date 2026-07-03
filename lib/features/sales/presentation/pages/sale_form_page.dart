@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/accounting/gst_types.dart';
+import '../../../../core/accounting/payment_breakdown.dart';
+import '../../../../core/accounting/payment_method_channel.dart';
 import '../../../../core/accounting/payment_modes.dart';
 import '../../../../core/di/data_revision.dart';
 import '../../../../core/router/route_names.dart';
@@ -15,13 +17,14 @@ import '../../../../core/utils/gst_calculator.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
+import '../../../../shared/widgets/dialogs/confirmation_dialog.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/inputs/app_party_picker_field.dart';
 import '../../../../shared/widgets/inputs/app_picker_field.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
-import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../../shared/widgets/layout/app_form_section.dart';
+import '../../../../shared/widgets/layout/main_shell_insets.dart';
 import '../../../../shared/widgets/pickers/show_item_picker.dart';
 import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../../items/presentation/widgets/entry_item_picker_sheet.dart';
@@ -30,6 +33,7 @@ import '../../../ledger/domain/entities/party.dart';
 import '../../../ledger/domain/entities/party_type.dart';
 import '../../../ledger/presentation/providers/party_providers.dart';
 import '../../domain/entities/sale_entry.dart';
+import '../../../../shared/widgets/inputs/payment_breakdown_fields.dart';
 import '../../../../shared/widgets/inputs/reminder_date_field.dart';
 import '../../domain/repositories/sale_repository.dart';
 import '../providers/sale_providers.dart';
@@ -79,7 +83,9 @@ class SaleFormPage extends ConsumerStatefulWidget {
 class _SaleFormPageState extends ConsumerState<SaleFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _notesController = TextEditingController();
-  final _paidController = TextEditingController();
+  final _cashController = TextEditingController();
+  final _upiController = TextEditingController();
+  final _bankController = TextEditingController();
 
   Party? _selectedParty;
   DateTime _date = DateTime.now();
@@ -90,15 +96,17 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
   bool _editHydrated = false;
   bool _isSaving = false;
   bool _isDeleting = false;
-  bool _paidManuallyEdited = false;
+  bool _paymentManuallyEdited = false;
   String? _cashCustomerPartyId;
-  double? _lastAutoPaidTotal;
   DateTime? _reminderDate;
+  PaymentMethodChannel _selectedPaymentMethod = PaymentMethodChannel.cash;
 
   @override
   void dispose() {
     _notesController.dispose();
-    _paidController.dispose();
+    _cashController.dispose();
+    _upiController.dispose();
+    _bankController.dispose();
     super.dispose();
   }
 
@@ -117,8 +125,12 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
     _date = entry.date;
     _gstType = entry.gstType;
     _notesController.text = entry.notes ?? '';
-    _paidController.text = _formatAmount(entry.paidAmount);
-    _paidManuallyEdited = true;
+    final breakdown = entry.paymentBreakdown;
+    _cashController.text = _formatAmount(breakdown.cash);
+    _upiController.text = _formatAmount(breakdown.upi);
+    _bankController.text = _formatAmount(breakdown.bank);
+    _selectedPaymentMethod = PaymentMethodChannel.fromBreakdown(breakdown);
+    _paymentManuallyEdited = true;
     _cashCustomerPartyId = cashCustomerId;
     _reminderDate = entry.reminderDate;
 
@@ -186,20 +198,44 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
     return GstCalculator.aggregate(_computedAmounts).grandTotal;
   }
 
-  double get _paidAmount {
-    final parsed = double.tryParse(_paidController.text.trim());
-    if (parsed != null) return parsed;
-    return _paidManuallyEdited ? 0 : _grandTotal;
+  PaymentBreakdown get _paymentBreakdown => PaymentBreakdown(
+        cash: _parseAmount(_cashController),
+        upi: _parseAmount(_upiController),
+        bank: _parseAmount(_bankController),
+      );
+
+  double get _paidAmount => _paymentBreakdown.paidTotal;
+
+  double get _dueAmount =>
+      _paymentBreakdown.remainingCredit(_grandTotal);
+
+  void _syncPaymentWithTotal() {
+    if (_paymentManuallyEdited || widget.isEdit) return;
+    _cashController.text = _formatAmount(_grandTotal);
+    _upiController.text = '0';
+    _bankController.text = '0';
+    _selectedPaymentMethod = PaymentMethodChannel.cash;
   }
 
-  double get _dueAmount => (_grandTotal - _paidAmount).clamp(0, double.infinity);
-
-  void _syncPaidWithTotal() {
-    if (_paidManuallyEdited || widget.isEdit) return;
-    if (_lastAutoPaidTotal == _grandTotal) return;
-    _lastAutoPaidTotal = _grandTotal;
-    _paidController.text = _formatAmount(_grandTotal);
+  void _selectPaymentMethod(PaymentMethodChannel method) {
+    setState(() {
+      _selectedPaymentMethod = method;
+      final paid = _paidAmount > 0 ? _paidAmount : _grandTotal;
+      if (paid > 0) {
+        _cashController.text =
+            method == PaymentMethodChannel.cash ? _formatAmount(paid) : '0';
+        _upiController.text =
+            method == PaymentMethodChannel.upi ? _formatAmount(paid) : '0';
+        _bankController.text =
+            method == PaymentMethodChannel.bank ? _formatAmount(paid) : '0';
+      }
+      _paymentManuallyEdited = true;
+      if (_dueAmount <= 0) _reminderDate = null;
+    });
   }
+
+  double _parseAmount(TextEditingController controller) =>
+      double.tryParse(controller.text.trim()) ?? 0;
 
   String _formatAmount(double value) {
     if (value == value.roundToDouble()) {
@@ -214,7 +250,8 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
       entryNo: _existing?.entryNo,
       date: _date,
       partyId: partyId,
-      paymentMode: PaymentMode.cash,
+      paymentMode: _dueAmount > 0 ? PaymentMode.credit : PaymentMode.cash,
+      paymentBreakdown: _paymentBreakdown.clampToTotal(_grandTotal),
       paidAmount: _paidAmount,
       gstType: _gstType,
       notes: _notesController.text.trim(),
@@ -252,7 +289,7 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
           ),
         );
       }
-      _syncPaidWithTotal();
+      _syncPaymentWithTotal();
     });
   }
 
@@ -307,32 +344,10 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
     final id = _existing?.id;
     if (id == null) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Yeh bikri delete karein?'),
-        content: const Text('Yeh entry delete ho jayegi.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const BilingualLabel(
-              english: 'Cancel',
-              hindi: 'Cancel',
-              compact: true,
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const BilingualLabel(
-              english: 'Delete',
-              hindi: 'Delete Karein',
-              compact: true,
-              englishStyle: TextStyle(color: ColorPalette.destructive),
-              hindiStyle: TextStyle(color: ColorPalette.destructive),
-            ),
-          ),
-        ],
-      ),
+    final confirmed = await ConfirmationDialog.show(
+      context,
+      title: 'Yeh bikri delete karein?',
+      message: 'Yeh entry delete ho jayegi.',
     );
     if (confirmed != true || !mounted) return;
 
@@ -430,131 +445,158 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
       body: SafeArea(
         child: Form(
           key: _formKey,
-          child: Column(
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              0,
+              20,
+              MainShellInsets.scrollBottom(context),
+            ),
             children: [
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              AppPartyPickerField(
+                party: _selectedParty,
+                onChanged: (party) => setState(() => _selectedParty = party),
+                helper: 'Khali chhodein to cash bikri',
+                allowClear: true,
+              ),
+              if (_selectedParty == null)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Cash Bikri',
+                    style: TextStyle(
+                      color: ColorPalette.purple,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 12),
+              AppFormSection(
+                english: 'Goods',
+                hindi: 'Maal',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    AppPartyPickerField(
-                      party: _selectedParty,
-                      onChanged: (party) => setState(() => _selectedParty = party),
-                      helper: 'Khali chhodein to cash bikri',
-                      allowClear: true,
+                    AppPickerField(
+                      english: 'Add Item',
+                      hindi: 'Maal Jodein',
+                      value: null,
+                      onTap: _pickItem,
+                      emptyText: 'Add item to sale',
+                      emptyHindi: 'Maal jodein',
+                      trailingIcon: Icons.add_circle_outline_rounded,
                     ),
-                    if (_selectedParty == null)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 8),
-                        child: Text(
-                          'Cash Bikri',
-                          style: TextStyle(
-                            color: ColorPalette.purple,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 12),
-                    AppFormSection(
-                      english: 'Goods',
-                      hindi: 'Maal',
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          AppPickerField(
-                            english: 'Add Item',
-                            hindi: 'Maal Jodein',
-                            value: null,
-                            onTap: _pickItem,
-                            emptyText: 'Add item to sale',
-                            emptyHindi: 'Maal jodein',
-                            trailingIcon: Icons.add_circle_outline_rounded,
-                          ),
-                          if (_lines.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            ..._lines.asMap().entries.map((entry) {
-                              return _SaleLineCard(
-                                line: entry.value,
-                                onChanged: () {
-                                  setState(_syncPaidWithTotal);
-                                },
-                                onRemove: () {
-                                  setState(() {
-                                    _lines.removeAt(entry.key);
-                                    _syncPaidWithTotal();
-                                  });
-                                },
-                              );
-                            }),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    AppFormSection(
-                      english: 'Date and Note',
-                      hindi: 'Tareekh aur Note',
-                      child: Column(
-                        children: [
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text(
-                              'Date',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            subtitle: Text(
-                              '(${DateFormatter.shortDate(_date)})',
-                              style: const TextStyle(
-                                color: ColorPalette.labelSecondary,
-                              ),
-                            ),
-                            trailing: const Icon(
-                              Icons.calendar_today_rounded,
-                              size: 20,
-                              color: ColorPalette.iconPrimary,
-                            ),
-                            onTap: _pickDate,
-                          ),
-                          AppTextField(
-                            english: 'Note',
-                            hindi: 'Note',
-                            controller: _notesController,
-                            helper: 'Optional',
-                            maxLines: 2,
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (widget.isEdit) ...[
-                      const SizedBox(height: 16),
-                      AppPrimaryButton(
-                        english: 'Delete',
-                        hindi: 'Delete Karein',
-                        destructive: true,
-                        compact: true,
-                        isLoading: _isDeleting,
-                        onPressed: _isDeleting ? null : _handleDelete,
-                      ),
+                    if (_lines.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      ..._lines.asMap().entries.map((entry) {
+                        return _SaleLineCard(
+                          line: entry.value,
+                          onChanged: () {
+                            setState(_syncPaymentWithTotal);
+                          },
+                          onRemove: () {
+                            setState(() {
+                              _lines.removeAt(entry.key);
+                              _syncPaymentWithTotal();
+                            });
+                          },
+                        );
+                      }),
                     ],
-                    const DeveloperFooter(),
                   ],
                 ),
               ),
-              _PaymentSummaryBar(
-                grandTotal: _grandTotal,
-                paidController: _paidController,
-                dueAmount: _dueAmount,
-                reminderDate: _reminderDate,
-                onReminderChanged: (date) => setState(() => _reminderDate = date),
-                onPaidChanged: (value) {
-                  setState(() {
-                    _paidManuallyEdited = true;
-                    _paidController.text = value;
-                    if (_dueAmount <= 0) _reminderDate = null;
-                  });
-                },
-                isSaving: _isSaving,
-                onSave: _handleSave,
+              const SizedBox(height: 12),
+              AppFormSection(
+                english: 'Payment Breakdown',
+                hindi: 'Payment Hisaab',
+                child: PaymentBreakdownFields(
+                  grandTotal: _grandTotal,
+                  totalLabel: 'Total Amount',
+                  creditLabel: 'Credit (Remaining)',
+                  cashController: _cashController,
+                  upiController: _upiController,
+                  bankController: _bankController,
+                  selectedMethod: _selectedPaymentMethod,
+                  onMethodSelected: _selectPaymentMethod,
+                  onChanged: ({required cash, required upi, required bank}) {
+                    setState(() {
+                      _paymentManuallyEdited = true;
+                      _selectedPaymentMethod = PaymentMethodChannel.fromBreakdown(
+                        PaymentBreakdown(cash: cash, upi: upi, bank: bank),
+                      );
+                      if (_dueAmount <= 0) _reminderDate = null;
+                    });
+                  },
+                ),
               ),
+              if (_dueAmount > 0) ...[
+                const SizedBox(height: 12),
+                AppFormSection(
+                  english: 'Reminder',
+                  hindi: 'Reminder',
+                  child: ReminderDateField(
+                    reminderDate: _reminderDate,
+                    onChanged: (date) => setState(() => _reminderDate = date),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              AppFormSection(
+                english: 'Notes',
+                hindi: 'Note',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text(
+                        'Date',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        DateFormatter.shortDate(_date),
+                        style: const TextStyle(
+                          color: ColorPalette.labelSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.calendar_today_rounded,
+                        size: 20,
+                        color: ColorPalette.iconPrimary,
+                      ),
+                      onTap: _pickDate,
+                    ),
+                    AppTextField(
+                      english: 'Note',
+                      hindi: 'Note',
+                      controller: _notesController,
+                      helper: 'Optional',
+                      maxLines: 2,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              AppPrimaryButton(
+                english: 'Save',
+                hindi: 'Save Karein',
+                isLoading: _isSaving,
+                onPressed: _handleSave,
+              ),
+              if (widget.isEdit) ...[
+                const SizedBox(height: 12),
+                AppPrimaryButton(
+                  english: 'Delete',
+                  hindi: 'Delete Karein',
+                  destructive: true,
+                  compact: true,
+                  isLoading: _isDeleting,
+                  onPressed: _isDeleting ? null : _handleDelete,
+                ),
+              ],
+              const DeveloperFooter(),
             ],
           ),
         ),
@@ -697,154 +739,6 @@ class _QtyButton extends StatelessWidget {
           child: Icon(icon, size: 20, color: ColorPalette.purple),
         ),
       ),
-    );
-  }
-}
-
-class _PaymentSummaryBar extends StatelessWidget {
-  const _PaymentSummaryBar({
-    required this.grandTotal,
-    required this.paidController,
-    required this.dueAmount,
-    required this.reminderDate,
-    required this.onReminderChanged,
-    required this.onPaidChanged,
-    required this.isSaving,
-    required this.onSave,
-  });
-
-  final double grandTotal;
-  final TextEditingController paidController;
-  final double dueAmount;
-  final DateTime? reminderDate;
-  final ValueChanged<DateTime?> onReminderChanged;
-  final ValueChanged<String> onPaidChanged;
-  final bool isSaving;
-  final VoidCallback onSave;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        16,
-        20,
-        16 + MediaQuery.paddingOf(context).bottom,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _SummaryRow(
-            label: 'Kul Bikri',
-            value: CurrencyFormatter.format(grandTotal),
-            emphasized: true,
-          ),
-          const Divider(height: 20),
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'Aaj Kitna Mila',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-              SizedBox(
-                width: 120,
-                child: TextFormField(
-                  controller: paidController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  textAlign: TextAlign.right,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-                  ],
-                  decoration: const InputDecoration(
-                    prefixText: '₹ ',
-                    isDense: true,
-                    filled: true,
-                    fillColor: ColorPalette.fieldFill,
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide.none,
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
-                    ),
-                  ),
-                  onChanged: onPaidChanged,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          _SummaryRow(
-            label: 'Baaki',
-            value: CurrencyFormatter.format(dueAmount),
-            valueColor: dueAmount > 0 ? Colors.orange.shade800 : ColorPalette.labelSecondary,
-          ),
-          if (dueAmount > 0) ...[
-            const SizedBox(height: 8),
-            ReminderDateField(
-              reminderDate: reminderDate,
-              onChanged: onReminderChanged,
-            ),
-          ],
-          const SizedBox(height: 16),
-          AppPrimaryButton(
-            english: 'Save',
-            hindi: 'Save Karein',
-            isLoading: isSaving,
-            onPressed: onSave,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SummaryRow extends StatelessWidget {
-  const _SummaryRow({
-    required this.label,
-    required this.value,
-    this.emphasized = false,
-    this.valueColor,
-  });
-
-  final String label;
-  final String value;
-  final bool emphasized;
-  final Color? valueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: emphasized ? FontWeight.w700 : FontWeight.w600,
-              fontSize: emphasized ? 16 : 14,
-            ),
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: emphasized ? 18 : 15,
-            color: valueColor ?? ColorPalette.purple,
-          ),
-        ),
-      ],
     );
   }
 }

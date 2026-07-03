@@ -21,6 +21,7 @@ abstract final class AccountSeeder {
     final defaults = [
       (AccountTypes.cash, 'Cash in Hand'),
       (AccountTypes.bank, 'Bank Account'),
+      (AccountTypes.upi, 'UPI'),
       (AccountTypes.sales, 'Sales'),
       (AccountTypes.purchase, 'Purchase'),
       (AccountTypes.receivable, 'Accounts Receivable'),

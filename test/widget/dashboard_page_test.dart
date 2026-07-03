@@ -14,7 +14,7 @@ import 'package:bt_business/features/business/domain/entities/business.dart';
 import 'package:bt_business/features/reports/data/datasources/transaction_history_local_datasource.dart';
 
 void main() {
-  testWidgets('dashboard shows four summary cards and quick actions', (tester) async {
+  testWidgets('dashboard shows five summary cards and quick actions', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -62,7 +62,9 @@ void main() {
     expect(find.text('(Home)'), findsOneWidget);
     expect(find.text("Today's Sale"), findsOneWidget);
     expect(find.text('(Aaj Ki Bikri)'), findsOneWidget);
-    expect(find.text("Today's Cash"), findsOneWidget);
+    expect(find.text("Today's Purchase"), findsOneWidget);
+    expect(find.text('(Aaj Ki Kharid)'), findsOneWidget);
+    expect(find.text("Today's Cash Received"), findsOneWidget);
     expect(find.text('(Aaj Cash Mila)'), findsOneWidget);
     expect(find.text("Today's Credit"), findsOneWidget);
     expect(find.text('(Aaj Udhaar Bana)'), findsOneWidget);

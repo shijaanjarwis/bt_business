@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/reminders/reminder_list_kind.dart';
 import '../../../../core/reminders/reminder_models.dart';
+import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
@@ -38,6 +41,7 @@ class DashboardReminderSummarySection extends StatelessWidget {
         amount: summary.receiveToday,
         icon: Icons.call_received_rounded,
         color: ColorPalette.accentGreen,
+        listKind: ReminderListKind.receiveToday,
       ),
       _ReminderMetric(
         english: 'Pay Today',
@@ -45,6 +49,7 @@ class DashboardReminderSummarySection extends StatelessWidget {
         amount: summary.payToday,
         icon: Icons.call_made_rounded,
         color: ColorPalette.accentOrange,
+        listKind: ReminderListKind.payToday,
       ),
       _ReminderMetric(
         english: 'Pending Receivable',
@@ -52,6 +57,7 @@ class DashboardReminderSummarySection extends StatelessWidget {
         amount: summary.pendingReceivable,
         icon: Icons.schedule_rounded,
         color: ColorPalette.purple,
+        listKind: ReminderListKind.pendingReceivable,
       ),
       _ReminderMetric(
         english: 'Pending Payable',
@@ -59,6 +65,7 @@ class DashboardReminderSummarySection extends StatelessWidget {
         amount: summary.pendingPayable,
         icon: Icons.schedule_send_rounded,
         color: ColorPalette.accentOrange,
+        listKind: ReminderListKind.pendingPayable,
       ),
       _ReminderMetric(
         english: 'Tomorrow',
@@ -67,6 +74,7 @@ class DashboardReminderSummarySection extends StatelessWidget {
         icon: Icons.today_outlined,
         color: ColorPalette.labelSecondary,
         subtitle: _pairSubtitle(summary.tomorrowReceive, summary.tomorrowPay),
+        listKind: ReminderListKind.tomorrow,
       ),
       _ReminderMetric(
         english: 'Next 7 Days',
@@ -75,6 +83,7 @@ class DashboardReminderSummarySection extends StatelessWidget {
         icon: Icons.date_range_outlined,
         color: ColorPalette.labelSecondary,
         subtitle: _pairSubtitle(summary.next7DaysReceive, summary.next7DaysPay),
+        listKind: ReminderListKind.next7Days,
       ),
       _ReminderMetric(
         english: 'Overdue',
@@ -84,6 +93,7 @@ class DashboardReminderSummarySection extends StatelessWidget {
         color: ColorPalette.warningText,
         subtitle: _pairSubtitle(summary.overdueReceive, summary.overduePay),
         highlight: summary.overdueReceive + summary.overduePay > 0,
+        listKind: ReminderListKind.overdue,
       ),
     ].where((card) => card.amount > 0).toList();
 
@@ -127,6 +137,7 @@ class _ReminderMetric {
     required this.amount,
     required this.icon,
     required this.color,
+    required this.listKind,
     this.subtitle,
     this.highlight = false,
   });
@@ -136,6 +147,7 @@ class _ReminderMetric {
   final double amount;
   final IconData icon;
   final Color color;
+  final ReminderListKind listKind;
   final String? subtitle;
   final bool highlight;
 }
@@ -147,46 +159,58 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: card.highlight ? ColorPalette.warningSurface : ColorPalette.cardSurface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: card.highlight ? ColorPalette.warningBorder : ColorPalette.border,
+    return Material(
+      color: card.highlight ? ColorPalette.warningSurface : ColorPalette.cardSurface,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push(
+          RouteNames.reminderListPath(card.listKind.routeSlug),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(card.icon, size: 20, color: card.color),
-          const Spacer(),
-          BilingualLabel(
-            english: card.english,
-            hindi: card.hindi,
-            compact: true,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            CurrencyFormatter.format(card.amount),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: ColorPalette.labelPrimary,
+        borderRadius: BorderRadius.circular(18),
+        splashColor: ColorPalette.purple.withValues(alpha: 0.12),
+        highlightColor: ColorPalette.purple.withValues(alpha: 0.08),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: card.highlight ? ColorPalette.warningBorder : ColorPalette.border,
             ),
+            borderRadius: BorderRadius.circular(18),
           ),
-          if (card.subtitle != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              card.subtitle!,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: ColorPalette.labelSecondary,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(card.icon, size: 20, color: card.color),
+              const Spacer(),
+              BilingualLabel(
+                english: card.english,
+                hindi: card.hindi,
+                compact: true,
               ),
-            ),
-          ],
-        ],
+              const SizedBox(height: 8),
+              Text(
+                CurrencyFormatter.format(card.amount),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: ColorPalette.labelPrimary,
+                ),
+              ),
+              if (card.subtitle != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  card.subtitle!,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: ColorPalette.labelSecondary,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

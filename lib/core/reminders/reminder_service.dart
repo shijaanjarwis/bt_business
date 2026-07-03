@@ -84,6 +84,7 @@ abstract final class ReminderService {
       transactionType: type,
       partyId: row['party_id']! as String,
       partyName: row['party_name']! as String,
+      partyPhone: row['party_phone'] as String? ?? '',
       amount: reminderAmount(
         transactionType: type,
         totalAmount: total,

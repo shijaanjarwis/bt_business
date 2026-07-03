@@ -1,0 +1,11 @@
+{
+  "voice_coming_soon": "Voice jald aa raha hai",
+  "assistant_option_en": "English",
+  "assistant_option_en_subtitle": "Greeting aur voice English mein",
+  "assistant_option_hi": "Hindi",
+  "assistant_option_hi_subtitle": "Greeting aur voice daily shopkeeper Hindi mein",
+  "assistant_option_ur": "Urdu",
+  "assistant_option_ur_subtitle": "Jald Aa Raha Hai",
+  "assistant_coming_soon": "Urdu assistant agle update mein aayega",
+  "settings_assistant_helper": "Greeting, voice, AI jawab, helper text aur notifications badalte hain. Screen labels hamesha English + neeche daily Hindi rahenge."
+}

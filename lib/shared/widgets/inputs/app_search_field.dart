@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/theme/app_text_theme.dart';
 import '../../../core/theme/color_palette.dart';
 
 /// Unified register search field — debounced for instant-feel typing.
@@ -56,11 +57,7 @@ class _AppSearchFieldState extends State<AppSearchField> {
         controller: widget.controller,
         autofocus: widget.autofocus,
         onChanged: _handleChanged,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: ColorPalette.labelPrimary,
-        ),
+        style: context.appText.primary,
         decoration: InputDecoration(
           hintText: AppSearchField.placeholder,
           hintStyle: const TextStyle(

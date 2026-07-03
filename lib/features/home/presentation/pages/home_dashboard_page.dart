@@ -9,6 +9,7 @@ import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
+import '../../../../shared/widgets/layout/main_shell_insets.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../business/presentation/providers/business_providers.dart';
@@ -125,11 +126,11 @@ class _DashboardContent extends StatelessWidget {
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
           ),
-          padding: const EdgeInsets.fromLTRB(
+          padding: EdgeInsets.fromLTRB(
             AppDimensions.screenPaddingH,
             AppSpacing.sm,
             AppDimensions.screenPaddingH,
-            120,
+            MainShellInsets.scrollBottomWithFab(context),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

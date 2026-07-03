@@ -37,6 +37,7 @@ dependencies:
   image_picker: ^1.1.2
   flutter_local_notifications: ^18.0.1
   timezone: ^0.10.0
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_test:
@@ -64,6 +65,9 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/localization/en.json
+    - assets/localization/hi.json
+    - assets/localization/ur.json
 
   # fonts:
   #   - family: BTBusiness

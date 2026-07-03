@@ -1,4 +1,5 @@
 import '../../../../core/accounting/gst_types.dart';
+import '../../../../core/accounting/payment_breakdown.dart';
 import '../../../../core/accounting/payment_modes.dart';
 import '../../../../core/errors/result.dart';
 import '../entities/purchase_invoice.dart';
@@ -39,6 +40,7 @@ class SavePurchaseInput {
     required this.paymentMode,
     required this.gstType,
     required this.lines,
+    this.paymentBreakdown = const PaymentBreakdown(),
     this.paidAmount,
     this.notes,
     this.reminderDate,
@@ -52,6 +54,7 @@ class SavePurchaseInput {
   final PaymentMode paymentMode;
   final GstType gstType;
   final List<PurchaseLineInput> lines;
+  final PaymentBreakdown paymentBreakdown;
   final double? paidAmount;
   final String? notes;
   final DateTime? reminderDate;

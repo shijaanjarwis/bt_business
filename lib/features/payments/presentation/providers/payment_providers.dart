@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/di/core_providers.dart';
 import '../../../../core/di/data_revision.dart';
 import '../../../../core/errors/failures.dart';
+import '../../../../core/accounting/payment_breakdown.dart';
 import '../../../../core/errors/result.dart';
 import '../../../business/data/datasources/business_table.dart';
 import '../../../ledger/domain/entities/party.dart';
@@ -113,7 +114,7 @@ final paymentListProvider =
           date: entry.date,
           createdAt: entry.createdAt,
           note: entry.note,
-          paymentModeLabel: entry.paymentModeLabel,
+          paymentBreakdown: entry.paymentBreakdown,
           balanceAfterPayment: balances[entry.id],
           reminderDate: entry.reminderDate,
         ),
@@ -142,7 +143,7 @@ final paymentDetailProvider =
     date: entry.date,
     createdAt: entry.createdAt,
     note: entry.note,
-    paymentModeLabel: entry.paymentModeLabel,
+    paymentBreakdown: entry.paymentBreakdown,
     balanceAfterPayment: balance,
     reminderDate: entry.reminderDate,
   );
@@ -164,6 +165,7 @@ final savePaymentProvider = Provider<
   String? note,
   String? id,
   DateTime? reminderDate,
+  PaymentBreakdown breakdown,
 })>((ref) {
   return ({
     required bool isReceived,
@@ -173,6 +175,7 @@ final savePaymentProvider = Provider<
     String? note,
     String? id,
     DateTime? reminderDate,
+    PaymentBreakdown breakdown = const PaymentBreakdown(),
   }) async {
     final businessId = await ref.read(currentBusinessIdProvider.future);
     if (businessId == null) {
@@ -187,6 +190,7 @@ final savePaymentProvider = Provider<
           note: note,
           id: id,
           reminderDate: reminderDate,
+          breakdown: breakdown,
         );
   };
 });

@@ -2,6 +2,7 @@
 abstract final class AccountTypes {
   static const String cash = 'cash';
   static const String bank = 'bank';
+  static const String upi = 'upi';
   static const String sales = 'sales';
   static const String purchase = 'purchase';
   static const String receivable = 'receivable';

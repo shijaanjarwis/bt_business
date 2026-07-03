@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/accounting/payment_method_channel.dart';
 import '../../../../core/di/data_revision.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
@@ -12,13 +13,15 @@ import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
+import '../../../../shared/widgets/dialogs/confirmation_dialog.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/inputs/app_party_picker_field.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
+import '../../../../shared/widgets/inputs/payment_method_selector.dart';
 import '../../../../shared/widgets/inputs/reminder_date_field.dart';
-import '../../../../shared/widgets/labels/bilingual_label.dart';
 import '../../../../shared/widgets/layout/app_form_section.dart';
+import '../../../../shared/widgets/layout/main_shell_insets.dart';
 import '../../../../shared/widgets/pickers/show_party_picker.dart';
 import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../../ledger/domain/entities/party.dart';
@@ -28,8 +31,6 @@ import '../../domain/entities/payment_register_entry.dart';
 import '../providers/payment_providers.dart';
 
 enum PaymentFormMode { received, paid }
-
-const _quickAmounts = [500, 1000, 2000, 5000, 10000];
 
 /// Fast jama / paise diye entry — under 10 seconds.
 class PaymentFormPage extends ConsumerStatefulWidget {
@@ -64,6 +65,7 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
   bool _isSaving = false;
   bool _isDeleting = false;
   DateTime? _reminderDate;
+  PaymentMethodChannel _paymentMethod = PaymentMethodChannel.cash;
 
   bool get isReceived => _mode == PaymentFormMode.received;
 
@@ -91,6 +93,7 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
     _amountController.text = _formatAmount(entry.amount);
     _noteController.text = entry.note ?? '';
     _reminderDate = entry.reminderDate;
+    _paymentMethod = PaymentMethodChannel.fromBreakdown(entry.paymentBreakdown);
     _selectedParty = Party(
       id: entry.partyId,
       businessId: '',
@@ -119,10 +122,6 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
   String _formatAmount(double value) {
     if (value == value.roundToDouble()) return value.round().toString();
     return value.toStringAsFixed(2);
-  }
-
-  void _setQuickAmount(int amount) {
-    setState(() => _amountController.text = amount.toString());
   }
 
   Future<void> _pickDate() async {
@@ -187,6 +186,7 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
         note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
         id: _existing?.id,
         reminderDate: _reminderDate,
+        breakdown: _paymentMethod.toBreakdown(amount),
       );
 
       if (result.isFailure) {
@@ -211,32 +211,10 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
     final id = _existing?.id;
     if (id == null) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isReceived ? 'Yeh jama delete karein?' : 'Yeh payment delete karein?'),
-        content: const Text('Entry hat jayegi aur hisaab wapas adjust ho jayega.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const BilingualLabel(
-              english: 'Cancel',
-              hindi: 'Cancel',
-              compact: true,
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const BilingualLabel(
-              english: 'Delete',
-              hindi: 'Delete Karein',
-              compact: true,
-              englishStyle: TextStyle(color: ColorPalette.destructive),
-              hindiStyle: TextStyle(color: ColorPalette.destructive),
-            ),
-          ),
-        ],
-      ),
+    final confirmed = await ConfirmationDialog.show(
+      context,
+      title: isReceived ? 'Yeh jama delete karein?' : 'Yeh payment delete karein?',
+      message: 'Entry hat jayegi aur hisaab wapas adjust ho jayega.',
     );
     if (confirmed != true || !mounted) return;
 
@@ -325,145 +303,129 @@ class _PaymentFormPageState extends ConsumerState<PaymentFormPage> {
       body: SafeArea(
         child: Form(
           key: _formKey,
-          child: Column(
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              0,
+              20,
+              MainShellInsets.scrollBottom(context),
+            ),
             children: [
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+              AppPartyPickerField(
+                party: _selectedParty,
+                onChanged: (party) => setState(() => _selectedParty = party),
+                scope: PartyPickerScope.register,
+                allowClear: false,
+              ),
+              const SizedBox(height: 12),
+              AppFormSection(
+                english: 'Amount',
+                hindi: 'Rashi',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    AppPartyPickerField(
-                      party: _selectedParty,
-                      onChanged: (party) => setState(() => _selectedParty = party),
-                      scope: PartyPickerScope.register,
-                      allowClear: false,
+                    TextFormField(
+                      controller: _amountController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                      ],
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      decoration: const InputDecoration(
+                        prefixText: '₹ ',
+                        hintText: '0',
+                        filled: true,
+                        fillColor: ColorPalette.fieldFill,
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide.none,
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                        ),
+                      ),
+                      validator: Validators.positiveAmount,
                     ),
-                    const SizedBox(height: 12),
-                    AppFormSection(
-                      english: 'Amount',
-                      hindi: 'Rashi',
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          TextFormField(
-                            controller: _amountController,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-                            ],
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                            ),
-                            decoration: const InputDecoration(
-                              prefixText: '₹ ',
-                              hintText: '0',
-                              filled: true,
-                              fillColor: ColorPalette.fieldFill,
-                              border: OutlineInputBorder(
-                                borderSide: BorderSide.none,
-                                borderRadius: BorderRadius.all(Radius.circular(12)),
-                              ),
-                            ),
-                            validator: Validators.positiveAmount,
-                          ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: _quickAmounts.map((amount) {
-                              return ActionChip(
-                                label: Text('₹$amount'),
-                                onPressed: () => _setQuickAmount(amount),
-                                backgroundColor: ColorPalette.background,
-                              );
-                            }).toList(),
-                          ),
-                        ],
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Payment Method',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: ColorPalette.labelPrimary,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    AppFormSection(
-                      english: 'Date · Time',
-                      hindi: 'Tareekh · Samay',
-                      child: Column(
-                        children: [
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('Tareekh'),
-                            subtitle: Text(DateFormatter.shortDate(_dateTime)),
-                            trailing: const Icon(Icons.calendar_today_rounded, size: 20),
-                            onTap: _pickDate,
-                          ),
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('Samay'),
-                            subtitle: Text(DateFormat('h:mm a').format(_dateTime)),
-                            trailing: const Icon(Icons.access_time_rounded, size: 20),
-                            onTap: _pickTime,
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: 8),
+                    PaymentMethodSelector(
+                      selected: _paymentMethod,
+                      onChanged: (method) =>
+                          setState(() => _paymentMethod = method),
                     ),
-                    const SizedBox(height: 12),
-                    AppFormSection(
-                      english: 'Reminder',
-                      hindi: 'Reminder',
-                      child: ReminderDateField(
-                        reminderDate: _reminderDate,
-                        onChanged: (date) => setState(() => _reminderDate = date),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    AppFormSection(
-                      english: 'Note',
-                      hindi: 'Note',
-                      child: AppTextField(
-                        english: 'Note',
-                        hindi: 'Note',
-                        helper: 'Optional',
-                        controller: _noteController,
-                        maxLines: 2,
-                      ),
-                    ),
-                    if (widget.isEdit) ...[
-                      const SizedBox(height: 16),
-                      AppPrimaryButton(
-                        english: 'Delete',
-                        hindi: 'Delete Karein',
-                        destructive: true,
-                        compact: true,
-                        isLoading: _isDeleting,
-                        onPressed: _isDeleting ? null : _handleDelete,
-                      ),
-                    ],
-                    const DeveloperFooter(),
                   ],
                 ),
               ),
-              Container(
-                padding: EdgeInsets.fromLTRB(
-                  20,
-                  16,
-                  20,
-                  16 + MediaQuery.paddingOf(context).bottom,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, -4),
+              const SizedBox(height: 12),
+              AppFormSection(
+                english: 'Date · Time',
+                hindi: 'Tareekh · Samay',
+                child: Column(
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Tareekh'),
+                      subtitle: Text(DateFormatter.shortDate(_dateTime)),
+                      trailing: const Icon(Icons.calendar_today_rounded, size: 20),
+                      onTap: _pickDate,
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Samay'),
+                      subtitle: Text(DateFormat('h:mm a').format(_dateTime)),
+                      trailing: const Icon(Icons.access_time_rounded, size: 20),
+                      onTap: _pickTime,
                     ),
                   ],
                 ),
-                child: AppPrimaryButton(
-                  english: 'Save',
-                  hindi: 'Save Karein',
-                  isLoading: _isSaving,
-                  onPressed: _save,
+              ),
+              const SizedBox(height: 12),
+              AppFormSection(
+                english: 'Reminder',
+                hindi: 'Reminder',
+                child: ReminderDateField(
+                  reminderDate: _reminderDate,
+                  onChanged: (date) => setState(() => _reminderDate = date),
                 ),
               ),
+              const SizedBox(height: 12),
+              AppFormSection(
+                english: 'Note',
+                hindi: 'Note',
+                child: AppTextField(
+                  english: 'Note',
+                  hindi: 'Note',
+                  helper: 'Optional',
+                  controller: _noteController,
+                  maxLines: 2,
+                ),
+              ),
+              const SizedBox(height: 20),
+              AppPrimaryButton(
+                english: 'Save',
+                hindi: 'Save Karein',
+                isLoading: _isSaving,
+                onPressed: _save,
+              ),
+              if (widget.isEdit) ...[
+                const SizedBox(height: 12),
+                AppPrimaryButton(
+                  english: 'Delete',
+                  hindi: 'Delete Karein',
+                  destructive: true,
+                  compact: true,
+                  isLoading: _isDeleting,
+                  onPressed: _isDeleting ? null : _handleDelete,
+                ),
+              ],
+              const DeveloperFooter(),
             ],
           ),
         ),

@@ -1,3 +1,4 @@
+import '../../../../core/accounting/payment_breakdown.dart';
 import '../../../../core/errors/exception_mapper.dart';
 import '../../../../core/errors/result.dart';
 import '../../../ledger/data/services/payment_posting_service.dart';
@@ -17,6 +18,7 @@ final class PaymentRegisterActions {
     String? note,
     String? id,
     DateTime? reminderDate,
+    PaymentBreakdown breakdown = const PaymentBreakdown(),
   }) async {
     try {
       final dateOnly = DateTime(dateTime.year, dateTime.month, dateTime.day);
@@ -30,6 +32,7 @@ final class PaymentRegisterActions {
               id: id,
               existingCreatedAt: dateTime,
               reminderDate: reminderDate,
+              breakdown: breakdown,
             )
           : await _postingService.recordPaid(
               businessId: businessId,
@@ -40,6 +43,7 @@ final class PaymentRegisterActions {
               id: id,
               existingCreatedAt: dateTime,
               reminderDate: reminderDate,
+              breakdown: breakdown,
             );
       return Success(transactionId);
     } catch (error, stackTrace) {

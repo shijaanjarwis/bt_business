@@ -150,6 +150,12 @@ class _RegisterDateFilterSheetBodyState extends State<_RegisterDateFilterSheetBo
                 onTap: () => _selectPreset(RegisterDatePeriod.today),
               ),
               _PresetTile(
+                english: 'Yesterday',
+                hindi: 'Kal',
+                selected: _period == RegisterDatePeriod.yesterday,
+                onTap: () => _selectPreset(RegisterDatePeriod.yesterday),
+              ),
+              _PresetTile(
                 english: 'This Week',
                 hindi: 'Is Hafte',
                 selected: _period == RegisterDatePeriod.thisWeek,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/color_palette.dart';
+import '../../../core/theme/app_text_theme.dart';
 import 'app_branding.dart';
 
 /// Subtle developer credit at the bottom of major scrollable screens.
@@ -16,13 +16,7 @@ class DeveloperFooter extends StatelessWidget {
       child: Text(
         AppBranding.developerFooter,
         textAlign: TextAlign.center,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          color: ColorPalette.labelTertiary,
-          height: 1.35,
-          letterSpacing: -0.1,
-        ),
+        style: context.appText.meta.copyWith(fontWeight: FontWeight.w400),
       ),
     );
   }

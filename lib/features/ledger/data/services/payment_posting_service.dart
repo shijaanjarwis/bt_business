@@ -1,6 +1,8 @@
 import 'package:sqflite/sqflite.dart' hide DatabaseException;
 
 import '../../../../core/accounting/account_types.dart';
+import '../../../../core/accounting/payment_breakdown.dart';
+import '../../../../core/accounting/payment_journal_helper.dart';
 import '../../../../core/accounting/transaction_types.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/utils/date_formatter.dart';
@@ -23,6 +25,7 @@ final class PaymentPostingService {
     String? id,
     DateTime? existingCreatedAt,
     DateTime? reminderDate,
+    PaymentBreakdown breakdown = const PaymentBreakdown(),
   }) {
     return _record(
       businessId: businessId,
@@ -32,8 +35,7 @@ final class PaymentPostingService {
       note: note,
       type: TransactionTypes.paymentReceived,
       balanceDelta: -amount,
-      debitAccount: AccountTypes.cash,
-      creditAccount: AccountTypes.receivable,
+      breakdown: breakdown,
       id: id,
       existingCreatedAt: existingCreatedAt,
       reminderDate: reminderDate,
@@ -49,6 +51,7 @@ final class PaymentPostingService {
     String? id,
     DateTime? existingCreatedAt,
     DateTime? reminderDate,
+    PaymentBreakdown breakdown = const PaymentBreakdown(),
   }) {
     return _record(
       businessId: businessId,
@@ -58,8 +61,7 @@ final class PaymentPostingService {
       note: note,
       type: TransactionTypes.paymentPaid,
       balanceDelta: amount,
-      debitAccount: AccountTypes.payable,
-      creditAccount: AccountTypes.cash,
+      breakdown: breakdown,
       id: id,
       existingCreatedAt: existingCreatedAt,
       reminderDate: reminderDate,
@@ -125,13 +127,20 @@ final class PaymentPostingService {
     String? note,
     required String type,
     required double balanceDelta,
-    required String debitAccount,
-    required String creditAccount,
+    required PaymentBreakdown breakdown,
     String? id,
     DateTime? existingCreatedAt,
     DateTime? reminderDate,
   }) async {
     if (amount <= 0) {
+      throw const ValidationException('Amount must be greater than zero');
+    }
+
+    final resolved = breakdown.paidTotal > 0
+        ? breakdown.clampToTotal(amount)
+        : PaymentBreakdown(cash: amount);
+    final paidTotal = resolved.paidTotal;
+    if (paidTotal <= 0) {
       throw const ValidationException('Amount must be greater than zero');
     }
 
@@ -151,7 +160,11 @@ final class PaymentPostingService {
         TransactionsTable.date: isoDate,
         TransactionsTable.partyId: partyId,
         TransactionsTable.notes: note?.trim().isEmpty ?? true ? null : note!.trim(),
-        TransactionsTable.totalAmount: amount,
+        TransactionsTable.totalAmount: paidTotal,
+        TransactionsTable.paidAmount: paidTotal,
+        TransactionsTable.cashAmount: resolved.cash,
+        TransactionsTable.upiAmount: resolved.upi,
+        TransactionsTable.bankAmount: resolved.bank,
         TransactionsTable.reminderDate: ReminderService.reminderDateIso(
           ReminderService.effectiveReminderDate(
             transactionType: type,
@@ -163,29 +176,43 @@ final class PaymentPostingService {
         TransactionsTable.updatedAt: now.toIso8601String(),
       });
 
-      final debitAccountId = await _accountId(txn, businessId, debitAccount);
-      final creditAccountId = await _accountId(txn, businessId, creditAccount);
-
-      await _insertLine(
-        txn,
-        transactionId,
-        debitAccountId,
-        partyId: debitAccount == AccountTypes.receivable ||
-                debitAccount == AccountTypes.payable
-            ? partyId
-            : null,
-        debit: amount,
-      );
-      await _insertLine(
-        txn,
-        transactionId,
-        creditAccountId,
-        partyId: creditAccount == AccountTypes.receivable ||
-                creditAccount == AccountTypes.payable
-            ? partyId
-            : null,
-        credit: amount,
-      );
+      if (type == TransactionTypes.paymentReceived) {
+        await PaymentJournalHelper.postIncomingBreakdown(
+          txn: txn,
+          transactionId: transactionId,
+          businessId: businessId,
+          breakdown: resolved,
+          accountId: _accountId,
+          insertLine: _insertLine,
+        );
+        final receivableAccountId =
+            await _accountId(txn, businessId, AccountTypes.receivable);
+        await _insertLine(
+          txn,
+          transactionId,
+          receivableAccountId,
+          partyId: partyId,
+          credit: paidTotal,
+        );
+      } else {
+        final payableAccountId =
+            await _accountId(txn, businessId, AccountTypes.payable);
+        await _insertLine(
+          txn,
+          transactionId,
+          payableAccountId,
+          partyId: partyId,
+          debit: paidTotal,
+        );
+        await PaymentJournalHelper.postOutgoingBreakdown(
+          txn: txn,
+          transactionId: transactionId,
+          businessId: businessId,
+          breakdown: resolved,
+          accountId: _accountId,
+          insertLine: _insertLine,
+        );
+      }
 
       await txn.rawUpdate(
         '''

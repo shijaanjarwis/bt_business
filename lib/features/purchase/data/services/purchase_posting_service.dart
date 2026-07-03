@@ -1,6 +1,8 @@
 import 'package:sqflite/sqflite.dart' hide DatabaseException;
 
 import '../../../../core/accounting/account_types.dart';
+import '../../../../core/accounting/payment_breakdown.dart';
+import '../../../../core/accounting/payment_journal_helper.dart';
 import '../../../../core/accounting/payment_modes.dart';
 import '../../../../core/accounting/transaction_types.dart';
 import '../../../../core/errors/exceptions.dart';
@@ -30,14 +32,22 @@ final class PurchasePostingService {
       throw const ValidationException('Invoice total must be greater than zero');
     }
 
-    final paidAmount = (input.paidAmount ?? totals.grandTotal)
-        .clamp(0, totals.grandTotal)
-        .toDouble();
+    final breakdown = PaymentBreakdown.resolve(
+      breakdown: input.paymentBreakdown,
+      paymentMode: input.paymentMode,
+      grandTotal: totals.grandTotal,
+      paidAmount: input.paidAmount,
+    );
+    final paidAmount = breakdown.paidTotal;
     if (paidAmount < 0) {
       throw const ValidationException('Paid amount cannot be negative');
     }
+    if (paidAmount > totals.grandTotal) {
+      throw const ValidationException('Paid amount cannot exceed total');
+    }
 
-    final dueAmount = totals.grandTotal - paidAmount;
+    final dueAmount = breakdown.remainingCredit(totals.grandTotal);
+    final paymentMode = dueAmount > 0 ? PaymentMode.credit : PaymentMode.cash;
     final reminderDate = ReminderService.effectiveReminderDate(
       transactionType: TransactionTypes.purchase,
       dueAmount: dueAmount,
@@ -68,8 +78,12 @@ final class PurchasePostingService {
         TransactionsTable.totalAmount: totals.grandTotal,
         TransactionsTable.paidAmount: paidAmount,
         TransactionsTable.dueAmount: dueAmount,
+        TransactionsTable.cashAmount: breakdown.cash,
+        TransactionsTable.upiAmount: breakdown.upi,
+        TransactionsTable.bankAmount: breakdown.bank,
+        TransactionsTable.chequeAmount: breakdown.cheque,
         TransactionsTable.reminderDate: ReminderService.reminderDateIso(reminderDate),
-        TransactionsTable.paymentMode: input.paymentMode.code,
+        TransactionsTable.paymentMode: paymentMode.code,
         TransactionsTable.gstType: input.gstType.code,
         TransactionsTable.subtotal: totals.subtotal,
         TransactionsTable.discountTotal: totals.discountTotal,
@@ -127,6 +141,8 @@ final class PurchasePostingService {
         businessId: businessId,
         transactionId: transactionId,
         input: input,
+        breakdown: breakdown,
+        dueAmount: dueAmount,
         totals: totals,
       );
     });
@@ -154,11 +170,8 @@ final class PurchasePostingService {
     if (rows.isEmpty) return;
 
     final transaction = rows.first;
-    final paymentMode = PaymentMode.fromCode(
-      transaction[TransactionsTable.paymentMode]! as String? ?? PaymentMode.cash.code,
-    );
     final partyId = transaction[TransactionsTable.partyId] as String?;
-    final grandTotal = (transaction[TransactionsTable.totalAmount] as num?)?.toDouble() ?? 0;
+    final dueAmount = (transaction[TransactionsTable.dueAmount] as num?)?.toDouble() ?? 0;
 
     final movements = await txn.query(
       StockMovementsTable.tableName,
@@ -180,7 +193,7 @@ final class PurchasePostingService {
       );
     }
 
-    if (paymentMode == PaymentMode.credit && partyId != null) {
+    if (dueAmount > 0 && partyId != null) {
       await txn.rawUpdate(
         '''
         UPDATE ${PartiesTable.tableName}
@@ -188,7 +201,7 @@ final class PurchasePostingService {
             ${PartiesTable.updatedAt} = ?
         WHERE ${PartiesTable.id} = ?
         ''',
-        [grandTotal, now, partyId],
+        [dueAmount, now, partyId],
       );
     }
 
@@ -219,6 +232,8 @@ final class PurchasePostingService {
     required String businessId,
     required String transactionId,
     required SavePurchaseInput input,
+    required PaymentBreakdown breakdown,
+    required double dueAmount,
     required ({
       double subtotal,
       double discountTotal,
@@ -229,8 +244,6 @@ final class PurchasePostingService {
       double grandTotal,
     }) totals,
   }) async {
-    final cashAccountId = await _accountId(txn, businessId, AccountTypes.cash);
-    final payableAccountId = await _accountId(txn, businessId, AccountTypes.payable);
     final stockAccountId = await _accountId(txn, businessId, AccountTypes.stock);
     final cgstAccountId = await _accountId(txn, businessId, AccountTypes.cgstPayable);
     final sgstAccountId = await _accountId(txn, businessId, AccountTypes.sgstPayable);
@@ -248,26 +261,16 @@ final class PurchasePostingService {
       await _insertLine(txn, transactionId, igstAccountId, debit: totals.igstTotal);
     }
 
-    if (input.paymentMode == PaymentMode.cash) {
-      await _insertLine(txn, transactionId, cashAccountId, credit: totals.grandTotal);
-    } else {
-      await _insertLine(
-        txn,
-        transactionId,
-        payableAccountId,
-        partyId: input.partyId,
-        credit: totals.grandTotal,
-      );
-      await txn.rawUpdate(
-        '''
-        UPDATE ${PartiesTable.tableName}
-        SET ${PartiesTable.balance} = ${PartiesTable.balance} - ?,
-            ${PartiesTable.updatedAt} = ?
-        WHERE ${PartiesTable.id} = ?
-        ''',
-        [totals.grandTotal, DateTime.now().toIso8601String(), input.partyId],
-      );
-    }
+    await PaymentJournalHelper.postPurchasePayment(
+      txn: txn,
+      transactionId: transactionId,
+      businessId: businessId,
+      partyId: input.partyId,
+      breakdown: breakdown,
+      dueAmount: dueAmount,
+      accountId: _accountId,
+      insertLine: _insertLine,
+    );
   }
 
   List<({PurchaseLineInput input, SaleLineAmounts amounts})> _computeLines(

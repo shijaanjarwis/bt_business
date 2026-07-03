@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_colors.dart';
+
 /// Brand colors — purple primary, Apple-inspired neutrals.
 abstract final class ColorPalette {
   static const Color seed = Color(0xFF7B1FA2);
@@ -10,12 +12,20 @@ abstract final class ColorPalette {
   static const Color background = Color(0xFFF2F2F7);
   static const Color cardSurface = Color(0xFFFFFFFF);
   static const Color splashBackground = purple;
-  static const Color labelPrimary = Color(0xFF1C1C1E);
-  static const Color labelSecondary = Color(0xFF48484A);
-  static const Color labelTertiary = Color(0xFF48484A);
-  static const Color hindiText = Color(0xFF48484A);
-  static const Color hintText = Color(0xFF48484A);
-  static const Color iconPrimary = Color(0xFF1C1C1E);
+
+  /// Primary readable text — party names, titles, amounts.
+  static const Color labelPrimary = AppColors.textPrimary;
+
+  /// Secondary readable text — phone, dates, helpers.
+  static const Color labelSecondary = AppColors.textSecondary;
+
+  /// Meta / de-emphasized only — never for primary content.
+  static const Color labelTertiary = AppColors.textTertiary;
+
+  static const Color hindiText = AppColors.textHindi;
+  static const Color hintText = AppColors.textHint;
+  static const Color iconPrimary = AppColors.iconPrimary;
+  static const Color iconSecondary = AppColors.iconSecondary;
   static const Color border = Color(0xFFD1D1D6);
 
   static const Color accentBlue = Color(0xFF007AFF);

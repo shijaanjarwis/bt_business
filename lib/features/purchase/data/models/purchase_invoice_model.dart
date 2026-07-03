@@ -1,4 +1,5 @@
 import '../../../../core/accounting/gst_types.dart';
+import '../../../../core/accounting/payment_breakdown.dart';
 import '../../../../core/accounting/payment_modes.dart';
 import '../../../../core/reminders/reminder_service.dart';
 import '../../../../data/local/database/tables/accounting_tables.dart';
@@ -38,6 +39,13 @@ final class PurchaseInvoiceModel {
         grandTotal: (map[TransactionsTable.totalAmount] as num?)?.toDouble() ?? 0,
         paidAmount: (map[TransactionsTable.paidAmount] as num?)?.toDouble() ?? 0,
         dueAmount: (map[TransactionsTable.dueAmount] as num?)?.toDouble() ?? 0,
+        paymentBreakdown: PaymentBreakdown.fromStored(
+          cashAmount: (map[TransactionsTable.cashAmount] as num?)?.toDouble() ?? 0,
+          upiAmount: (map[TransactionsTable.upiAmount] as num?)?.toDouble() ?? 0,
+          bankAmount: (map[TransactionsTable.bankAmount] as num?)?.toDouble() ?? 0,
+          chequeAmount: (map[TransactionsTable.chequeAmount] as num?)?.toDouble() ?? 0,
+          paidAmount: (map[TransactionsTable.paidAmount] as num?)?.toDouble() ?? 0,
+        ),
         reminderDate: ReminderService.parseReminderDate(
           map[TransactionsTable.reminderDate] as String?,
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_spacing.dart';
+import '../../../core/theme/app_text_theme.dart';
 import '../../../core/theme/color_palette.dart';
 import '../labels/app_form_field_label.dart';
 
@@ -59,11 +60,7 @@ class AppTextField extends StatelessWidget {
           onChanged: onChanged,
           readOnly: readOnly,
           onTap: onTap,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: ColorPalette.labelPrimary,
-          ),
+          style: context.appText.primary,
           decoration: InputDecoration(
             prefixIcon: prefixIcon == null
                 ? null
@@ -99,12 +96,7 @@ class AppTextField extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             helper!,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: ColorPalette.labelSecondary,
-              height: 1.35,
-            ),
+            style: context.appText.helper,
           ),
         ],
       ],

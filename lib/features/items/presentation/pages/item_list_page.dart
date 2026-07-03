@@ -8,7 +8,7 @@ import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/feedback/app_error_view.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
-import '../../../../shared/widgets/buttons/app_register_fab.dart';
+import '../../../../shared/widgets/layout/main_shell_insets.dart';
 import '../../../../shared/widgets/inputs/app_search_field.dart';
 import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../providers/item_providers.dart';
@@ -41,12 +41,6 @@ class _ItemListPageState extends ConsumerState<ItemListPage> {
       appBar: const AppRegisterAppBar(
         english: 'Goods',
         hindi: 'Maal',
-      ),
-      floatingActionButton: AppRegisterFab(
-        onPressed: () => context.push(RouteNames.stockNew),
-        english: 'Add Item',
-        hindi: 'Maal Jodein',
-        icon: Icons.add_rounded,
       ),
       body: SafeArea(
         child: Column(
@@ -82,7 +76,12 @@ class _ItemListPageState extends ConsumerState<ItemListPage> {
                         physics: const AlwaysScrollableScrollPhysics(
                           parent: BouncingScrollPhysics(),
                         ),
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
+                        padding: EdgeInsets.fromLTRB(
+                          20,
+                          0,
+                          20,
+                          MainShellInsets.scrollBottomWithFab(context),
+                        ),
                         children: [
                           SizedBox(height: MediaQuery.sizeOf(context).height * 0.14),
                           Center(
@@ -110,7 +109,12 @@ class _ItemListPageState extends ConsumerState<ItemListPage> {
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
+                      padding: EdgeInsets.fromLTRB(
+                        20,
+                        0,
+                        20,
+                        MainShellInsets.scrollBottomWithFab(context),
+                      ),
                       itemCount: items.length + 1,
                       separatorBuilder: (context, index) {
                         if (index >= items.length - 1) {
