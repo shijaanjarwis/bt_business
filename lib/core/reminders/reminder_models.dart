@@ -36,6 +36,8 @@ class ReminderEntry {
     required this.dueAmount,
     required this.direction,
     this.partyPhone = '',
+    this.transactionDate,
+    this.notes = '',
   });
 
   final String transactionId;
@@ -47,6 +49,8 @@ class ReminderEntry {
   final double dueAmount;
   final ReminderDirection direction;
   final String partyPhone;
+  final DateTime? transactionDate;
+  final String notes;
 
   bool get isOverdue {
     final today = DateTime.now();
@@ -60,6 +64,40 @@ class ReminderEntry {
     final due = DateTime(reminderDate.year, reminderDate.month, reminderDate.day);
     final now = DateTime(today.year, today.month, today.day);
     return now.difference(due).inDays;
+  }
+}
+
+/// Pending receivable/payable rows grouped by party for list screens.
+class PartyPendingGroup {
+  const PartyPendingGroup({
+    required this.partyId,
+    required this.partyName,
+    required this.partyPhone,
+    required this.totalPendingAmount,
+    required this.entryCount,
+    required this.oldestDueDate,
+    required this.direction,
+    required this.entries,
+  });
+
+  final String partyId;
+  final String partyName;
+  final String partyPhone;
+  final double totalPendingAmount;
+  final int entryCount;
+  final DateTime oldestDueDate;
+  final ReminderDirection direction;
+  final List<ReminderEntry> entries;
+
+  bool get isOverdue {
+    final today = DateTime.now();
+    final due = DateTime(
+      oldestDueDate.year,
+      oldestDueDate.month,
+      oldestDueDate.day,
+    );
+    final now = DateTime(today.year, today.month, today.day);
+    return due.isBefore(now);
   }
 }
 

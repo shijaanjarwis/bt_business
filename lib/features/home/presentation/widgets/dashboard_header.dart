@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_dimensions.dart';
 import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/localization/language_provider.dart';
+import '../../../../core/localization/dashboard_greeting_provider.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/widgets/branding/app_branding.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
+import 'dashboard_greeting_text.dart';
 
 /// Dashboard header — logo, business name, date and greeting.
 class DashboardHeader extends ConsumerWidget {
@@ -23,9 +24,7 @@ class DashboardHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final today = DateTime.now();
-    final assistantLanguage = ref.watch(assistantLanguageProvider);
-    final localization = ref.watch(localizationServiceProvider);
-    final greeting = localization.greeting(assistantLanguage);
+    final greeting = ref.watch(dashboardGreetingDisplayProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,16 +89,7 @@ class DashboardHeader extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        Text(
-          greeting,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: ColorPalette.purple,
-            letterSpacing: 0.2,
-            height: 1.35,
-          ),
-        ),
+        DashboardGreetingText(display: greeting),
       ],
     );
   }

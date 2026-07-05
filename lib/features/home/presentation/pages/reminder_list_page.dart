@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/reminders/reminder_list_kind.dart';
+import '../../../../core/reminders/reminder_models.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/chips/app_filter_chip.dart';
@@ -12,6 +13,7 @@ import '../../../../shared/widgets/inputs/app_search_field.dart';
 import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../../ledger/presentation/providers/party_ledger_extras_provider.dart';
 import '../providers/reminder_list_providers.dart';
+import '../widgets/party_pending_group_tile.dart';
 import '../widgets/reminder_list_tile.dart';
 
 /// Full-screen reminder list opened from dashboard summary cards.
@@ -40,7 +42,13 @@ class _ReminderListPageState extends ConsumerState<ReminderListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final entriesAsync = ref.watch(filteredReminderListProvider(widget.kind));
+    final groupsByParty = widget.kind.groupsByParty;
+    final entriesAsync = groupsByParty
+        ? ref.watch(filteredPartyPendingGroupsProvider(widget.kind))
+        : null;
+    final flatEntriesAsync = groupsByParty
+        ? null
+        : ref.watch(filteredReminderListProvider(widget.kind));
     final lastActivityMap =
         ref.watch(partyLastActivityProvider).valueOrNull ?? {};
     final subFilter = ref.watch(reminderListSubFilterProvider(widget.kind));
@@ -106,77 +114,193 @@ class _ReminderListPageState extends ConsumerState<ReminderListPage> {
                 ),
               ),
             Expanded(
-              child: entriesAsync.when(
-                loading: () => const AppLoadingView(),
-                error: (error, _) => AppErrorView(
-                  title: 'Reminder load nahi ho paya',
-                  message: UserErrorMessages.from(error),
-                  actionEnglish: 'Try Again',
-                  actionHindi: 'Phir Try Karein',
-                  onAction: () =>
-                      ref.invalidate(filteredReminderListProvider(widget.kind)),
-                ),
-                data: (entries) {
-                  if (entries.isEmpty) {
-                    return ListView(
-                      physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics(),
-                      ),
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-                      children: [
-                        SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
-                        Center(
-                          child: Text(
-                            widget.kind.emptyMessage,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: ColorPalette.labelSecondary,
-                            ),
-                          ),
-                        ),
-                        const DeveloperFooter(),
-                      ],
-                    );
-                  }
-
-                  return RefreshIndicator(
-                    color: ColorPalette.purple,
-                    onRefresh: () async {
-                      ref.invalidate(filteredReminderListProvider(widget.kind));
-                      ref.invalidate(partyLastActivityProvider);
-                    },
-                    child: ListView.separated(
-                      physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics(),
-                      ),
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-                      itemCount: entries.length + 1,
-                      separatorBuilder: (context, index) {
-                        if (index >= entries.length - 1) {
-                          return const SizedBox.shrink();
-                        }
-                        return const SizedBox(height: 10);
-                      },
-                      itemBuilder: (context, index) {
-                        if (index == entries.length) {
-                          return const DeveloperFooter();
-                        }
-                        final entry = entries[index];
-                        return ReminderListTile(
-                          entry: entry,
-                          showLastActivity: showLastActivity,
-                          lastActivity: lastActivityMap[entry.partyId],
+              child: groupsByParty
+                  ? _GroupedReminderList(
+                      groupsAsync: entriesAsync!,
+                      kindSlug: widget.kind.routeSlug,
+                      onRefresh: () async {
+                        ref.invalidate(
+                          filteredPartyPendingGroupsProvider(widget.kind),
                         );
                       },
+                      emptyMessage: widget.kind.emptyMessage,
+                    )
+                  : _FlatReminderList(
+                      entriesAsync: flatEntriesAsync!,
+                      showLastActivity: showLastActivity,
+                      lastActivityMap: lastActivityMap,
+                      onRefresh: () async {
+                        ref.invalidate(filteredReminderListProvider(widget.kind));
+                        ref.invalidate(partyLastActivityProvider);
+                      },
+                      emptyMessage: widget.kind.emptyMessage,
                     ),
-                  );
-                },
-              ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _GroupedReminderList extends StatelessWidget {
+  const _GroupedReminderList({
+    required this.groupsAsync,
+    required this.kindSlug,
+    required this.onRefresh,
+    required this.emptyMessage,
+  });
+
+  final AsyncValue<List<PartyPendingGroup>> groupsAsync;
+  final String kindSlug;
+  final Future<void> Function() onRefresh;
+  final String emptyMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    return groupsAsync.when(
+      loading: () => const AppLoadingView(),
+      error: (error, _) => AppErrorView(
+        title: 'Reminder load nahi ho paya',
+        message: UserErrorMessages.from(error),
+        actionEnglish: 'Try Again',
+        actionHindi: 'Phir Try Karein',
+        onAction: onRefresh,
+      ),
+      data: (groups) {
+        if (groups.isEmpty) {
+          return ListView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+            children: [
+              SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
+              Center(
+                child: Text(
+                  emptyMessage,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: ColorPalette.labelSecondary,
+                  ),
+                ),
+              ),
+              const DeveloperFooter(),
+            ],
+          );
+        }
+
+        return RefreshIndicator(
+          color: ColorPalette.purple,
+          onRefresh: onRefresh,
+          child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+            itemCount: groups.length + 1,
+            separatorBuilder: (context, index) {
+              if (index >= groups.length - 1) {
+                return const SizedBox.shrink();
+              }
+              return const SizedBox(height: 10);
+            },
+            itemBuilder: (context, index) {
+              if (index == groups.length) {
+                return const DeveloperFooter();
+              }
+              return PartyPendingGroupTile(
+                group: groups[index],
+                kindSlug: kindSlug,
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _FlatReminderList extends StatelessWidget {
+  const _FlatReminderList({
+    required this.entriesAsync,
+    required this.showLastActivity,
+    required this.lastActivityMap,
+    required this.onRefresh,
+    required this.emptyMessage,
+  });
+
+  final AsyncValue<List<ReminderEntry>> entriesAsync;
+  final bool showLastActivity;
+  final Map<String, DateTime> lastActivityMap;
+  final Future<void> Function() onRefresh;
+  final String emptyMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    return entriesAsync.when(
+      loading: () => const AppLoadingView(),
+      error: (error, _) => AppErrorView(
+        title: 'Reminder load nahi ho paya',
+        message: UserErrorMessages.from(error),
+        actionEnglish: 'Try Again',
+        actionHindi: 'Phir Try Karein',
+        onAction: onRefresh,
+      ),
+      data: (entries) {
+        if (entries.isEmpty) {
+          return ListView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+            children: [
+              SizedBox(height: MediaQuery.sizeOf(context).height * 0.18),
+              Center(
+                child: Text(
+                  emptyMessage,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: ColorPalette.labelSecondary,
+                  ),
+                ),
+              ),
+              const DeveloperFooter(),
+            ],
+          );
+        }
+
+        return RefreshIndicator(
+          color: ColorPalette.purple,
+          onRefresh: onRefresh,
+          child: ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+            itemCount: entries.length + 1,
+            separatorBuilder: (context, index) {
+              if (index >= entries.length - 1) {
+                return const SizedBox.shrink();
+              }
+              return const SizedBox(height: 10);
+            },
+            itemBuilder: (context, index) {
+              if (index == entries.length) {
+                return const DeveloperFooter();
+              }
+              final entry = entries[index];
+              return ReminderListTile(
+                entry: entry,
+                showLastActivity: showLastActivity,
+                lastActivity: lastActivityMap[entry.partyId],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

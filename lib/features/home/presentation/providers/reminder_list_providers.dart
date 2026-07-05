@@ -4,6 +4,7 @@ import '../../../../core/di/data_revision.dart';
 import '../../../../core/reminders/reminder_list_kind.dart';
 import '../../../../core/reminders/reminder_models.dart';
 import '../../../../core/reminders/reminder_providers.dart';
+import '../../../../core/reminders/reminder_service.dart';
 
 final reminderListSearchProvider =
     StateProvider.autoDispose.family<String, ReminderListKind>((ref, kind) => '');
@@ -13,9 +14,10 @@ final reminderListSubFilterProvider = StateProvider.autoDispose
   return ReminderListSubFilter.all;
 });
 
-final filteredReminderListProvider =
-    FutureProvider.autoDispose.family<List<ReminderEntry>, ReminderListKind>(
-        (ref, kind) async {
+Future<List<ReminderEntry>> _loadFilteredReminderEntries(
+  Ref ref,
+  ReminderListKind kind,
+) async {
   ref.watch(dataRevisionProvider);
   final all = await ref.watch(reminderLocalDataSourceProvider).fetchActiveReminders();
   final now = DateTime.now();
@@ -50,4 +52,37 @@ final filteredReminderListProvider =
   }
 
   return filtered;
+}
+
+final filteredReminderListProvider =
+    FutureProvider.autoDispose.family<List<ReminderEntry>, ReminderListKind>(
+        (ref, kind) async {
+  return _loadFilteredReminderEntries(ref, kind);
+});
+
+/// Pending receivable/payable list — one card per party.
+final filteredPartyPendingGroupsProvider = FutureProvider.autoDispose
+    .family<List<PartyPendingGroup>, ReminderListKind>((ref, kind) async {
+  assert(kind.groupsByParty);
+  final entries = await _loadFilteredReminderEntries(ref, kind);
+  return ReminderService.groupByParty(entries);
+});
+
+typedef PartyPendingDetailArgs = ({ReminderListKind kind, String partyId});
+
+/// All pending entries for one party on the detail screen (ignores list search).
+final partyPendingDetailProvider = FutureProvider.autoDispose
+    .family<List<ReminderEntry>, PartyPendingDetailArgs>((ref, args) async {
+  ref.watch(dataRevisionProvider);
+  final all = await ref.watch(reminderLocalDataSourceProvider).fetchActiveReminders();
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+
+  return all
+      .where(
+        (entry) =>
+            args.kind.matches(entry, today) && entry.partyId == args.partyId,
+      )
+      .toList()
+    ..sort((a, b) => a.reminderDate.compareTo(b.reminderDate));
 });

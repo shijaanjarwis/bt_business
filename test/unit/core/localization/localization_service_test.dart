@@ -1,31 +1,21 @@
 import 'package:bt_business/core/localization/assistant_language.dart';
-import 'package:bt_business/core/localization/greeting_copy.dart';
+import 'package:bt_business/core/localization/dashboard_greeting.dart';
+import 'package:bt_business/core/localization/dashboard_greeting_provider.dart';
 import 'package:bt_business/core/localization/label_registry.dart';
 import 'package:bt_business/core/localization/localization_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() async {
-    await LocalizationService.instance.ensureLoaded();
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
   });
 
-  test('greeting follows assistant language via GreetingCopy', () {
-    final service = LocalizationService.instance;
-
-    expect(
-      service.greeting(AssistantLanguage.english),
-      GreetingCopy.english,
-    );
-    expect(
-      service.greeting(AssistantLanguage.hindi),
-      GreetingCopy.hindi,
-    );
-    expect(
-      service.greeting(AssistantLanguage.urdu),
-      GreetingCopy.urdu,
-    );
+  setUpAll(() async {
+    await LocalizationService.instance.ensureLoaded();
   });
 
   test('label registry is always bilingual english plus daily hindi', () {
@@ -48,5 +38,30 @@ void main() {
       service.helper(AssistantLanguage.english, 'settings_assistant_helper'),
       contains('Screen labels always stay English'),
     );
+  });
+
+  test('saved greeting style persists across provider containers', () async {
+    final first = ProviderContainer();
+    addTearDown(first.dispose);
+
+    await Future<void>.delayed(Duration.zero);
+    expect(
+      first.read(dashboardGreetingDisplayProvider).primary,
+      'Assalamualaikum',
+    );
+
+    await first
+        .read(dashboardGreetingStyleProvider.notifier)
+        .setStyle(DashboardGreetingStyle.assalamualaikumNamaste);
+
+    first.dispose();
+
+    final restarted = ProviderContainer();
+    addTearDown(restarted.dispose);
+    await Future<void>.delayed(Duration.zero);
+
+    final display = restarted.read(dashboardGreetingDisplayProvider);
+    expect(display.primary, 'Assalamualaikum');
+    expect(display.secondary, 'Namaste');
   });
 }

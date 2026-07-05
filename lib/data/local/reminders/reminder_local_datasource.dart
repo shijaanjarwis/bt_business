@@ -27,10 +27,12 @@ final class ReminderLocalDataSource {
       SELECT
         t.${TransactionsTable.id} AS id,
         t.${TransactionsTable.type} AS type,
+        t.${TransactionsTable.date} AS date,
         t.${TransactionsTable.partyId} AS party_id,
         t.${TransactionsTable.totalAmount} AS total_amount,
         t.${TransactionsTable.dueAmount} AS due_amount,
         t.${TransactionsTable.reminderDate} AS reminder_date,
+        t.${TransactionsTable.notes} AS notes,
         p.${PartiesTable.name} AS party_name,
         p.${PartiesTable.phone} AS party_phone
       FROM ${TransactionsTable.tableName} t

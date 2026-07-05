@@ -79,6 +79,10 @@ abstract final class ReminderService {
     final due = (row['due_amount'] as num?)?.toDouble() ?? 0;
     final reminderIso = row['reminder_date']! as String;
 
+    final dateIso = row['date'] as String?;
+    final transactionDate =
+        dateIso != null && dateIso.isNotEmpty ? DateTime.parse(dateIso) : null;
+
     return ReminderEntry(
       transactionId: row['id']! as String,
       transactionType: type,
@@ -93,7 +97,42 @@ abstract final class ReminderService {
       reminderDate: DateTime.parse(reminderIso),
       dueAmount: due,
       direction: ReminderDirection.fromTransactionType(type),
+      transactionDate: transactionDate,
+      notes: row['notes'] as String? ?? '',
     );
+  }
+
+  /// Groups pending entries by party ID — one card per party on list screens.
+  static List<PartyPendingGroup> groupByParty(List<ReminderEntry> entries) {
+    final grouped = <String, List<ReminderEntry>>{};
+    for (final entry in entries) {
+      grouped.putIfAbsent(entry.partyId, () => []).add(entry);
+    }
+
+    final groups = grouped.entries.map((bucket) {
+      final partyEntries = [...bucket.value]
+        ..sort((a, b) => a.reminderDate.compareTo(b.reminderDate));
+      final first = partyEntries.first;
+      final oldestDueDate = partyEntries.first.reminderDate;
+      final totalPendingAmount = partyEntries.fold<double>(
+        0,
+        (sum, entry) => sum + entry.amount,
+      );
+
+      return PartyPendingGroup(
+        partyId: first.partyId,
+        partyName: first.partyName,
+        partyPhone: first.partyPhone,
+        totalPendingAmount: totalPendingAmount,
+        entryCount: partyEntries.length,
+        oldestDueDate: oldestDueDate,
+        direction: first.direction,
+        entries: partyEntries,
+      );
+    }).toList()
+      ..sort((a, b) => a.oldestDueDate.compareTo(b.oldestDueDate));
+
+    return groups;
   }
 
   static ReminderDashboardSummary summarize(List<ReminderEntry> entries, {DateTime? reference}) {

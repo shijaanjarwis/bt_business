@@ -166,6 +166,67 @@ void main() {
       expect(body, contains('4 pending reminders today'));
     });
 
+    test('groupByParty merges entries by party ID not name', () {
+      final groups = ReminderService.groupByParty([
+        ReminderEntry(
+          transactionId: 's1',
+          transactionType: TransactionTypes.sale,
+          partyId: 'p1',
+          partyName: 'Mateen',
+          partyPhone: '9876543210',
+          amount: 399269,
+          reminderDate: DateTime(2026, 5, 1),
+          dueAmount: 399269,
+          direction: ReminderDirection.receive,
+        ),
+        ReminderEntry(
+          transactionId: 's2',
+          transactionType: TransactionTypes.sale,
+          partyId: 'p1',
+          partyName: 'Mateen',
+          partyPhone: '9876543210',
+          amount: 30000,
+          reminderDate: DateTime(2026, 6, 1),
+          dueAmount: 30000,
+          direction: ReminderDirection.receive,
+        ),
+        ReminderEntry(
+          transactionId: 's3',
+          transactionType: TransactionTypes.sale,
+          partyId: 'p1',
+          partyName: 'Mateen',
+          partyPhone: '9876543210',
+          amount: 12500,
+          reminderDate: DateTime(2026, 7, 1),
+          dueAmount: 12500,
+          direction: ReminderDirection.receive,
+        ),
+        ReminderEntry(
+          transactionId: 's4',
+          transactionType: TransactionTypes.sale,
+          partyId: 'p2',
+          partyName: 'Mateen',
+          partyPhone: '9999999999',
+          amount: 5000,
+          reminderDate: DateTime(2026, 4, 1),
+          dueAmount: 5000,
+          direction: ReminderDirection.receive,
+        ),
+      ]);
+
+      expect(groups.length, 2);
+      expect(groups.firstWhere((g) => g.partyId == 'p1').entryCount, 3);
+      expect(
+        groups.firstWhere((g) => g.partyId == 'p1').totalPendingAmount,
+        441769,
+      );
+      expect(
+        groups.firstWhere((g) => g.partyId == 'p1').oldestDueDate,
+        DateTime(2026, 5, 1),
+      );
+      expect(groups.firstWhere((g) => g.partyId == 'p2').entryCount, 1);
+    });
+
     test('notification payload opens correct detail route', () {
       expect(
         reminderDetailPathFromPayload('${TransactionTypes.sale}:abc'),

@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 import 'assistant_language.dart';
-import 'greeting_copy.dart';
 
 /// Loads assistant copy — greeting, helpers, AI, notifications.
 ///
@@ -49,9 +48,6 @@ final class LocalizationService {
 
     return fallback ?? key;
   }
-
-  /// Approved dashboard greeting — not loaded from JSON to prevent copy drift.
-  String greeting(AssistantLanguage language) => GreetingCopy.forLanguage(language);
 
   String helper(AssistantLanguage language, String key) =>
       translate(language, key);

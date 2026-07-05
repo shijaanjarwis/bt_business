@@ -9,6 +9,7 @@ import '../../features/home/presentation/models/dashboard_summary_kind.dart';
 import '../../features/business/presentation/pages/business_profile_page.dart';
 import '../../features/business/presentation/providers/business_providers.dart';
 import '../../features/home/presentation/pages/dashboard_summary_detail_page.dart';
+import '../../features/home/presentation/pages/party_pending_detail_page.dart';
 import '../../features/home/presentation/pages/reminder_list_page.dart';
 import '../../features/home/presentation/pages/home_dashboard_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
@@ -176,6 +177,33 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       }
                       return ReminderListPage(kind: kind);
                     },
+                    routes: [
+                      GoRoute(
+                        path: 'party/:partyId',
+                        name: RouteNames.partyPendingDetailName,
+                        builder: (context, state) {
+                          final kind = ReminderListKind.fromRoute(
+                            state.pathParameters['kind']!,
+                          );
+                          final partyId = state.pathParameters['partyId'];
+                          if (kind == null ||
+                              partyId == null ||
+                              !kind.groupsByParty) {
+                            return AppErrorView(
+                              title: 'Page not found',
+                              message: 'Yeh pending page available nahi hai.',
+                              actionEnglish: 'Back',
+                              actionHindi: 'Wapas',
+                              onAction: () => context.pop(),
+                            );
+                          }
+                          return PartyPendingDetailPage(
+                            kind: kind,
+                            partyId: partyId,
+                          );
+                        },
+                      ),
+                    ],
                   ),
                   GoRoute(
                     path: 'summary/:kind',

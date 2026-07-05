@@ -67,6 +67,8 @@ enum ReminderListKind {
       this == ReminderListKind.pendingReceivable ||
       this == ReminderListKind.pendingPayable;
 
+  bool get groupsByParty => showsSubFilters;
+
   bool matches(ReminderEntry entry, DateTime today) {
     final due = DateTime(
       entry.reminderDate.year,
