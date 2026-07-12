@@ -23,12 +23,14 @@ class AppTextField extends StatelessWidget {
     this.onChanged,
     this.readOnly = false,
     this.onTap,
+    this.hintText,
   });
 
   final String english;
   final String hindi;
   final TextEditingController controller;
   final String? helper;
+  final String? hintText;
   final TextInputType? keyboardType;
   final TextCapitalization textCapitalization;
   final TextInputAction? textInputAction;
@@ -62,6 +64,7 @@ class AppTextField extends StatelessWidget {
           onTap: onTap,
           style: context.appText.primary,
           decoration: InputDecoration(
+            hintText: hintText,
             prefixIcon: prefixIcon == null
                 ? null
                 : Icon(prefixIcon, color: ColorPalette.iconPrimary, size: 20),

@@ -1,6 +1,5 @@
 import 'package:bt_business/core/errors/user_error_messages.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,7 +14,7 @@ import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../core/utils/gst_calculator.dart';
-import '../../../../core/utils/validators.dart';
+import '../../../../core/utils/rate_field_utils.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/dialogs/confirmation_dialog.dart';
@@ -36,6 +35,7 @@ import '../../../ledger/domain/entities/party_type.dart';
 import '../../../ledger/presentation/providers/party_providers.dart';
 import '../../domain/entities/sale_entry.dart';
 import '../../../../shared/widgets/inputs/editable_quantity_input.dart';
+import '../../../../shared/widgets/inputs/entry_rate_field.dart';
 import '../../../../shared/widgets/inputs/payment_breakdown_fields.dart';
 import '../../../../shared/widgets/inputs/reminder_date_field.dart';
 import '../../domain/repositories/sale_repository.dart';
@@ -642,8 +642,9 @@ class _SaleLineCard extends StatefulWidget {
 }
 
 class _SaleLineCardState extends State<_SaleLineCard> {
-  late final _rateController =
-      TextEditingController(text: widget.line.rate.toString());
+  late final _rateController = TextEditingController(
+    text: RateFieldUtils.initialText(widget.line.rate),
+  );
 
   @override
   void dispose() {
@@ -652,7 +653,7 @@ class _SaleLineCardState extends State<_SaleLineCard> {
   }
 
   void _syncRate() {
-    widget.line.rate = double.tryParse(_rateController.text) ?? widget.line.rate;
+    widget.line.rate = RateFieldUtils.parse(_rateController.text);
     widget.onChanged();
   }
 
@@ -707,20 +708,9 @@ class _SaleLineCardState extends State<_SaleLineCard> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: TextFormField(
+                child: EntryRateField(
                   controller: _rateController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-                  ],
-                  decoration: const InputDecoration(
-                    labelText: 'Rate · Daam',
-                    isDense: true,
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                  validator: (v) => Validators.positiveAmount(v),
-                  onChanged: (_) => _syncRate(),
+                  onChanged: _syncRate,
                 ),
               ),
             ],

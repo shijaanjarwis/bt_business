@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/item_units.dart';
 import '../../../../core/di/data_revision.dart';
 import '../../../../core/theme/color_palette.dart';
+import '../../../../core/utils/rate_field_utils.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
@@ -67,10 +68,10 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
     _nameController.text = item.name;
     _selectedUnit = item.unit;
     if (item.purchasePrice > 0) {
-      _purchaseRateController.text = item.purchasePrice.toString();
+      _purchaseRateController.text = RateFieldUtils.initialText(item.purchasePrice);
     }
     if (item.salePrice > 0) {
-      _saleRateController.text = item.salePrice.toString();
+      _saleRateController.text = RateFieldUtils.initialText(item.salePrice);
     }
     _itemApplied = true;
   }
@@ -87,9 +88,7 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
   bool get _isOtherUnit => !ItemUnits.presets.contains(_selectedUnit);
 
   double _parseRate(TextEditingController controller) {
-    final text = controller.text.replaceAll(',', '').trim();
-    if (text.isEmpty) return 0;
-    return double.tryParse(text) ?? 0;
+    return RateFieldUtils.parse(controller.text);
   }
 
   SaveItemInput _buildInput() {
@@ -265,6 +264,7 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
                       hindi: 'Kharid Daam',
                       controller: _purchaseRateController,
                       helper: 'Optional',
+                      hintText: 'Enter Rate',
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                       textInputAction: TextInputAction.next,
@@ -276,6 +276,7 @@ class _ItemFormPageState extends ConsumerState<ItemFormPage> {
                       hindi: 'Bikri Daam',
                       controller: _saleRateController,
                       helper: 'Optional',
+                      hintText: 'Enter Rate',
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                       textInputAction: TextInputAction.done,

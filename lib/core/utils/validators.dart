@@ -69,6 +69,19 @@ abstract final class Validators {
     return null;
   }
 
+  /// Sale/Purchase line rate — must be entered and greater than zero.
+  static String? entryRate(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Please enter a valid rate.';
+    }
+
+    final amount = double.tryParse(value.replaceAll(',', '').trim());
+    if (amount == null || amount <= 0) {
+      return 'Please enter a valid rate.';
+    }
+    return null;
+  }
+
   static String? nonNegativeAmount(String? value, {String fieldName = 'Amount'}) {
     if (value == null || value.trim().isEmpty) return null;
 
