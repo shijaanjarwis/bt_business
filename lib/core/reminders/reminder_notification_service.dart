@@ -7,16 +7,16 @@ import 'package:timezone/timezone.dart' as tz;
 import '../logging/logger.dart';
 import 'reminder_models.dart';
 import 'reminder_navigation.dart';
+import 'reminder_notification_ids.dart';
+import 'reminder_notification_port.dart';
+import 'reminder_service.dart';
 
-/// Three-level local notification engine — 8 AM, 1 PM, 6 PM offline reminders.
-final class ReminderNotificationService {
+/// Per-reminder 3-level notifications — cancel individually after payment.
+final class ReminderNotificationService implements ReminderNotificationPort {
   ReminderNotificationService(this._logger);
 
   static const _channelId = 'bt_reminders';
   static const _channelName = 'Payment Reminders';
-  static const morningNotificationId = 9001;
-  static const afternoonNotificationId = 9002;
-  static const eveningNotificationId = 9003;
 
   final Logger _logger;
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
@@ -104,77 +104,92 @@ final class ReminderNotificationService {
     return granted;
   }
 
-  /// Schedules morning (repeating), afternoon, and evening slots for today.
-  Future<void> scheduleThreeLevelReminders({
-    required ReminderNotificationContent morning,
-    required ReminderNotificationContent afternoon,
-    required ReminderNotificationContent evening,
+  /// Cancels all three slots for one reminder — other parties unaffected.
+  @override
+  Future<void> cancelReminderNotifications(String transactionId) async {
+    if (!_supportsNotifications) return;
+
+    final ids = ReminderNotificationIds.forTransaction(transactionId);
+    await _plugin.cancel(ids.morning);
+    await _plugin.cancel(ids.afternoon);
+    await _plugin.cancel(ids.evening);
+    _logger.info('Cancelled reminder notifications for $transactionId');
+  }
+
+  /// Removes legacy grouped notification IDs from the prior scheduler.
+  @override
+  Future<void> cancelLegacyGroupedReminders() async {
+    if (!_supportsNotifications) return;
+    await _plugin.cancel(LegacyReminderNotificationIds.morning);
+    await _plugin.cancel(LegacyReminderNotificationIds.afternoon);
+    await _plugin.cancel(LegacyReminderNotificationIds.evening);
+  }
+
+  /// Schedules morning / afternoon / evening for a single pending reminder.
+  @override
+  Future<void> scheduleForReminder(
+    ReminderEntry entry, {
+    DateTime? reference,
   }) async {
     if (!_supportsNotifications) return;
 
-    await cancelAllReminders();
+    await cancelReminderNotifications(entry.transactionId);
 
-    if (morning.body.trim().isEmpty) return;
-
-    await _scheduleSlot(
-      id: morningNotificationId,
-      hour: 8,
-      minute: 0,
-      title: morning.title,
-      body: morning.body,
-      payload: morning.payload,
-      repeatDaily: true,
+    final morning = ReminderService.buildNotificationContent(
+      level: ReminderNotificationLevel.morning,
+      dueTodayAndOverdue: [entry],
+      reference: reference,
+    );
+    final afternoon = ReminderService.buildNotificationContent(
+      level: ReminderNotificationLevel.afternoon,
+      dueTodayAndOverdue: [entry],
+      reference: reference,
+    );
+    final evening = ReminderService.buildNotificationContent(
+      level: ReminderNotificationLevel.evening,
+      dueTodayAndOverdue: [entry],
+      reference: reference,
     );
 
+    final ids = ReminderNotificationIds.forTransaction(entry.transactionId);
+    final payload = ReminderService.notificationPayload(entry);
     final now = tz.TZDateTime.now(tz.local);
-    final afternoonTime = _todayAt(13, 0);
-    if (afternoonTime.isAfter(now) && afternoon.body.trim().isNotEmpty) {
+
+    if (morning.body.trim().isNotEmpty) {
       await _scheduleSlot(
-        id: afternoonNotificationId,
+        id: ids.morning,
+        hour: 8,
+        minute: 0,
+        title: morning.title,
+        body: morning.body,
+        payload: payload,
+        repeatDaily: true,
+      );
+    }
+
+    if (_todayAt(13, 0).isAfter(now) && afternoon.body.trim().isNotEmpty) {
+      await _scheduleSlot(
+        id: ids.afternoon,
         hour: 13,
         minute: 0,
         title: afternoon.title,
         body: afternoon.body,
-        payload: afternoon.payload,
+        payload: payload,
         repeatDaily: false,
       );
     }
 
-    final eveningTime = _todayAt(18, 0);
-    if (eveningTime.isAfter(now) && evening.body.trim().isNotEmpty) {
+    if (_todayAt(18, 0).isAfter(now) && evening.body.trim().isNotEmpty) {
       await _scheduleSlot(
-        id: eveningNotificationId,
+        id: ids.evening,
         hour: 18,
         minute: 0,
         title: evening.title,
         body: evening.body,
-        payload: evening.payload,
+        payload: payload,
         repeatDaily: false,
       );
     }
-  }
-
-  Future<void> cancelAllReminders() async {
-    if (!_supportsNotifications) return;
-    await _plugin.cancel(morningNotificationId);
-    await _plugin.cancel(afternoonNotificationId);
-    await _plugin.cancel(eveningNotificationId);
-  }
-
-  @Deprecated('Use cancelAllReminders')
-  Future<void> cancelMorningReminder() => cancelAllReminders();
-
-  @Deprecated('Use scheduleThreeLevelReminders')
-  Future<void> scheduleMorningReminder({
-    required String title,
-    required String body,
-    String? payload,
-  }) {
-    return scheduleThreeLevelReminders(
-      morning: ReminderNotificationContent(title: title, body: body, payload: payload),
-      afternoon: const ReminderNotificationContent(title: '', body: ''),
-      evening: const ReminderNotificationContent(title: '', body: ''),
-    );
   }
 
   Future<void> _scheduleSlot({

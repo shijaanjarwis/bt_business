@@ -143,7 +143,7 @@ Future<void> _initializeReminders(ProviderContainer container, Logger logger) as
   Timer? rescheduleTimer;
   container.listen<int>(dataRevisionProvider, (previous, next) {
     rescheduleTimer?.cancel();
-    rescheduleTimer = Timer(const Duration(milliseconds: 500), () {
+    rescheduleTimer = Timer(const Duration(milliseconds: 100), () {
       container.read(reminderSchedulerProvider).reschedule();
     });
   });

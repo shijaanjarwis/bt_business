@@ -5,6 +5,7 @@ import '../di/core_providers.dart';
 import '../di/data_revision.dart';
 import 'reminder_models.dart';
 import 'reminder_notification_service.dart';
+import 'reminder_schedule_tracker.dart';
 import 'reminder_scheduler.dart';
 import 'reminder_service.dart';
 
@@ -67,8 +68,13 @@ final reminderSchedulerProvider = Provider<ReminderScheduler>((ref) {
   return ReminderScheduler(
     ref.watch(reminderLocalDataSourceProvider),
     ref.watch(reminderNotificationServiceProvider),
+    ref.watch(reminderScheduleTrackerProvider),
     ref.watch(loggerProvider),
   );
+});
+
+final reminderScheduleTrackerProvider = Provider<ReminderScheduleTracker>((ref) {
+  return ReminderScheduleTracker.create();
 });
 
 /// True when notification permission was denied — shows dashboard prompt.
