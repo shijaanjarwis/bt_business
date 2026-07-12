@@ -101,7 +101,6 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
   bool _editHydrated = false;
   bool _isSaving = false;
   bool _isDeleting = false;
-  bool _paymentManuallyEdited = false;
   String? _cashCustomerPartyId;
   DateTime? _reminderDate;
   PaymentMethodChannel _selectedPaymentMethod = PaymentMethodChannel.cash;
@@ -131,11 +130,10 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
     _gstType = entry.gstType;
     _notesController.text = entry.notes ?? '';
     final breakdown = entry.paymentBreakdown;
-    _cashController.text = _formatAmount(breakdown.cash);
-    _upiController.text = _formatAmount(breakdown.upi);
-    _bankController.text = _formatAmount(breakdown.bank);
+    _cashController.text = _amountFieldText(breakdown.cash);
+    _upiController.text = _amountFieldText(breakdown.upi);
+    _bankController.text = _amountFieldText(breakdown.bank);
     _selectedPaymentMethod = PaymentMethodChannel.fromBreakdown(breakdown);
-    _paymentManuallyEdited = true;
     _cashCustomerPartyId = cashCustomerId;
     _reminderDate = entry.reminderDate;
 
@@ -229,30 +227,15 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
   double get _dueAmount =>
       _paymentBreakdown.remainingCredit(_grandTotal);
 
-  void _syncPaymentWithTotal() {
-    if (_paymentManuallyEdited || widget.isEdit) return;
-    _cashController.text = _formatAmount(_grandTotal);
-    _upiController.text = '0';
-    _bankController.text = '0';
-    _selectedPaymentMethod = PaymentMethodChannel.cash;
-  }
-
   void _selectPaymentMethod(PaymentMethodChannel method) {
     setState(() {
       _selectedPaymentMethod = method;
-      final paid = _paidAmount > 0 ? _paidAmount : _grandTotal;
-      if (paid > 0) {
-        _cashController.text =
-            method == PaymentMethodChannel.cash ? _formatAmount(paid) : '0';
-        _upiController.text =
-            method == PaymentMethodChannel.upi ? _formatAmount(paid) : '0';
-        _bankController.text =
-            method == PaymentMethodChannel.bank ? _formatAmount(paid) : '0';
-      }
-      _paymentManuallyEdited = true;
       if (_dueAmount <= 0) _reminderDate = null;
     });
   }
+
+  String _amountFieldText(double value) =>
+      value > 0 ? _formatAmount(value) : '';
 
   double _parseAmount(TextEditingController controller) =>
       double.tryParse(controller.text.trim()) ?? 0;
@@ -310,7 +293,6 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
           ),
         );
       }
-      _syncPaymentWithTotal();
     });
   }
 
@@ -512,13 +494,10 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
                       ..._lines.asMap().entries.map((entry) {
                         return _SaleLineCard(
                           line: entry.value,
-                          onChanged: () {
-                            setState(_syncPaymentWithTotal);
-                          },
+                          onChanged: () => setState(() {}),
                           onRemove: () {
                             setState(() {
                               _lines.removeAt(entry.key);
-                              _syncPaymentWithTotal();
                             });
                           },
                         );
@@ -542,7 +521,6 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
                   onMethodSelected: _selectPaymentMethod,
                   onChanged: ({required cash, required upi, required bank}) {
                     setState(() {
-                      _paymentManuallyEdited = true;
                       _selectedPaymentMethod = PaymentMethodChannel.fromBreakdown(
                         PaymentBreakdown(cash: cash, upi: upi, bank: bank),
                       );

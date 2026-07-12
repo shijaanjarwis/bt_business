@@ -34,7 +34,6 @@ final class PurchasePostingService {
 
     final breakdown = PaymentBreakdown.resolve(
       breakdown: input.paymentBreakdown,
-      paymentMode: input.paymentMode,
       grandTotal: totals.grandTotal,
       paidAmount: input.paidAmount,
     );

@@ -46,8 +46,9 @@ class PaymentBreakdownFields extends StatelessWidget {
   double get _paidTotal =>
       _parse(cashController) + _parse(upiController) + _parse(bankController);
 
-  double get _remainingCredit =>
-      (grandTotal - _paidTotal).clamp(0, double.infinity);
+  double get _remainingCredit => grandTotal - _paidTotal;
+
+  bool get _isOverpaid => _paidTotal > grandTotal && grandTotal > 0;
 
   @override
   Widget build(BuildContext context) {
@@ -105,11 +106,26 @@ class PaymentBreakdownFields extends StatelessWidget {
         const SizedBox(height: 8),
         _SummaryRow(
           label: creditLabel,
-          value: CurrencyFormatter.format(_remainingCredit),
-          valueColor: _remainingCredit > 0
-              ? ColorPalette.accentOrange
-              : ColorPalette.labelSecondary,
+          value: CurrencyFormatter.format(
+            _isOverpaid ? 0 : _remainingCredit.clamp(0, double.infinity),
+          ),
+          valueColor: _isOverpaid
+              ? ColorPalette.destructive
+              : (_remainingCredit > 0
+                  ? ColorPalette.accentOrange
+                  : ColorPalette.labelSecondary),
         ),
+        if (_isOverpaid) ...[
+          const SizedBox(height: 6),
+          const Text(
+            'Zyada rashi — total se kam likhein',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: ColorPalette.destructive,
+            ),
+          ),
+        ],
       ],
     );
   }

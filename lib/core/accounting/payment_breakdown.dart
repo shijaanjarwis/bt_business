@@ -1,5 +1,3 @@
-import 'payment_modes.dart';
-
 /// Split payment amounts for sale and purchase entries.
 class PaymentBreakdown {
   const PaymentBreakdown({
@@ -58,10 +56,9 @@ class PaymentBreakdown {
     return const PaymentBreakdown();
   }
 
-  /// Resolves stored breakdown, explicit paid amount, or legacy payment mode.
+  /// Resolves stored breakdown or legacy paid amount — never auto-assigns cash.
   static PaymentBreakdown resolve({
     required PaymentBreakdown breakdown,
-    required PaymentMode paymentMode,
     required double grandTotal,
     double? paidAmount,
   }) {
@@ -70,9 +67,6 @@ class PaymentBreakdown {
     }
     if (paidAmount != null && paidAmount > 0) {
       return PaymentBreakdown(cash: paidAmount).clampToTotal(grandTotal);
-    }
-    if (paymentMode == PaymentMode.cash) {
-      return PaymentBreakdown(cash: grandTotal);
     }
     return const PaymentBreakdown();
   }
