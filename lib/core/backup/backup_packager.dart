@@ -102,6 +102,11 @@ final class BackupPackager {
     );
   }
 
+  /// Reads plaintext manifest header without decrypting payload.
+  BackupManifest readManifestHeader(Uint8List fileBytes) {
+    return _unwrapFile(fileBytes).manifest;
+  }
+
   Uint8List _wrapFile({
     required BackupManifest manifest,
     required Uint8List encryptedPayload,

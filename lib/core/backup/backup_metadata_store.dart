@@ -16,6 +16,8 @@ final class BackupMetadataStore {
   static const _lastError = 'bt_backup_last_error';
   static const _isRunning = 'bt_backup_is_running';
   static const _storageChoice = 'bt_backup_storage_choice';
+  static const _backupDetailsPrefix = 'bt_backup_details_';
+  static const _lastFailedBackup = 'bt_last_failed_backup';
 
   final Future<SharedPreferences> _prefsFuture;
 
@@ -143,6 +145,58 @@ final class BackupMetadataStore {
     return BackupStorageChoice.values.byName(raw);
   }
 
+  Future<void> recordBackupDetails({
+    required String backupId,
+    required String storageLocation,
+    required bool cloudSynced,
+    required bool succeeded,
+  }) async {
+    final prefs = await _prefsFuture;
+    await prefs.setString(
+      '$_backupDetailsPrefix$backupId',
+      '$storageLocation|${cloudSynced ? 1 : 0}|${succeeded ? 1 : 0}',
+    );
+    if (succeeded) {
+      await prefs.remove(_lastFailedBackup);
+    }
+  }
+
+  Future<BackupDetailsRecord?> backupDetails(String backupId) async {
+    final prefs = await _prefsFuture;
+    final raw = prefs.getString('$_backupDetailsPrefix$backupId');
+    if (raw == null) return null;
+    final parts = raw.split('|');
+    if (parts.length < 3) return null;
+    return BackupDetailsRecord(
+      storageLocation: parts[0],
+      cloudSynced: parts[1] == '1',
+      succeeded: parts[2] == '1',
+    );
+  }
+
+  Future<void> recordFailedBackupAttempt({
+    String storageLocation = 'Phone',
+    String? errorMessage,
+  }) async {
+    final prefs = await _prefsFuture;
+    final failedAt = DateTime.now().toIso8601String();
+    final message = (errorMessage ?? '').replaceAll('|', ' ');
+    await prefs.setString(_lastFailedBackup, '$failedAt|$storageLocation|$message');
+  }
+
+  Future<FailedBackupRecord?> lastFailedBackupAttempt() async {
+    final prefs = await _prefsFuture;
+    final raw = prefs.getString(_lastFailedBackup);
+    if (raw == null) return null;
+    final parts = raw.split('|');
+    if (parts.length < 2) return null;
+    return FailedBackupRecord(
+      failedAt: DateTime.parse(parts[0]),
+      storageLocation: parts[1],
+      errorMessage: parts.length > 2 ? parts.sublist(2).join('|') : null,
+    );
+  }
+
   Future<Map<String, Object?>> exportAllPreferences() async {
     final prefs = await _prefsFuture;
     final exported = <String, Object?>{};
@@ -246,4 +300,28 @@ final class BackupMetadataStore {
     }
     return '${at.day} ${_monthShort(at.month)} $hour:$minute $suffix';
   }
+}
+
+class BackupDetailsRecord {
+  const BackupDetailsRecord({
+    required this.storageLocation,
+    required this.cloudSynced,
+    required this.succeeded,
+  });
+
+  final String storageLocation;
+  final bool cloudSynced;
+  final bool succeeded;
+}
+
+class FailedBackupRecord {
+  const FailedBackupRecord({
+    required this.failedAt,
+    required this.storageLocation,
+    this.errorMessage,
+  });
+
+  final DateTime failedAt;
+  final String storageLocation;
+  final String? errorMessage;
 }

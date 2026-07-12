@@ -158,5 +158,21 @@ void main() {
       expect(bundle.databaseBytes.isNotEmpty, isTrue);
       expect(bundle.preferences.containsKey('assistant_language'), isTrue);
     });
+
+    test('backup manifest includes content stats', () async {
+      final backup = await service.createBackup(type: BackupType.manual);
+      expect(backup.manifest.stats.partyCount, greaterThanOrEqualTo(1));
+      expect(backup.manifest.stats.saleCount, greaterThanOrEqualTo(1));
+
+      final preview = await service.buildCurrentBackupPreview();
+      expect(preview.stats.saleCount, greaterThanOrEqualTo(1));
+    });
+
+    test('read file preview from backup header', () async {
+      final backup = await service.createBackup(type: BackupType.manual);
+      final preview = await service.readFilePreview(backup.filePath);
+      expect(preview.businessName, isNotEmpty);
+      expect(preview.stats.saleCount, greaterThanOrEqualTo(1));
+    });
   });
 }

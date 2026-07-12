@@ -1,4 +1,8 @@
 /// Backup file format constants and manifest model.
+library;
+
+import 'backup_content_stats.dart';
+
 abstract final class BackupFormat {
   static const magic = 'BTBT';
   static const version = 1;
@@ -41,6 +45,9 @@ class BackupManifest {
     required this.type,
     required this.encryptedSize,
     required this.salt,
+    this.stats = BackupContentStats.empty,
+    this.storageLocation,
+    this.cloudSynced = false,
   });
 
   final String backupId;
@@ -52,6 +59,9 @@ class BackupManifest {
   final BackupType type;
   final int encryptedSize;
   final String salt;
+  final BackupContentStats stats;
+  final String? storageLocation;
+  final bool cloudSynced;
 
   Map<String, Object?> toJson() => {
         'backupId': backupId,
@@ -63,6 +73,9 @@ class BackupManifest {
         'type': type.name,
         'encryptedSize': encryptedSize,
         'salt': salt,
+        'stats': stats.toJson(),
+        if (storageLocation != null) 'storageLocation': storageLocation,
+        'cloudSynced': cloudSynced,
       };
 
   static BackupManifest fromJson(Map<String, Object?> json) {
@@ -76,6 +89,11 @@ class BackupManifest {
       type: BackupType.values.byName(json['type']! as String),
       encryptedSize: json['encryptedSize']! as int,
       salt: json['salt']! as String,
+      stats: BackupContentStats.fromJson(
+        json['stats'] as Map<String, Object?>?,
+      ),
+      storageLocation: json['storageLocation'] as String?,
+      cloudSynced: json['cloudSynced'] as bool? ?? false,
     );
   }
 }
@@ -160,4 +178,25 @@ class BackupStatus {
     isRunning: false,
     lastError: null,
   );
+}
+
+/// One row in backup history UI — success file or latest failed attempt.
+class BackupHistoryItem {
+  const BackupHistoryItem({
+    required this.entry,
+    required this.storageLocation,
+    required this.cloudSynced,
+    required this.status,
+    this.failedAt,
+    this.errorMessage,
+  });
+
+  final BackupEntry? entry;
+  final String storageLocation;
+  final bool cloudSynced;
+  final BackupHistoryStatus status;
+  final DateTime? failedAt;
+  final String? errorMessage;
+
+  bool get isSuccess => status == BackupHistoryStatus.success;
 }

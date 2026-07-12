@@ -30,9 +30,10 @@ final backupStatusProvider = FutureProvider.autoDispose<BackupStatus>((ref) asyn
   return ref.watch(backupServiceProvider).getStatus();
 });
 
-final backupHistoryProvider = FutureProvider.autoDispose<List<BackupEntry>>((ref) async {
+final backupHistoryProvider =
+    FutureProvider.autoDispose<List<BackupHistoryItem>>((ref) async {
   ref.watch(backupRefreshProvider);
-  return ref.watch(backupServiceProvider).listBackups();
+  return ref.watch(backupServiceProvider).listBackupHistory();
 });
 
 final cloudBackupHistoryProvider =

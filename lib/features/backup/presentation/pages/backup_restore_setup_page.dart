@@ -1,12 +1,16 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../core/backup/backup_format.dart';
+import '../../../../core/backup/backup_metadata_store.dart';
 import '../../../../core/backup/backup_providers.dart';
+import '../../../../core/di/core_providers.dart';
+import '../../../../core/di/data_revision.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/app_text_theme.dart';
 import '../../../../core/theme/color_palette.dart';
@@ -15,8 +19,11 @@ import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../widgets/backup_cloud_restore_sheet.dart';
+import '../widgets/backup_history_card.dart';
+import '../widgets/backup_preview_dialogs.dart';
+import '../widgets/restore_source_sheet.dart';
 
-/// Backup & Restore setup — storage choice, cloud guide, first backup.
+/// Production Backup & Restore workflow — storage, preview, restore, history.
 class BackupRestoreSetupPage extends ConsumerStatefulWidget {
   const BackupRestoreSetupPage({super.key});
 
@@ -55,6 +62,7 @@ class _BackupRestoreSetupPageState extends ConsumerState<BackupRestoreSetupPage>
     try {
       await action();
       notifyBackupChanged(ref);
+      notifyDataChanged(ref);
     } catch (error) {
       setState(() => _error = '$error');
     } finally {
@@ -68,15 +76,59 @@ class _BackupRestoreSetupPageState extends ConsumerState<BackupRestoreSetupPage>
     notifyBackupChanged(ref);
   }
 
-  Future<void> _createBackup() {
-    return _run(() async {
-      await ref.read(backupServiceProvider).createBackup(type: BackupType.manual);
+  Future<void> _backupWithPreview({required bool exportAfter}) async {
+    final service = ref.read(backupServiceProvider);
+    final preview = await service.buildCurrentBackupPreview();
+    if (!mounted) return;
+
+    final confirmed = await showBackupPreviewSheet(
+      context,
+      preview: preview,
+      confirmLabel: exportAfter ? 'Export' : 'Backup',
+    );
+    if (!confirmed || !mounted) return;
+
+    await _run(() async {
+      await service.createBackup(type: BackupType.manual);
+      if (exportAfter) {
+        await service.exportLatestBackup();
+      }
     });
   }
 
-  Future<void> _exportLatest() {
-    return _run(() async {
-      await ref.read(backupServiceProvider).exportLatestBackup();
+  Future<void> _restoreFromFile() async {
+    final picked = await FilePicker.platform.pickFiles(
+      allowedExtensions: ['btbackup'],
+      type: FileType.custom,
+    );
+    if (picked == null || picked.files.isEmpty) return;
+    final path = picked.files.single.path;
+    if (path == null || !mounted) return;
+
+    final service = ref.read(backupServiceProvider);
+    final preview = await service.readFilePreview(path);
+    if (!mounted) return;
+
+    final confirmed = await showRestorePreviewDialog(context, preview: preview);
+    if (!confirmed || !mounted) return;
+
+    await _run(() async {
+      await service.restoreImportedFile(path);
+      ref.invalidate(appDatabaseProvider);
+    });
+  }
+
+  Future<void> _restoreEntry(BackupEntry entry) async {
+    final service = ref.read(backupServiceProvider);
+    final preview = await service.readEntryPreview(entry);
+    if (!mounted) return;
+
+    final confirmed = await showRestorePreviewDialog(context, preview: preview);
+    if (!confirmed || !mounted) return;
+
+    await _run(() async {
+      await service.restoreBackup(entry);
+      ref.invalidate(appDatabaseProvider);
     });
   }
 
@@ -101,6 +153,8 @@ class _BackupRestoreSetupPageState extends ConsumerState<BackupRestoreSetupPage>
   Widget build(BuildContext context) {
     final text = context.appText;
     final statusAsync = ref.watch(backupStatusProvider);
+    final historyAsync = ref.watch(backupHistoryProvider);
+    final metadata = ref.watch(backupMetadataStoreProvider);
     final isIos = Platform.isIOS;
     final cloudName = ref.watch(cloudBackupPortProvider).providerName;
 
@@ -114,7 +168,7 @@ class _BackupRestoreSetupPageState extends ConsumerState<BackupRestoreSetupPage>
           ? const AppLoadingView()
           : statusAsync.when(
               loading: () => const AppLoadingView(),
-              error: (error, _) => _ErrorBody(message: '$error', text: text),
+              error: (error, _) => Center(child: Text('$error', style: text.primary)),
               data: (status) {
                 final choice = _selected ?? BackupStorageChoice.cloud;
 
@@ -127,32 +181,26 @@ class _BackupRestoreSetupPageState extends ConsumerState<BackupRestoreSetupPage>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Pehle batayein copy kahan save hogi. '
-                      'Poora data encrypted .btbackup file mein rahega.',
+                      'Encrypted .btbackup — AES-256. Koi plain data save nahi hota.',
                       style: text.secondary.copyWith(fontSize: 15, height: 1.45),
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 12),
                       _InlineError(message: _error!, text: text),
                     ],
+                    const SizedBox(height: 16),
+                    _StatusCard(text: text, status: status),
                     const SizedBox(height: 20),
-                    Text(
-                      'Copy kahan save karein?',
-                      style: text.primaryBold.copyWith(fontSize: 17),
-                    ),
+                    Text('Backup', style: text.primaryBold.copyWith(fontSize: 17)),
                     const SizedBox(height: 10),
                     _StorageOptionCard(
                       text: text,
+                      emoji: '☁️',
                       title: isIos ? 'iCloud Drive' : 'Google Drive',
-                      subtitle: isIos
-                          ? 'Recommended — roz automatic copy'
-                          : 'Recommended — roz automatic copy',
+                      subtitle: 'Recommended — roz automatic copy',
                       detail: isIos
-                          ? 'iPhone ki iCloud par encrypted copy save hogi. '
-                              'Naya phone par wapas la sakte hain.'
-                          : 'Google Drive par encrypted copy save hogi. '
-                              'Naya phone par wapas la sakte hain.',
-                      icon: Icons.cloud_outlined,
+                          ? 'iPhone ki iCloud par encrypted copy save hogi.'
+                          : 'Google Drive par encrypted copy save hogi.',
                       recommended: true,
                       selected: choice == BackupStorageChoice.cloud,
                       onTap: () => _selectStorage(BackupStorageChoice.cloud),
@@ -160,51 +208,106 @@ class _BackupRestoreSetupPageState extends ConsumerState<BackupRestoreSetupPage>
                     const SizedBox(height: 10),
                     _StorageOptionCard(
                       text: text,
-                      title: 'Export manually',
-                      subtitle: '.btbackup file — khud save karein',
-                      detail: 'Copy file banegi. Aap WhatsApp, email ya '
-                          'Files app se kahin bhi save kar sakte hain.',
-                      icon: Icons.ios_share_outlined,
+                      emoji: '📁',
+                      title: 'Export .btbackup File',
+                      subtitle: 'Manual — khud save karein',
+                      detail: 'Copy file banegi. WhatsApp, email ya Files se save karein.',
                       recommended: false,
                       selected: choice == BackupStorageChoice.manual,
                       onTap: () => _selectStorage(BackupStorageChoice.manual),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     if (choice == BackupStorageChoice.cloud) ...[
-                      _CloudSetupPanel(
+                      _CloudPanel(
                         text: text,
                         status: status,
                         cloudName: cloudName,
                         isIos: isIos,
                         onConnect: _connectCloud,
                         onEnableAuto: _enableAutoBackup,
-                        onBackupNow: _createBackup,
+                        onBackup: () => _backupWithPreview(exportAfter: false),
                         onOpenSettings: openAppSettings,
-                        onRestoreCloud: () =>
-                            showBackupCloudRestoreSheet(context, ref),
                       ),
                     ] else ...[
-                      _ManualSetupPanel(
-                        text: text,
-                        lastBackupLabel: status.lastBackupLabel,
-                        onBackupNow: _createBackup,
-                        onExport: _exportLatest,
-                        onOpenDataSafety: () => context.push(RouteNames.dataSafety),
+                      AppPrimaryButton(
+                        english: 'Create Backup',
+                        hindi: 'Copy Banayein',
+                        onPressed: () => _backupWithPreview(exportAfter: false),
+                      ),
+                      const SizedBox(height: 10),
+                      OutlinedButton(
+                        onPressed: () => _backupWithPreview(exportAfter: true),
+                        child: Text('Export .btbackup', style: text.primaryBold),
                       ),
                     ],
+                    const SizedBox(height: 20),
+                    Text('Restore', style: text.primaryBold.copyWith(fontSize: 17)),
+                    const SizedBox(height: 10),
+                    OutlinedButton(
+                      onPressed: () => showRestoreSourceSheet(
+                        context,
+                        ref,
+                        onRestoreFromFile: _restoreFromFile,
+                        onRestoreFromCloud: () =>
+                            showBackupCloudRestoreSheet(context, ref),
+                      ),
+                      child: Text('Wapas Laayein', style: text.primaryBold),
+                    ),
+                    const SizedBox(height: 20),
+                    Text('Automatic Backup', style: text.primaryBold.copyWith(fontSize: 17)),
+                    const SizedBox(height: 10),
+                    _AutoBackupCard(
+                      text: text,
+                      status: status,
+                      metadata: metadata,
+                      onChanged: () => notifyBackupChanged(ref),
+                    ),
+                    const SizedBox(height: 20),
+                    Text('Backup History', style: text.primaryBold.copyWith(fontSize: 17)),
+                    const SizedBox(height: 10),
+                    historyAsync.when(
+                      loading: () => const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      error: (error, _) => Text('History load fail: $error', style: text.secondary),
+                      data: (items) {
+                        if (items.isEmpty) {
+                          return Text('Abhi koi copy nahi bani.', style: text.secondary);
+                        }
+                        return Column(
+                          children: items.map((item) {
+                            final label = item.entry == null
+                                ? 'Failed attempt'
+                                : metadata.formatDisplayTimestamp(
+                                    item.entry!.manifest.createdAt,
+                                  );
+                            return BackupHistoryCard(
+                              text: text,
+                              item: item,
+                              dateLabel: label,
+                              onRestore: item.entry == null
+                                  ? null
+                                  : () => _restoreEntry(item.entry!),
+                              onShare: item.entry == null
+                                  ? null
+                                  : () => ref
+                                      .read(backupServiceProvider)
+                                      .exportBackup(item.entry!),
+                              onDelete: item.entry == null
+                                  ? null
+                                  : () => _run(() => ref
+                                      .read(backupServiceProvider)
+                                      .deleteBackup(item.entry!)),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
                     const SizedBox(height: 16),
                     OutlinedButton(
                       onPressed: () => context.push(RouteNames.dataSafety),
-                      child: Text(
-                        'Poori Data Safety Settings',
-                        style: text.primaryBold.copyWith(fontSize: 15),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Aakhri copy: ${status.lastBackupLabel} • '
-                      '${status.backupCount} copies phone par',
-                      style: text.caption.copyWith(fontSize: 13),
+                      child: Text('Advanced Data Safety', style: text.primaryBold),
                     ),
                     const DeveloperFooter(),
                   ],
@@ -215,17 +318,122 @@ class _BackupRestoreSetupPageState extends ConsumerState<BackupRestoreSetupPage>
   }
 }
 
-class _CloudSetupPanel extends StatelessWidget {
-  const _CloudSetupPanel({
+class _StatusCard extends StatelessWidget {
+  const _StatusCard({required this.text, required this.status});
+
+  final AppTextTheme text;
+  final BackupStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: ColorPalette.cardSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ColorPalette.border),
+      ),
+      child: Column(
+        children: [
+          _Row(text: text, label: 'Last Backup', value: status.lastBackupLabel),
+          _Row(text: text, label: 'Next Scheduled', value: status.nextAutomaticBackupLabel),
+          _Row(
+            text: text,
+            label: 'Backup Status',
+            value: status.isRunning
+                ? 'Chal rahi hai...'
+                : status.lastError != null
+                    ? 'Fail — ${status.lastError}'
+                    : status.autoBackupEnabled
+                        ? 'Automatic chalu'
+                        : 'Manual',
+          ),
+          _Row(text: text, label: 'Encryption', value: status.encryptionLabel),
+        ],
+      ),
+    );
+  }
+}
+
+class _AutoBackupCard extends ConsumerWidget {
+  const _AutoBackupCard({
+    required this.text,
+    required this.status,
+    required this.metadata,
+    required this.onChanged,
+  });
+
+  final AppTextTheme text;
+  final BackupStatus status;
+  final BackupMetadataStore metadata;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: ColorPalette.cardSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ColorPalette.border),
+      ),
+      child: Column(
+        children: [
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text('Daily automatic copy', style: text.primaryBold.copyWith(fontSize: 15)),
+            subtitle: Text('Roz 2 baje', style: text.secondary.copyWith(fontSize: 13)),
+            value: status.autoBackupEnabled,
+            onChanged: (value) async {
+              await metadata.setAutoBackupEnabled(value);
+              if (value) await metadata.setAutoFrequency(AutoBackupFrequency.daily);
+              onChanged();
+            },
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text('Only while charging', style: text.primary.copyWith(fontSize: 15)),
+            value: status.requireCharging,
+            onChanged: (value) async {
+              await metadata.setRequireCharging(value);
+              onChanged();
+            },
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text('Only on WiFi', style: text.primary.copyWith(fontSize: 15)),
+            value: status.wifiOnly,
+            onChanged: (value) async {
+              await metadata.setWifiOnly(value);
+              onChanged();
+            },
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Cloud upload after successful backup',
+                style: text.helper.copyWith(fontSize: 13),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CloudPanel extends StatelessWidget {
+  const _CloudPanel({
     required this.text,
     required this.status,
     required this.cloudName,
     required this.isIos,
     required this.onConnect,
     required this.onEnableAuto,
-    required this.onBackupNow,
+    required this.onBackup,
     required this.onOpenSettings,
-    required this.onRestoreCloud,
   });
 
   final AppTextTheme text;
@@ -234,89 +442,28 @@ class _CloudSetupPanel extends StatelessWidget {
   final bool isIos;
   final VoidCallback onConnect;
   final VoidCallback onEnableAuto;
-  final VoidCallback onBackupNow;
+  final VoidCallback onBackup;
   final Future<bool> Function() onOpenSettings;
-  final VoidCallback onRestoreCloud;
 
   @override
   Widget build(BuildContext context) {
-    final cloudReady = status.isConnected;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ColorPalette.cardSurface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ColorPalette.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            '$cloudName Setup',
-            style: text.primaryBold.copyWith(fontSize: 17),
-          ),
-          const SizedBox(height: 8),
-          if (cloudReady) ...[
-            Row(
-              children: [
-                const Icon(Icons.check_circle_outline,
-                    color: ColorPalette.accentGreen, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '${status.connectedAccountLabel} — tayyar hai',
-                    style: text.primary.copyWith(fontSize: 15),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (!status.autoBackupEnabled) ...[
-              Text(
-                'Automatic copy abhi band hai. Chalu karein taaki roz raat '
-                '2 baje WiFi + charge par copy ban jaye.',
-                style: text.secondary.copyWith(fontSize: 14, height: 1.4),
-              ),
-              const SizedBox(height: 10),
-              FilledButton(
-                onPressed: onEnableAuto,
-                child: const Text('Automatic Copy Chalu Karein'),
-              ),
-              const SizedBox(height: 10),
-            ] else ...[
-              Text(
-                'Automatic copy chalu — ${status.nextAutomaticBackupLabel}',
-                style: text.secondary.copyWith(fontSize: 14),
-              ),
-              const SizedBox(height: 10),
-            ],
-            AppPrimaryButton(
-              english: 'Abhi Copy Banayein',
-              hindi: 'Pehli Copy',
-              onPressed: onBackupNow,
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton(
-              onPressed: onRestoreCloud,
-              child: const Text('Cloud Se Wapas Laayein'),
-            ),
-          ] else ...[
-            Text(
-              '$cloudName abhi set nahi hai.',
-              style: text.primaryBold.copyWith(fontSize: 16),
-            ),
+    if (!status.isConnected) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: ColorPalette.cardSurface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: ColorPalette.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('$cloudName set nahi hai', style: text.primaryBold.copyWith(fontSize: 16)),
             const SizedBox(height: 8),
             Text(
               isIos
-                  ? '1. Settings kholein\n'
-                      '2. Apple ID par tap karein\n'
-                      '3. iCloud > iCloud Drive ON karein\n'
-                      '4. Wapas aakar "Phir Try Karein" dabayein'
-                  : '1. Phone par Google account sign in karein\n'
-                      '2. Google Drive access allow karein\n'
-                      '3. Wapas aakar "Phir Try Karein" dabayein',
+                  ? '1. Settings kholein\n2. Apple ID > iCloud\n3. iCloud Drive ON karein\n4. Phir Try Karein'
+                  : '1. Google account sign in karein\n2. Google Drive allow karein\n3. Phir Try Karein',
               style: text.secondary.copyWith(fontSize: 14, height: 1.5),
             ),
             const SizedBox(height: 12),
@@ -326,75 +473,53 @@ class _CloudSetupPanel extends StatelessWidget {
               onPressed: onConnect,
             ),
             const SizedBox(height: 10),
-            OutlinedButton(
-              onPressed: onOpenSettings,
-              child: const Text('Settings Kholein'),
-            ),
+            OutlinedButton(onPressed: onOpenSettings, child: const Text('Settings Kholein')),
           ],
-        ],
-      ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!status.autoBackupEnabled)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: OutlinedButton(
+              onPressed: onEnableAuto,
+              child: const Text('Automatic Copy Chalu Karein'),
+            ),
+          ),
+        AppPrimaryButton(
+          english: 'Create Backup',
+          hindi: 'Copy Banayein',
+          onPressed: onBackup,
+        ),
+      ],
     );
   }
 }
 
-class _ManualSetupPanel extends StatelessWidget {
-  const _ManualSetupPanel({
-    required this.text,
-    required this.lastBackupLabel,
-    required this.onBackupNow,
-    required this.onExport,
-    required this.onOpenDataSafety,
-  });
+class _Row extends StatelessWidget {
+  const _Row({required this.text, required this.label, required this.value});
 
   final AppTextTheme text;
-  final String lastBackupLabel;
-  final VoidCallback onBackupNow;
-  final VoidCallback onExport;
-  final VoidCallback onOpenDataSafety;
+  final String label;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ColorPalette.cardSurface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: ColorPalette.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
         children: [
-          Text(
-            'Manual Export',
-            style: text.primaryBold.copyWith(fontSize: 17),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Pehle phone par copy banegi. Phir .btbackup file export karke '
-            'kahin safe jagah save karein.',
-            style: text.secondary.copyWith(fontSize: 14, height: 1.45),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Aakhri copy: $lastBackupLabel',
-            style: text.primary.copyWith(fontSize: 15),
-          ),
-          const SizedBox(height: 12),
-          AppPrimaryButton(
-            english: 'Abhi Copy Banayein',
-            hindi: 'Phone Par Copy',
-            onPressed: onBackupNow,
-          ),
-          const SizedBox(height: 10),
-          OutlinedButton(
-            onPressed: onExport,
-            child: const Text('Encrypted .btbackup Export'),
-          ),
-          const SizedBox(height: 10),
-          OutlinedButton(
-            onPressed: onOpenDataSafety,
-            child: const Text('.btbackup Se Wapas Laayein'),
+          Expanded(child: Text(label, style: text.secondary.copyWith(fontSize: 14))),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: text.primaryBold.copyWith(fontSize: 14),
+            ),
           ),
         ],
       ),
@@ -405,20 +530,20 @@ class _ManualSetupPanel extends StatelessWidget {
 class _StorageOptionCard extends StatelessWidget {
   const _StorageOptionCard({
     required this.text,
+    required this.emoji,
     required this.title,
     required this.subtitle,
     required this.detail,
-    required this.icon,
     required this.recommended,
     required this.selected,
     required this.onTap,
   });
 
   final AppTextTheme text;
+  final String emoji;
   final String title;
   final String subtitle;
   final String detail;
-  final IconData icon;
   final bool recommended;
   final bool selected;
   final VoidCallback onTap;
@@ -443,7 +568,7 @@ class _StorageOptionCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: ColorPalette.purple, size: 28),
+              Text(emoji, style: const TextStyle(fontSize: 28)),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -452,54 +577,24 @@ class _StorageOptionCard extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: Text(
-                            title,
-                            style: text.primaryBold.copyWith(fontSize: 16),
-                          ),
+                          child: Text(title, style: text.primaryBold.copyWith(fontSize: 16)),
                         ),
                         if (recommended)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: ColorPalette.purple.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Recommended',
-                              style: text.caption.copyWith(
-                                fontSize: 11,
-                                color: ColorPalette.purple,
-                                fontWeight: FontWeight.w700,
-                              ),
+                          Text(
+                            'Recommended',
+                            style: text.caption.copyWith(
+                              fontSize: 11,
+                              color: ColorPalette.purple,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: text.secondary.copyWith(fontSize: 14),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      detail,
-                      style: text.helper.copyWith(fontSize: 13, height: 1.4),
-                    ),
+                    Text(subtitle, style: text.secondary.copyWith(fontSize: 14)),
+                    Text(detail, style: text.helper.copyWith(fontSize: 13, height: 1.4)),
                   ],
                 ),
               ),
-              if (selected)
-                const Padding(
-                  padding: EdgeInsets.only(left: 8, top: 2),
-                  child: Icon(
-                    Icons.check_circle_rounded,
-                    color: ColorPalette.purple,
-                    size: 22,
-                  ),
-                ),
             ],
           ),
         ),
@@ -521,36 +616,8 @@ class _InlineError extends StatelessWidget {
       decoration: BoxDecoration(
         color: ColorPalette.destructive.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ColorPalette.destructive.withValues(alpha: 0.3)),
       ),
-      child: Text(
-        message,
-        style: text.primary.copyWith(
-          fontSize: 14,
-          color: ColorPalette.destructive,
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorBody extends StatelessWidget {
-  const _ErrorBody({required this.message, required this.text});
-
-  final String message;
-  final AppTextTheme text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Text('Load nahi ho paya', style: text.primaryBold.copyWith(fontSize: 18)),
-          const SizedBox(height: 8),
-          Text(message, style: text.secondary),
-        ],
-      ),
+      child: Text(message, style: text.primary.copyWith(color: ColorPalette.destructive)),
     );
   }
 }

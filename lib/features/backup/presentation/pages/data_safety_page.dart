@@ -18,6 +18,8 @@ import '../../../../shared/widgets/feedback/app_loading_view.dart';
 import '../../../../shared/widgets/layout/app_form_section.dart';
 import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../widgets/backup_cloud_restore_sheet.dart';
+import '../widgets/backup_history_card.dart';
+import '../widgets/backup_preview_dialogs.dart';
 
 /// Data Safety Center — backup, restore, export, import, and status.
 class DataSafetyPage extends ConsumerStatefulWidget {
@@ -88,15 +90,9 @@ class _DataSafetyPageState extends ConsumerState<DataSafetyPage> {
   }
 
   Future<void> _restoreEntry(BackupEntry entry) async {
-    final confirmed = await ConfirmationDialog.show(
-      context,
-      title: 'Backup wapas laayein?',
-      message:
-          'Pehle is phone ki copy ban jayegi. Phir chuni hui copy restore hogi.',
-      confirmLabel: 'Restore',
-      cancelLabel: 'Cancel',
-      isDestructive: false,
-    );
+    final preview = await ref.read(backupServiceProvider).readEntryPreview(entry);
+    if (!mounted) return;
+    final confirmed = await showRestorePreviewDialog(context, preview: preview);
     if (!mounted || confirmed != true) return;
 
     await _run(() async {
@@ -360,50 +356,30 @@ class _DataSafetyPageState extends ConsumerState<DataSafetyPage> {
                             child: Center(child: CircularProgressIndicator()),
                           ),
                           error: (error, _) => Text('History load fail: $error'),
-                          data: (entries) {
-                            if (entries.isEmpty) {
-                              return const Text('Abhi koi copy nahi bani.');
+                          data: (items) {
+                            final successItems =
+                                items.where((item) => item.entry != null).toList();
+                            if (successItems.isEmpty) {
+                              return Text(
+                                'Abhi koi copy nahi bani.',
+                                style: context.appText.secondary,
+                              );
                             }
 
+                            final text = context.appText;
                             return Column(
-                              children: entries.map((entry) {
+                              children: successItems.map((item) {
+                                final entry = item.entry!;
                                 final label = metadata.formatDisplayTimestamp(
                                   entry.manifest.createdAt,
                                 );
-                                return Card(
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  child: ListTile(
-                                    title: Text(label),
-                                    subtitle: Text(
-                                      '${entry.manifest.businessName} • ${_formatBytes(entry.fileSizeBytes)}',
-                                    ),
-                                    trailing: PopupMenuButton<String>(
-                                      onSelected: (action) {
-                                        switch (action) {
-                                          case 'restore':
-                                            _restoreEntry(entry);
-                                          case 'export':
-                                            _exportEntry(entry);
-                                          case 'delete':
-                                            _deleteEntry(entry);
-                                        }
-                                      },
-                                      itemBuilder: (context) => const [
-                                        PopupMenuItem(
-                                          value: 'restore',
-                                          child: Text('Wapas Laayein'),
-                                        ),
-                                        PopupMenuItem(
-                                          value: 'export',
-                                          child: Text('Save Karein'),
-                                        ),
-                                        PopupMenuItem(
-                                          value: 'delete',
-                                          child: Text('Delete'),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                return BackupHistoryCard(
+                                  text: text,
+                                  item: item,
+                                  dateLabel: label,
+                                  onRestore: () => _restoreEntry(entry),
+                                  onShare: () => _exportEntry(entry),
+                                  onDelete: () => _deleteEntry(entry),
                                 );
                               }).toList(),
                             );

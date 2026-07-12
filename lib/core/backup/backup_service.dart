@@ -15,10 +15,12 @@ import '../../features/business/data/datasources/business_table.dart';
 import '../constants/app_constants.dart';
 import '../logging/logger.dart';
 import 'backup_auto_conditions.dart';
+import 'backup_content_stats.dart';
 import 'backup_encryption_service.dart';
 import 'backup_format.dart';
 import 'backup_metadata_store.dart';
 import 'backup_packager.dart';
+import 'backup_snapshot_collector.dart';
 
 /// Creates, restores, exports, and prunes encrypted business backups.
 final class BackupService {
@@ -110,6 +112,9 @@ final class BackupService {
       final createdAt = DateTime.now();
       final backupId = _uuid.v4();
       final salt = _encryption.generateSalt();
+      final databasePath = await _resolveDatabasePath();
+      final stats = await BackupSnapshotCollector(_database)
+          .collect(databasePath: databasePath);
       final manifest = BackupManifest(
         backupId: backupId,
         businessId: business.id,
@@ -120,9 +125,9 @@ final class BackupService {
         type: type,
         encryptedSize: 0,
         salt: salt,
+        stats: stats,
       );
 
-      final databasePath = await _resolveDatabasePath();
       final logosDir = await _logosDirectory();
       final preferences = await _metadata.exportAllPreferences();
 
@@ -142,12 +147,19 @@ final class BackupService {
 
       await _pruneOldBackups();
       await _metadata.recordBackup(createdAt);
-      await _uploadToCloud(saved);
+      final cloudSynced = await _uploadToCloud(saved);
+      await _metadata.recordBackupDetails(
+        backupId: saved.id,
+        storageLocation: cloudSynced ? _cloud.providerName : 'Phone',
+        cloudSynced: cloudSynced,
+        succeeded: true,
+      );
 
       _logger.info('Backup created: ${saved.id} (${type.name})');
       return saved;
     } catch (error, stackTrace) {
       await _metadata.setLastError('$error');
+      await _metadata.recordFailedBackupAttempt(errorMessage: '$error');
       _logger.error('Backup failed', error, stackTrace);
       rethrow;
     } finally {
@@ -220,6 +232,62 @@ final class BackupService {
       _logger.warning('Cloud backup list failed: $error');
       return [];
     }
+  }
+
+  Future<BackupPreviewData> buildCurrentBackupPreview() async {
+    final business = await _readBusiness();
+    if (business == null) {
+      throw StateError('Business profile missing — backup cannot run');
+    }
+    final databasePath = await _resolveDatabasePath();
+    final stats = await BackupSnapshotCollector(_database)
+        .collect(databasePath: databasePath);
+    final now = DateTime.now();
+    return BackupPreviewData(
+      backupDate: now,
+      backupTimeLabel: _metadata.formatDisplayTimestamp(now),
+      appVersion: '1.0.0+5',
+      businessName: business.name,
+      fileSizeBytes: 0,
+      stats: stats,
+    );
+  }
+
+  Future<BackupPreviewData> readEntryPreview(BackupEntry entry) async {
+    return _previewFromManifest(
+      manifest: entry.manifest,
+      fileSizeBytes: entry.fileSizeBytes,
+    );
+  }
+
+  Future<BackupPreviewData> readFilePreview(String sourcePath) async {
+    final bytes = await File(sourcePath).readAsBytes();
+    final manifest = _packager.readManifestHeader(bytes);
+    return _previewFromManifest(
+      manifest: manifest,
+      fileSizeBytes: bytes.length,
+      isExistingBackup: true,
+    );
+  }
+
+  BackupPreviewData _previewFromManifest({
+    required BackupManifest manifest,
+    required int fileSizeBytes,
+    bool isExistingBackup = true,
+  }) {
+    final size = fileSizeBytes > 0
+        ? fileSizeBytes
+        : manifest.encryptedSize;
+    return BackupPreviewData(
+      backupDate: manifest.createdAt,
+      backupTimeLabel: _metadata.formatDisplayTimestamp(manifest.createdAt),
+      appVersion: manifest.appVersion,
+      businessName: manifest.businessName,
+      fileSizeBytes: size,
+      stats: manifest.stats,
+      storageLocation: manifest.storageLocation,
+      isExistingBackup: isExistingBackup,
+    );
   }
 
   Future<void> exportLatestBackup() async {
@@ -374,8 +442,8 @@ final class BackupService {
     }
   }
 
-  Future<void> _uploadToCloud(BackupEntry entry) async {
-    if (!await _cloud.isAvailable()) return;
+  Future<bool> _uploadToCloud(BackupEntry entry) async {
+    if (!await _cloud.isAvailable()) return false;
 
     try {
       await _cloud.ensureConnected();
@@ -389,8 +457,10 @@ final class BackupService {
         await _metadata.setConnectedAccount(account);
       }
       await _pruneRemoteBackups();
+      return true;
     } catch (error) {
       _logger.warning('Cloud upload skipped: $error');
+      return false;
     }
   }
 
@@ -431,6 +501,39 @@ final class BackupService {
     return DatabasePaths.resolve();
   }
 
+  Future<List<BackupHistoryItem>> listBackupHistory() async {
+    final entries = await listBackups();
+    final items = <BackupHistoryItem>[];
+    for (final entry in entries) {
+      final details = await _metadata.backupDetails(entry.id);
+      items.add(
+        BackupHistoryItem(
+          entry: entry,
+          storageLocation: details?.storageLocation ??
+              entry.manifest.storageLocation ??
+              'Phone',
+          cloudSynced: details?.cloudSynced ?? entry.manifest.cloudSynced,
+          status: BackupHistoryStatus.success,
+        ),
+      );
+    }
+    final failed = await _metadata.lastFailedBackupAttempt();
+    if (failed != null) {
+      items.insert(
+        0,
+        BackupHistoryItem(
+          entry: null,
+          storageLocation: failed.storageLocation,
+          cloudSynced: false,
+          status: BackupHistoryStatus.failed,
+          failedAt: failed.failedAt,
+          errorMessage: failed.errorMessage,
+        ),
+      );
+    }
+    return items;
+  }
+
   Future<_BusinessSnapshot?> _readBusiness() async {
     final rows = await _database.query(BusinessTable.tableName, limit: 1);
     if (rows.isEmpty) return null;
@@ -461,6 +564,9 @@ extension on BackupManifest {
       type: type,
       encryptedSize: size,
       salt: salt,
+      stats: stats,
+      storageLocation: storageLocation,
+      cloudSynced: cloudSynced,
     );
   }
 
@@ -475,6 +581,9 @@ extension on BackupManifest {
       type: value,
       encryptedSize: encryptedSize,
       salt: salt,
+      stats: stats,
+      storageLocation: storageLocation,
+      cloudSynced: cloudSynced,
     );
   }
 }
