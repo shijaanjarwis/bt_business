@@ -1,4 +1,5 @@
 import '../accounting/transaction_types.dart';
+import '../utils/currency_formatter.dart';
 import '../utils/date_formatter.dart';
 import 'reminder_models.dart';
 
@@ -211,58 +212,128 @@ abstract final class ReminderService {
     );
   }
 
-  /// Builds a concise morning notification body — combines when possible.
-  static String buildMorningNotificationBody({
+  /// Builds 3-level notification copy — grouped when multiple reminders due.
+  static ReminderNotificationContent buildNotificationContent({
+    required ReminderNotificationLevel level,
     required List<ReminderEntry> dueTodayAndOverdue,
-    required ReminderDashboardSummary summary,
     DateTime? reference,
   }) {
     if (dueTodayAndOverdue.isEmpty) {
-      return 'No pending reminders today.';
+      return const ReminderNotificationContent(title: '', body: '');
     }
 
-    final parts = <String>[];
-    final sorted = [...dueTodayAndOverdue]
+    final payload = notificationListPayload(dueTodayAndOverdue);
+    final sorted = _sortedForNotification(dueTodayAndOverdue, reference: reference);
+
+    if (sorted.length == 1) {
+      final entry = sorted.first;
+      return ReminderNotificationContent(
+        title: _titleForLevel(level),
+        body: _singleEntryBody(level, entry, reference: reference),
+        payload: payload,
+      );
+    }
+
+    final lines = sorted
+        .take(6)
+        .map((entry) => '• ${entry.partyName} ${CurrencyFormatter.format(entry.amount)}')
+        .join('\n');
+    final count = sorted.length;
+    final overdueCount = sorted
+        .where((e) => daysFromToday(e.reminderDate, reference: reference) > 0)
+        .length;
+
+    final body = switch (level) {
+      ReminderNotificationLevel.morning => overdueCount == count
+          ? '$count overdue payments.\n$lines\nTap to view all reminders.'
+          : '$count reminders pending today.\n$lines\nTap to view all reminders.',
+      ReminderNotificationLevel.afternoon =>
+        '$count reminders abhi bhi baaki hain.\n$lines',
+      ReminderNotificationLevel.evening =>
+        'Aaj ka last reminder — $count baaki hain.\n$lines',
+    };
+
+    return ReminderNotificationContent(
+      title: _titleForLevel(level, grouped: true),
+      body: body,
+      payload: payload,
+    );
+  }
+
+  static String _titleForLevel(ReminderNotificationLevel level, {bool grouped = false}) {
+    return switch (level) {
+      ReminderNotificationLevel.morning =>
+        grouped ? "Today's Payment Reminders" : "Today's Payment Reminder",
+      ReminderNotificationLevel.afternoon => 'Reminder',
+      ReminderNotificationLevel.evening => 'Last Reminder Today',
+    };
+  }
+
+  static String _singleEntryBody(
+    ReminderNotificationLevel level,
+    ReminderEntry entry, {
+    DateTime? reference,
+  }) {
+    final amount = CurrencyFormatter.format(entry.amount);
+    final days = daysFromToday(entry.reminderDate, reference: reference);
+    final isReceive = entry.direction == ReminderDirection.receive;
+    final overdueSuffix = days > 0
+        ? ' — Overdue by $days ${days == 1 ? 'day' : 'days'}'
+        : '';
+
+    return switch (level) {
+      ReminderNotificationLevel.morning => isReceive
+          ? '${entry.partyName} se $amount lena hai aaj$overdueSuffix.'
+          : '${entry.partyName} ko $amount dena hai aaj$overdueSuffix.',
+      ReminderNotificationLevel.afternoon => isReceive
+          ? '${entry.partyName} se $amount lena abhi bhi baaki hai$overdueSuffix.'
+          : '${entry.partyName} ko $amount dena abhi bhi baaki hai$overdueSuffix.',
+      ReminderNotificationLevel.evening => isReceive
+          ? '${entry.partyName} se $amount lena abhi bhi baaki hai$overdueSuffix.'
+          : '${entry.partyName} ko $amount dena abhi bhi baaki hai$overdueSuffix.',
+    };
+  }
+
+  static List<ReminderEntry> _sortedForNotification(
+    List<ReminderEntry> entries, {
+    DateTime? reference,
+  }) {
+    return [...entries]
       ..sort((a, b) {
         final aDays = daysFromToday(a.reminderDate, reference: reference);
         final bDays = daysFromToday(b.reminderDate, reference: reference);
         if (aDays != bDays) return bDays.compareTo(aDays);
         return a.reminderDate.compareTo(b.reminderDate);
       });
-
-    for (final entry in sorted.take(2)) {
-      final preposition =
-          entry.direction == ReminderDirection.receive ? 'from' : 'to';
-      final days = daysFromToday(entry.reminderDate, reference: reference);
-      final prefix = days > 0 ? 'Overdue' : 'Today';
-      parts.add(
-        '$prefix ${entry.direction.englishLabel.toLowerCase()} '
-        '₹${_format(entry.amount)} $preposition ${entry.partyName}',
-      );
-    }
-
-    if (dueTodayAndOverdue.length > 2) {
-      parts.add(
-        'You have ${dueTodayAndOverdue.length} pending reminders today.',
-      );
-    } else if (dueTodayAndOverdue.length > 1 && parts.length == 1) {
-      parts.add(
-        'You have ${dueTodayAndOverdue.length} pending reminders today.',
-      );
-    }
-
-    return parts.join('. ');
   }
 
-  /// Payload for notification tap — `transactionType:transactionId`.
+  /// Tap payload for reminder list screens — receive-today, pay-today, or home.
+  static String notificationListPayload(List<ReminderEntry> entries) {
+    if (entries.isEmpty) return 'list:home';
+
+    final hasReceive = entries.any((e) => e.direction == ReminderDirection.receive);
+    final hasPay = entries.any((e) => e.direction == ReminderDirection.payment);
+
+    if (hasReceive && !hasPay) return 'list:receive-today';
+    if (hasPay && !hasReceive) return 'list:pay-today';
+    return 'list:home';
+  }
+
+  /// Legacy morning body builder — kept for tests.
+  static String buildMorningNotificationBody({
+    required List<ReminderEntry> dueTodayAndOverdue,
+    required ReminderDashboardSummary summary,
+    DateTime? reference,
+  }) {
+    return buildNotificationContent(
+      level: ReminderNotificationLevel.morning,
+      dueTodayAndOverdue: dueTodayAndOverdue,
+      reference: reference,
+    ).body;
+  }
+
+  /// Payload for notification tap — `list:slug` or `transactionType:transactionId`.
   static String notificationPayload(ReminderEntry entry) {
     return '${entry.transactionType}:${entry.transactionId}';
-  }
-
-  static String _format(double value) {
-    if (value == value.roundToDouble()) {
-      return value.round().toString();
-    }
-    return value.toStringAsFixed(0);
   }
 }

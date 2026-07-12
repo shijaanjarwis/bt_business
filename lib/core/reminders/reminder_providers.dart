@@ -70,3 +70,6 @@ final reminderSchedulerProvider = Provider<ReminderScheduler>((ref) {
     ref.watch(loggerProvider),
   );
 });
+
+/// True when notification permission was denied — shows dashboard prompt.
+final notificationPermissionDeniedProvider = StateProvider<bool>((ref) => false);

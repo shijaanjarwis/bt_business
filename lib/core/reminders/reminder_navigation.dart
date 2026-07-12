@@ -20,6 +20,23 @@ void openReminderEntryDetail(BuildContext context, ReminderEntry entry) {
   }
 }
 
+/// Parses notification payload into a navigation path.
+String? reminderNavigationPathFromPayload(String? payload) {
+  if (payload == null || payload.isEmpty) return null;
+
+  if (payload.startsWith('list:')) {
+    final slug = payload.substring(5);
+    return switch (slug) {
+      'receive-today' => RouteNames.reminderListPath('receive-today'),
+      'pay-today' => RouteNames.reminderListPath('pay-today'),
+      'home' => RouteNames.home,
+      _ => null,
+    };
+  }
+
+  return reminderDetailPathFromPayload(payload);
+}
+
 /// Parses notification payload `type:transactionId` into a detail route.
 String? reminderDetailPathFromPayload(String? payload) {
   if (payload == null || payload.isEmpty) return null;

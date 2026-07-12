@@ -125,7 +125,11 @@ Future<void> _initializeReminders(ProviderContainer container, Logger logger) as
 
   // iOS permission dialogs require an active UI window — never await before runApp.
   unawaited(
-    notifications.requestPermissions().timeout(
+    notifications.requestPermissions().then((granted) {
+      if (!granted) {
+        container.read(notificationPermissionDeniedProvider.notifier).state = true;
+      }
+    }).timeout(
       const Duration(seconds: 15),
       onTimeout: () {
         StartupTrace.log('WARN notifications permission timed out');

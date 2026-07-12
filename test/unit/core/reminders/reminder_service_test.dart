@@ -106,64 +106,164 @@ void main() {
       expect(summary.pendingPayable, 12500);
     });
 
-    test('morning notification combines party lines without spamming', () {
+    test('morning notification uses Hindi-first single reminder copy', () {
+      final content = ReminderService.buildNotificationContent(
+        level: ReminderNotificationLevel.morning,
+        dueTodayAndOverdue: [
+          ReminderEntry(
+            transactionId: 's1',
+            transactionType: TransactionTypes.sale,
+            partyId: 'p1',
+            partyName: 'Raaj',
+            amount: 15000,
+            reminderDate: DateTime(2026, 6, 30),
+            dueAmount: 15000,
+            direction: ReminderDirection.receive,
+          ),
+        ],
+        reference: DateTime(2026, 6, 30),
+      );
+
+      expect(content.title, "Today's Payment Reminder");
+      expect(content.body, contains('Raaj se'));
+      expect(content.body, contains('₹15,000'));
+      expect(content.body, contains('lena hai aaj'));
+      expect(content.payload, 'list:receive-today');
+    });
+
+    test('afternoon notification says still pending', () {
+      final content = ReminderService.buildNotificationContent(
+        level: ReminderNotificationLevel.afternoon,
+        dueTodayAndOverdue: [
+          ReminderEntry(
+            transactionId: 's1',
+            transactionType: TransactionTypes.sale,
+            partyId: 'p1',
+            partyName: 'Raaj',
+            amount: 15000,
+            reminderDate: DateTime(2026, 6, 30),
+            dueAmount: 15000,
+            direction: ReminderDirection.receive,
+          ),
+        ],
+        reference: DateTime(2026, 6, 30),
+      );
+
+      expect(content.title, 'Reminder');
+      expect(content.body, contains('abhi bhi baaki hai'));
+    });
+
+    test('evening notification is last reminder today', () {
+      final content = ReminderService.buildNotificationContent(
+        level: ReminderNotificationLevel.evening,
+        dueTodayAndOverdue: [
+          ReminderEntry(
+            transactionId: 's1',
+            transactionType: TransactionTypes.sale,
+            partyId: 'p1',
+            partyName: 'Raaj',
+            amount: 15000,
+            reminderDate: DateTime(2026, 6, 30),
+            dueAmount: 15000,
+            direction: ReminderDirection.receive,
+          ),
+        ],
+        reference: DateTime(2026, 6, 30),
+      );
+
+      expect(content.title, 'Last Reminder Today');
+      expect(content.body, contains('abhi bhi baaki hai'));
+    });
+
+    test('grouped morning notification combines parties', () {
       final entries = [
         ReminderEntry(
           transactionId: 's1',
           transactionType: TransactionTypes.sale,
           partyId: 'p1',
-          partyName: 'Mateen Traders',
-          amount: 27896,
+          partyName: 'Raaj',
+          amount: 15000,
           reminderDate: DateTime(2026, 6, 30),
-          dueAmount: 27896,
+          dueAmount: 15000,
           direction: ReminderDirection.receive,
         ),
+        ReminderEntry(
+          transactionId: 's2',
+          transactionType: TransactionTypes.sale,
+          partyId: 'p2',
+          partyName: 'Mateen',
+          amount: 25000,
+          reminderDate: DateTime(2026, 6, 30),
+          dueAmount: 25000,
+          direction: ReminderDirection.receive,
+        ),
+        ReminderEntry(
+          transactionId: 's3',
+          transactionType: TransactionTypes.sale,
+          partyId: 'p3',
+          partyName: 'Akram',
+          amount: 8000,
+          reminderDate: DateTime(2026, 6, 30),
+          dueAmount: 8000,
+          direction: ReminderDirection.receive,
+        ),
+      ];
+
+      final content = ReminderService.buildNotificationContent(
+        level: ReminderNotificationLevel.morning,
+        dueTodayAndOverdue: entries,
+        reference: DateTime(2026, 6, 30),
+      );
+
+      expect(content.title, "Today's Payment Reminders");
+      expect(content.body, contains('3 reminders pending today'));
+      expect(content.body, contains('Raaj'));
+      expect(content.body, contains('Mateen'));
+      expect(content.body, contains('Akram'));
+      expect(content.body, contains('Tap to view all reminders'));
+      expect(content.payload, 'list:receive-today');
+    });
+
+    test('overdue morning notification mentions overdue days', () {
+      final content = ReminderService.buildNotificationContent(
+        level: ReminderNotificationLevel.morning,
+        dueTodayAndOverdue: [
+          ReminderEntry(
+            transactionId: 's1',
+            transactionType: TransactionTypes.sale,
+            partyId: 'p1',
+            partyName: 'Raaj',
+            amount: 15000,
+            reminderDate: DateTime(2026, 6, 28),
+            dueAmount: 15000,
+            direction: ReminderDirection.receive,
+          ),
+        ],
+        reference: DateTime(2026, 6, 30),
+      );
+
+      expect(content.body, contains('Overdue by 2 days'));
+    });
+
+    test('pay reminder routes to pay-today list', () {
+      final payload = ReminderService.notificationListPayload([
         ReminderEntry(
           transactionId: 'p1',
           transactionType: TransactionTypes.purchase,
           partyId: 'p2',
-          partyName: 'Bharat Steel',
-          amount: 14500,
+          partyName: 'Sharma Traders',
+          amount: 22000,
           reminderDate: DateTime(2026, 6, 30),
-          dueAmount: 14500,
+          dueAmount: 22000,
           direction: ReminderDirection.payment,
         ),
-      ];
+      ]);
 
-      final body = ReminderService.buildMorningNotificationBody(
-        dueTodayAndOverdue: entries,
-        summary: ReminderService.summarize(entries, reference: DateTime(2026, 6, 30)),
-        reference: DateTime(2026, 6, 30),
+      expect(payload, 'list:pay-today');
+      expect(
+        reminderNavigationPathFromPayload(payload),
+        '/reminders/pay-today',
       );
-
-      expect(body, contains('Mateen Traders'));
-      expect(body, contains('Bharat Steel'));
-      expect(body, contains('Today receive'));
-      expect(body, contains('Today payment'));
-    });
-
-    test('morning notification adds count when many reminders exist', () {
-      final entries = List.generate(
-        4,
-        (index) => ReminderEntry(
-          transactionId: 's$index',
-          transactionType: TransactionTypes.sale,
-          partyId: 'p$index',
-          partyName: 'Party $index',
-          amount: 1000,
-          reminderDate: DateTime(2026, 6, 30),
-          dueAmount: 1000,
-          direction: ReminderDirection.receive,
-        ),
-      );
-
-      final body = ReminderService.buildMorningNotificationBody(
-        dueTodayAndOverdue: entries,
-        summary: ReminderService.summarize(entries, reference: DateTime(2026, 6, 30)),
-        reference: DateTime(2026, 6, 30),
-      );
-
-      expect(body, contains('4 pending reminders today'));
     });
 
     test('groupByParty merges entries by party ID not name', () {
@@ -235,6 +335,13 @@ void main() {
       expect(
         reminderDetailPathFromPayload('${TransactionTypes.paymentPaid}:xyz'),
         '/payments/xyz',
+      );
+    });
+
+    test('list payload opens receive today screen', () {
+      expect(
+        reminderNavigationPathFromPayload('list:receive-today'),
+        '/reminders/receive-today',
       );
     });
   });

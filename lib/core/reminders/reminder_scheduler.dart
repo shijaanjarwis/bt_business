@@ -4,7 +4,7 @@ import 'reminder_models.dart';
 import 'reminder_notification_service.dart';
 import 'reminder_service.dart';
 
-/// Single scheduler — refreshes the morning reminder whenever data changes.
+/// Schedules 3-level reminders whenever data changes — cancels on payment.
 final class ReminderScheduler {
   ReminderScheduler(
     this._datasource,
@@ -16,47 +16,38 @@ final class ReminderScheduler {
   final ReminderNotificationService _notifications;
   final Logger _logger;
 
-  static const _title = 'BT Business Reminders';
-
   Future<void> reschedule({DateTime? reference}) async {
     try {
       final due = await _datasource.fetchDueReminders(asOf: reference);
-      final summary = await _datasource.fetchSummary(asOf: reference);
 
       if (due.isEmpty) {
-        await _notifications.cancelMorningReminder();
+        await _notifications.cancelAllReminders();
         return;
       }
 
-      final body = ReminderService.buildMorningNotificationBody(
+      final morning = ReminderService.buildNotificationContent(
+        level: ReminderNotificationLevel.morning,
         dueTodayAndOverdue: due,
-        summary: summary,
+        reference: reference,
+      );
+      final afternoon = ReminderService.buildNotificationContent(
+        level: ReminderNotificationLevel.afternoon,
+        dueTodayAndOverdue: due,
+        reference: reference,
+      );
+      final evening = ReminderService.buildNotificationContent(
+        level: ReminderNotificationLevel.evening,
+        dueTodayAndOverdue: due,
         reference: reference,
       );
 
-      final payloadEntry = _primaryPayloadEntry(due);
-      final payload = payloadEntry == null
-          ? null
-          : ReminderService.notificationPayload(payloadEntry);
-
-      await _notifications.scheduleMorningReminder(
-        title: _title,
-        body: body,
-        payload: payload,
+      await _notifications.scheduleThreeLevelReminders(
+        morning: morning,
+        afternoon: afternoon,
+        evening: evening,
       );
     } catch (error, stackTrace) {
       _logger.error('Reminder reschedule failed', error, stackTrace);
     }
-  }
-
-  ReminderEntry? _primaryPayloadEntry(List<ReminderEntry> due) {
-    if (due.isEmpty) return null;
-
-    final sorted = [...due]
-      ..sort((a, b) {
-        if (a.isOverdue != b.isOverdue) return a.isOverdue ? -1 : 1;
-        return a.reminderDate.compareTo(b.reminderDate);
-      });
-    return sorted.first;
   }
 }

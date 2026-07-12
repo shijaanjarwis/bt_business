@@ -24,6 +24,26 @@ enum ReminderDirection {
   }
 }
 
+/// Daily notification slot — morning, afternoon, or evening.
+enum ReminderNotificationLevel {
+  morning,
+  afternoon,
+  evening,
+}
+
+/// Title, body, and tap payload for a scheduled reminder notification.
+class ReminderNotificationContent {
+  const ReminderNotificationContent({
+    required this.title,
+    required this.body,
+    this.payload,
+  });
+
+  final String title;
+  final String body;
+  final String? payload;
+}
+
 /// One pending reminder row for dashboard / notifications.
 class ReminderEntry {
   const ReminderEntry({
