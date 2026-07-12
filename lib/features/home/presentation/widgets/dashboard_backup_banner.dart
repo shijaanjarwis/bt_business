@@ -7,7 +7,7 @@ import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/theme/color_palette.dart';
 
-/// Dashboard reminder when business data has not been backed up recently.
+/// Dashboard backup status — 7-day reminder and 30-day critical warning.
 class DashboardBackupBanner extends ConsumerWidget {
   const DashboardBackupBanner({super.key});
 
@@ -26,38 +26,23 @@ class DashboardBackupBanner extends ConsumerWidget {
               label: status.lastBackupLabel,
               onTap: () => context.push(RouteNames.backup),
             ),
-            if (status.isStale) ...[
+            if (status.isCritical) ...[
               const SizedBox(height: AppSpacing.md),
-              Material(
+              _WarningBanner(
+                color: ColorPalette.destructive.withValues(alpha: 0.12),
+                iconColor: ColorPalette.destructive,
+                message:
+                    'Bahut zaroori — 30 din se copy nahi bani. Abhi copy banayein, data safe rakhein.',
+                onTap: () => context.push(RouteNames.backup),
+              ),
+            ] else if (status.isStale) ...[
+              const SizedBox(height: AppSpacing.md),
+              _WarningBanner(
                 color: ColorPalette.warningSurface,
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => context.push(RouteNames.backup),
-                  child: const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.cloud_upload_outlined,
-                          color: ColorPalette.warningText,
-                          size: 20,
-                        ),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Aapka hisaab bahut din se copy nahi hua. Abhi copy banayein.',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: ColorPalette.warningText,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                iconColor: ColorPalette.warningText,
+                message:
+                    'Aapka hisaab bahut din se copy nahi hua. Abhi copy banayein.',
+                onTap: () => context.push(RouteNames.backup),
               ),
             ],
           ],
@@ -113,6 +98,56 @@ class _LastBackupChip extends StatelessWidget {
               const Icon(
                 Icons.chevron_right_rounded,
                 color: ColorPalette.labelSecondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WarningBanner extends StatelessWidget {
+  const _WarningBanner({
+    required this.color,
+    required this.iconColor,
+    required this.message,
+    required this.onTap,
+  });
+
+  final Color color;
+  final Color iconColor;
+  final String message;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: color,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.cloud_upload_outlined,
+                color: iconColor,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: iconColor,
+                  ),
+                ),
               ),
             ],
           ),

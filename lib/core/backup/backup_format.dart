@@ -5,6 +5,7 @@ abstract final class BackupFormat {
   static const fileExtension = '.btbackup';
   static const maxHistoryCount = 30;
   static const staleDays = 7;
+  static const criticalDays = 30;
   static const autoBackupHour = 2;
 }
 
@@ -95,11 +96,14 @@ class BackupStatus {
     required this.lastBackupLabel,
     required this.isConnected,
     required this.connectedAccountLabel,
+    required this.cloudProviderName,
     required this.storageUsedBytes,
     required this.backupCount,
+    required this.cloudBackupCount,
     required this.autoFrequency,
     required this.wifiOnly,
     required this.isStale,
+    required this.isCritical,
     required this.isRunning,
     required this.lastError,
   });
@@ -108,11 +112,14 @@ class BackupStatus {
   final String lastBackupLabel;
   final bool isConnected;
   final String connectedAccountLabel;
+  final String cloudProviderName;
   final int storageUsedBytes;
   final int backupCount;
+  final int cloudBackupCount;
   final AutoBackupFrequency autoFrequency;
   final bool wifiOnly;
   final bool isStale;
+  final bool isCritical;
   final bool isRunning;
   final String? lastError;
 
@@ -121,11 +128,14 @@ class BackupStatus {
     lastBackupLabel: 'Kabhi Nahi',
     isConnected: false,
     connectedAccountLabel: 'Connect nahi hai',
+    cloudProviderName: 'Cloud',
     storageUsedBytes: 0,
     backupCount: 0,
+    cloudBackupCount: 0,
     autoFrequency: AutoBackupFrequency.daily,
     wifiOnly: true,
     isStale: true,
+    isCritical: true,
     isRunning: false,
     lastError: null,
   );

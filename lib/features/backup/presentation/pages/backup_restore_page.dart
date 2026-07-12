@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/backup/backup_format.dart';
 import '../../../../core/backup/backup_providers.dart';
+import '../../presentation/widgets/backup_cloud_restore_sheet.dart';
 import '../../../../core/di/core_providers.dart';
 import '../../../../core/di/data_revision.dart';
 import '../../../../core/theme/color_palette.dart';
@@ -168,6 +169,14 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
                               value: status.connectedAccountLabel,
                             ),
                             _InfoRow(
+                              label: 'Cloud',
+                              value: status.cloudProviderName,
+                            ),
+                            _InfoRow(
+                              label: 'Cloud Copies',
+                              value: '${status.cloudBackupCount}',
+                            ),
+                            _InfoRow(
                               label: 'Jagah Use',
                               value: _formatBytes(status.storageUsedBytes),
                             ),
@@ -224,6 +233,11 @@ class _BackupRestorePageState extends ConsumerState<BackupRestorePage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
+                            OutlinedButton(
+                              onPressed: () => showBackupCloudRestoreSheet(context, ref),
+                              child: const Text('Cloud Se Wapas Laayein'),
+                            ),
+                            const SizedBox(height: 10),
                             OutlinedButton(
                               onPressed: _importBackup,
                               child: const Text('.btbackup File Se Laayein'),

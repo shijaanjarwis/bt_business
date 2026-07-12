@@ -43,6 +43,11 @@ dependencies:
   file_picker: ^8.1.7
   share_plus: ^10.1.4
   connectivity_plus: ^6.1.4
+  google_sign_in: ^6.3.0
+  googleapis: ^14.0.0
+  extension_google_sign_in_as_googleapis_auth: ^2.0.13
+  http: ^1.2.2
+  icloud_storage_plus: ^3.0.0
 
 dev_dependencies:
   flutter_test:

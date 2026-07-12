@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/remote/backup/cloud_backup_port.dart';
+import '../../features/backup/data/cloud/platform_cloud_backup_factory.dart';
 import '../di/core_providers.dart';
 import 'backup_format.dart';
 import 'backup_metadata_store.dart';
@@ -11,7 +12,7 @@ final backupMetadataStoreProvider = Provider<BackupMetadataStore>((ref) {
 });
 
 final cloudBackupPortProvider = Provider<CloudBackupPort>((ref) {
-  return LocalCloudBackupPort();
+  return PlatformCloudBackupFactory.create();
 });
 
 final backupServiceProvider = Provider<BackupService>((ref) {
@@ -32,6 +33,12 @@ final backupStatusProvider = FutureProvider.autoDispose<BackupStatus>((ref) asyn
 final backupHistoryProvider = FutureProvider.autoDispose<List<BackupEntry>>((ref) async {
   ref.watch(backupRefreshProvider);
   return ref.watch(backupServiceProvider).listBackups();
+});
+
+final cloudBackupHistoryProvider =
+    FutureProvider.autoDispose<List<CloudBackupRemoteEntry>>((ref) async {
+  ref.watch(backupRefreshProvider);
+  return ref.watch(backupServiceProvider).listCloudBackups();
 });
 
 /// Increment to refresh backup status and history.

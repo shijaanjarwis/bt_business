@@ -150,6 +150,16 @@ final class BackupMetadataStore {
     return reference.difference(at).inDays >= BackupFormat.staleDays;
   }
 
+  bool isCritical(DateTime? at, DateTime reference) {
+    if (at == null) return true;
+    return reference.difference(at).inDays >= BackupFormat.criticalDays;
+  }
+
+  Future<void> recordCloudSync(DateTime at) async {
+    final prefs = await _prefsFuture;
+    await prefs.setString('bt_last_cloud_sync_at', at.toIso8601String());
+  }
+
   String _monthShort(int month) {
     const labels = [
       'Jan',

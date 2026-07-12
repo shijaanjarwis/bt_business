@@ -68,5 +68,17 @@
 	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>BT Business needs photo access to set your business logo.</string>
+	<key>NSUbiquitousContainers</key>
+	<dict>
+		<key>iCloud.com.example.btBusiness</key>
+		<dict>
+			<key>NSUbiquitousContainerIsDocumentScopePublic</key>
+			<true/>
+			<key>NSUbiquitousContainerName</key>
+			<string>BT Business</string>
+			<key>NSUbiquitousContainerSupportedFolderLevels</key>
+			<string>Any</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

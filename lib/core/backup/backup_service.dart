@@ -56,6 +56,7 @@ final class BackupService {
     final now = DateTime.now();
     final lastAt = await _metadata.lastBackupAt();
     final entries = await listBackups();
+    final cloudEntries = await listCloudBackups();
     final storageUsed = entries.fold<int>(0, (sum, entry) => sum + entry.fileSizeBytes);
     final connectedLabel = await _cloud.connectedAccountLabel();
 
@@ -63,13 +64,15 @@ final class BackupService {
       lastBackupAt: lastAt,
       lastBackupLabel: _metadata.formatLastBackupLabel(lastAt, now),
       isConnected: await _cloud.isConnected(),
-      connectedAccountLabel:
-          connectedLabel ?? 'Connect nahi hai',
+      connectedAccountLabel: connectedLabel ?? 'Connect nahi hai',
+      cloudProviderName: _cloud.providerName,
       storageUsedBytes: storageUsed,
       backupCount: entries.length,
+      cloudBackupCount: cloudEntries.length,
       autoFrequency: await _metadata.autoFrequency(),
       wifiOnly: await _metadata.wifiOnly(),
       isStale: _metadata.isStale(lastAt, now),
+      isCritical: _metadata.isCritical(lastAt, now),
       isRunning: await _metadata.isRunning(),
       lastError: await _metadata.lastError(),
     );
@@ -118,10 +121,7 @@ final class BackupService {
 
       await _pruneOldBackups();
       await _metadata.recordBackup(createdAt);
-
-      if (type == BackupType.automatic && await _cloud.isConnected()) {
-        await _cloud.uploadBackup(File(saved.filePath));
-      }
+      await _uploadToCloud(saved);
 
       _logger.info('Backup created: ${saved.id} (${type.name})');
       return saved;
@@ -178,6 +178,27 @@ final class BackupService {
   Future<void> restoreImportedFile(String sourcePath) async {
     final entry = await importBackupFile(sourcePath);
     await restoreBackup(entry);
+  }
+
+  Future<void> restoreFromCloud(CloudBackupRemoteEntry remote) async {
+    final downloaded = await _cloud.downloadBackup(remote.remoteId);
+    try {
+      await restoreImportedFile(downloaded.path);
+    } finally {
+      if (await downloaded.exists()) {
+        await downloaded.delete();
+      }
+    }
+  }
+
+  Future<List<CloudBackupRemoteEntry>> listCloudBackups() async {
+    if (!await _cloud.isAvailable()) return [];
+    try {
+      return await _cloud.listRemoteBackups();
+    } catch (error) {
+      _logger.warning('Cloud backup list failed: $error');
+      return [];
+    }
   }
 
   Future<void> exportBackup(BackupEntry entry) async {
@@ -333,6 +354,40 @@ final class BackupService {
     for (final entry in removable) {
       if (entry.manifest.type == BackupType.preRestore) continue;
       await deleteBackup(entry);
+    }
+  }
+
+  Future<void> _uploadToCloud(BackupEntry entry) async {
+    if (!await _cloud.isAvailable()) return;
+
+    try {
+      await _cloud.ensureConnected();
+      await _cloud.uploadBackup(
+        File(entry.filePath),
+        remoteFileName: p.basename(entry.filePath),
+      );
+      await _metadata.recordCloudSync(DateTime.now());
+      final account = await _cloud.connectedAccountLabel();
+      if (account != null) {
+        await _metadata.setConnectedAccount(account);
+      }
+      await _pruneRemoteBackups();
+    } catch (error) {
+      _logger.warning('Cloud upload skipped: $error');
+    }
+  }
+
+  Future<void> _pruneRemoteBackups() async {
+    final remote = await _cloud.listRemoteBackups();
+    if (remote.length <= BackupFormat.maxHistoryCount) return;
+
+    final removable = remote.sublist(BackupFormat.maxHistoryCount);
+    for (final entry in removable) {
+      try {
+        await _cloud.deleteRemoteBackup(entry.remoteId);
+      } catch (error) {
+        _logger.warning('Remote backup prune failed: $error');
+      }
     }
   }
 
