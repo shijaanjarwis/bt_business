@@ -46,7 +46,7 @@ class MainShell extends ConsumerWidget {
       floatingActionButton: showFabs
           ? GlobalFabStack(
               onPlusPressed: () => GlobalFabManager.onPlusPressed(context, ref),
-              onVoicePressed: () => GlobalFabManager.onVoicePressed(context),
+              onVoicePressed: () => GlobalFabManager.onVoicePressed(context, ref),
             )
           : null,
       floatingActionButtonLocation: const VoiceFabLocation(),

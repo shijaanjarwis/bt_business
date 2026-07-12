@@ -80,5 +80,9 @@
 			<string>Any</string>
 		</dict>
 	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>BT Business aapki awaaz se entry banane ke liye mic use karta hai.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>BT Business bol kar entry samajhne ke liye speech recognition use karta hai.</string>
 </dict>
 </plist>

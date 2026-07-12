@@ -10,7 +10,7 @@ import '../../../features/payments/presentation/providers/payment_providers.dart
 import '../labels/bilingual_label.dart';
 import '../sheets/app_bottom_sheet.dart';
 import '../sheets/app_quick_entry_sheet.dart';
-import 'global_voice_fab.dart';
+import '../../../features/voice/presentation/widgets/voice_listening_sheet.dart';
 
 /// Resolves and handles global add + voice FAB actions for every main screen.
 abstract final class GlobalFabManager {
@@ -46,8 +46,8 @@ abstract final class GlobalFabManager {
     }
   }
 
-  static void onVoicePressed(BuildContext context) {
-    GlobalVoiceFab.showComingSoon(context);
+  static void onVoicePressed(BuildContext context, WidgetRef ref) {
+    VoiceListeningSheet.show(context, ref);
   }
 
   static String _normalize(String path) {
