@@ -87,4 +87,51 @@ abstract final class ItemUnitLibrary {
 
   static List<String> get categories =>
       all.map((e) => e.category).toSet().toList()..sort();
+
+  /// Whole-number qty for count units; decimals for weight/length/volume/etc.
+  static bool allowsDecimalQuantity(String unitName) {
+    final entry = _matchUnit(unitName);
+    if (entry != null) {
+      return entry.category != 'Count';
+    }
+    return false;
+  }
+
+  static ItemUnitEntry? _matchUnit(String unitName) {
+    final normalized = unitName.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+    for (final entry in all) {
+      if (entry.name.toLowerCase() == normalized) return entry;
+    }
+    return null;
+  }
+
+  static String formatQuantity(double qty, String unit) {
+    final clamped = clampQuantity(qty, unit);
+    if (allowsDecimalQuantity(unit)) {
+      if (clamped == clamped.roundToDouble()) {
+        return clamped.round().toString();
+      }
+      return clamped.toStringAsFixed(2);
+    }
+    return clamped.round().toString();
+  }
+
+  static double parseQuantity(String text, {required String unit, double fallback = 1}) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return fallback;
+    final parsed = double.tryParse(trimmed);
+    if (parsed == null) return fallback;
+    return clampQuantity(parsed, unit);
+  }
+
+  static double clampQuantity(double qty, String unit) {
+    const min = 1.0;
+    const max = 999999.0;
+    var value = qty.clamp(min, max).toDouble();
+    if (!allowsDecimalQuantity(unit)) {
+      value = value.roundToDouble();
+    }
+    return value;
+  }
 }

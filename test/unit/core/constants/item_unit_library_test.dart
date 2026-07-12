@@ -17,4 +17,26 @@ void main() {
         isTrue);
     expect(ItemUnitLibrary.search('nos').first.name, 'Nos');
   });
+
+  test('count units require whole-number quantities', () {
+    expect(ItemUnitLibrary.allowsDecimalQuantity('Piece'), isFalse);
+    expect(ItemUnitLibrary.allowsDecimalQuantity('Packet'), isFalse);
+    expect(ItemUnitLibrary.allowsDecimalQuantity('Box'), isFalse);
+    expect(ItemUnitLibrary.allowsDecimalQuantity('Rod'), isFalse);
+  });
+
+  test('weight and measure units allow decimal quantities', () {
+    expect(ItemUnitLibrary.allowsDecimalQuantity('Kg'), isTrue);
+    expect(ItemUnitLibrary.allowsDecimalQuantity('Gram'), isTrue);
+    expect(ItemUnitLibrary.allowsDecimalQuantity('Litre'), isTrue);
+    expect(ItemUnitLibrary.allowsDecimalQuantity('Meter'), isTrue);
+    expect(ItemUnitLibrary.allowsDecimalQuantity('Foot'), isTrue);
+  });
+
+  test('quantity clamp never goes below 1', () {
+    expect(ItemUnitLibrary.clampQuantity(0, 'Piece'), 1);
+    expect(ItemUnitLibrary.clampQuantity(0.5, 'Piece'), 1);
+    expect(ItemUnitLibrary.clampQuantity(125.7, 'Piece'), 126);
+    expect(ItemUnitLibrary.clampQuantity(2.5, 'Kg'), 2.5);
+  });
 }

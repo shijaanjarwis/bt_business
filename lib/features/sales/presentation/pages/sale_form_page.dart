@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/constants/item_unit_library.dart';
 import '../../../../core/accounting/gst_types.dart';
 import '../../../../core/accounting/payment_breakdown.dart';
 import '../../../../core/accounting/payment_method_channel.dart';
@@ -27,12 +28,14 @@ import '../../../../shared/widgets/layout/app_form_section.dart';
 import '../../../../shared/widgets/layout/main_shell_insets.dart';
 import '../../../../shared/widgets/pickers/show_item_picker.dart';
 import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
+import '../../../items/presentation/providers/item_providers.dart';
 import '../../../items/presentation/widgets/entry_item_picker_sheet.dart';
 import '../../../items/domain/entities/item.dart';
 import '../../../ledger/domain/entities/party.dart';
 import '../../../ledger/domain/entities/party_type.dart';
 import '../../../ledger/presentation/providers/party_providers.dart';
 import '../../domain/entities/sale_entry.dart';
+import '../../../../shared/widgets/inputs/editable_quantity_input.dart';
 import '../../../../shared/widgets/inputs/payment_breakdown_fields.dart';
 import '../../../../shared/widgets/inputs/reminder_date_field.dart';
 import '../../domain/repositories/sale_repository.dart';
@@ -46,6 +49,7 @@ class DraftSaleLine {
     required this.itemId,
     required this.itemName,
     this.hsnSac,
+    this.unit = ItemUnitLibrary.defaultUnit,
     this.qty = 1,
     this.rate = 0,
     this.discountAmount = 0,
@@ -55,6 +59,7 @@ class DraftSaleLine {
   final String itemId;
   final String itemName;
   final String? hsnSac;
+  String unit;
   double qty;
   double rate;
   double discountAmount;
@@ -170,6 +175,21 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
         ),
       );
     _editHydrated = true;
+    _enrichLineUnits();
+  }
+
+  Future<void> _enrichLineUnits() async {
+    final repo = ref.read(itemRepositoryProvider);
+    var changed = false;
+    for (final line in _lines) {
+      final result = await repo.getItem(line.itemId);
+      final item = result.valueOrNull;
+      if (item != null && item.unit != line.unit) {
+        line.unit = item.unit;
+        changed = true;
+      }
+    }
+    if (changed && mounted) setState(() {});
   }
 
   Future<void> _loadInitialParty() async {
@@ -284,6 +304,7 @@ class _SaleFormPageState extends ConsumerState<SaleFormPage> {
             itemId: item.id,
             itemName: item.name,
             hsnSac: item.hsnSac,
+            unit: item.unit,
             rate: item.saleRate,
             gstRate: item.gstRate,
           ),
@@ -635,14 +656,6 @@ class _SaleLineCardState extends State<_SaleLineCard> {
     widget.onChanged();
   }
 
-  void _changeQty(double delta) {
-    final next = (widget.line.qty + delta).clamp(0.001, 999999.0).toDouble();
-    setState(() {
-      widget.line.qty = next;
-      widget.onChanged();
-    });
-  }
-
   double get _lineTotal => widget.line.qty * widget.line.rate;
 
   @override
@@ -682,17 +695,16 @@ class _SaleLineCardState extends State<_SaleLineCard> {
           const SizedBox(height: 8),
           Row(
             children: [
-              _QtyButton(icon: Icons.remove_rounded, onTap: () => _changeQty(-1)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  widget.line.qty == widget.line.qty.roundToDouble()
-                      ? widget.line.qty.round().toString()
-                      : widget.line.qty.toStringAsFixed(2),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                ),
+              EditableQuantityInput(
+                value: widget.line.qty,
+                unit: widget.line.unit,
+                onChanged: (qty) {
+                  setState(() {
+                    widget.line.qty = qty;
+                    widget.onChanged();
+                  });
+                },
               ),
-              _QtyButton(icon: Icons.add_rounded, onTap: () => _changeQty(1)),
               const SizedBox(width: 12),
               Expanded(
                 child: TextFormField(
@@ -714,30 +726,6 @@ class _SaleLineCardState extends State<_SaleLineCard> {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _QtyButton extends StatelessWidget {
-  const _QtyButton({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: SizedBox(
-          width: 40,
-          height: 40,
-          child: Icon(icon, size: 20, color: ColorPalette.purple),
-        ),
       ),
     );
   }
