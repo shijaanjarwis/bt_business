@@ -16,22 +16,50 @@ class AppFilterChip extends StatelessWidget {
   final bool selected;
   final VoidCallback onSelected;
 
+  static const Color lightUnselectedBackground = Color(0xFFFFFFFF);
+  static const Color lightUnselectedBorder = Color(0xFFD1D5DB);
+  static const Color lightUnselectedText = Color(0xFF374151);
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+
+    final unselectedBackground = isDark
+        ? colorScheme.surfaceContainerHighest
+        : lightUnselectedBackground;
+    final unselectedBorder =
+        isDark ? colorScheme.outlineVariant : lightUnselectedBorder;
+    final unselectedText = isDark ? colorScheme.onSurface : lightUnselectedText;
+    final selectedBackground = isDark ? colorScheme.primary : ColorPalette.purple;
+    final selectedForeground =
+        isDark ? colorScheme.onPrimary : Colors.white;
+    final selectedCheck =
+        isDark ? colorScheme.onPrimary : ColorPalette.purpleLight;
+
     return FilterChip(
       label: Text(
         label,
         style: TextStyle(
           fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-          color: selected ? ColorPalette.purple : ColorPalette.labelPrimary,
+          color: selected ? selectedForeground : unselectedText,
         ),
       ),
       selected: selected,
       onSelected: (_) => onSelected(),
-      selectedColor: ColorPalette.purple.withValues(alpha: 0.14),
-      checkmarkColor: ColorPalette.purple,
+      showCheckmark: selected,
+      backgroundColor: unselectedBackground,
+      selectedColor: selectedBackground,
+      disabledColor: unselectedBackground,
+      checkmarkColor: selectedCheck,
+      elevation: 0,
+      pressElevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
       side: BorderSide(
-        color: selected ? ColorPalette.purple.withValues(alpha: 0.35) : ColorPalette.border,
+        color: selected ? selectedBackground : unselectedBorder,
+        width: 1,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppDimensions.chipRadius),

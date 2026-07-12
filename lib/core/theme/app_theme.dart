@@ -74,6 +74,28 @@ abstract final class AppTheme {
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: ColorPalette.cardSurface,
       ),
+      chipTheme: ChipThemeData(
+        backgroundColor: ColorPalette.cardSurface,
+        selectedColor: ColorPalette.purple,
+        disabledColor: ColorPalette.cardSurface,
+        labelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          color: AppColors.textPrimary,
+        ),
+        secondaryLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+        checkmarkColor: ColorPalette.purpleLight,
+        brightness: Brightness.light,
+        elevation: 0,
+        pressElevation: 0,
+        side: const BorderSide(color: Color(0xFFD1D5DB)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        surfaceTintColor: Colors.transparent,
+      ),
     );
 
     return base.copyWith(
@@ -116,6 +138,20 @@ abstract final class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       visualDensity: VisualDensity.adaptivePlatformDensity,
+      chipTheme: ChipThemeData(
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        selectedColor: colorScheme.primary,
+        disabledColor: colorScheme.surfaceContainerHighest,
+        checkmarkColor: colorScheme.onPrimary,
+        brightness: Brightness.dark,
+        elevation: 0,
+        pressElevation: 0,
+        side: BorderSide(color: colorScheme.outlineVariant),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        surfaceTintColor: Colors.transparent,
+      ),
     );
 
     return base.copyWith(
