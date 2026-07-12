@@ -98,10 +98,15 @@ class BackupStatus {
     required this.connectedAccountLabel,
     required this.cloudProviderName,
     required this.storageUsedBytes,
+    required this.latestBackupSizeBytes,
     required this.backupCount,
     required this.cloudBackupCount,
+    required this.autoBackupEnabled,
     required this.autoFrequency,
     required this.wifiOnly,
+    required this.requireCharging,
+    required this.nextAutomaticBackupLabel,
+    required this.encryptionLabel,
     required this.isStale,
     required this.isCritical,
     required this.isRunning,
@@ -114,10 +119,15 @@ class BackupStatus {
   final String connectedAccountLabel;
   final String cloudProviderName;
   final int storageUsedBytes;
+  final int latestBackupSizeBytes;
   final int backupCount;
   final int cloudBackupCount;
+  final bool autoBackupEnabled;
   final AutoBackupFrequency autoFrequency;
   final bool wifiOnly;
+  final bool requireCharging;
+  final String nextAutomaticBackupLabel;
+  final String encryptionLabel;
   final bool isStale;
   final bool isCritical;
   final bool isRunning;
@@ -130,10 +140,15 @@ class BackupStatus {
     connectedAccountLabel: 'Connect nahi hai',
     cloudProviderName: 'Cloud',
     storageUsedBytes: 0,
+    latestBackupSizeBytes: 0,
     backupCount: 0,
     cloudBackupCount: 0,
+    autoBackupEnabled: false,
     autoFrequency: AutoBackupFrequency.daily,
     wifiOnly: true,
+    requireCharging: true,
+    nextAutomaticBackupLabel: 'Band hai',
+    encryptionLabel: 'AES-256',
     isStale: true,
     isCritical: true,
     isRunning: false,

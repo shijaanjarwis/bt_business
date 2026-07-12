@@ -9,6 +9,9 @@ final class BackupMetadataStore {
   static const _lastBackupAt = 'bt_last_backup_at';
   static const _autoFrequency = 'bt_auto_backup_frequency';
   static const _wifiOnly = 'bt_backup_wifi_only';
+  static const _requireCharging = 'bt_backup_require_charging';
+  static const _autoBackupEnabled = 'bt_auto_backup_enabled';
+  static const _autoBackupPromptShown = 'bt_auto_backup_prompt_shown';
   static const _connectedAccount = 'bt_backup_connected_account';
   static const _lastError = 'bt_backup_last_error';
   static const _isRunning = 'bt_backup_is_running';
@@ -52,6 +55,41 @@ final class BackupMetadataStore {
   Future<bool> wifiOnly() async {
     final prefs = await _prefsFuture;
     return prefs.getBool(_wifiOnly) ?? true;
+  }
+
+  Future<void> setRequireCharging(bool value) async {
+    final prefs = await _prefsFuture;
+    await prefs.setBool(_requireCharging, value);
+  }
+
+  Future<bool> requireCharging() async {
+    final prefs = await _prefsFuture;
+    return prefs.getBool(_requireCharging) ?? true;
+  }
+
+  Future<void> setAutoBackupEnabled(bool value) async {
+    final prefs = await _prefsFuture;
+    await prefs.setBool(_autoBackupEnabled, value);
+  }
+
+  Future<bool> autoBackupEnabled() async {
+    final prefs = await _prefsFuture;
+    return prefs.getBool(_autoBackupEnabled) ?? false;
+  }
+
+  Future<bool> autoBackupPromptShown() async {
+    final prefs = await _prefsFuture;
+    return prefs.getBool(_autoBackupPromptShown) ?? false;
+  }
+
+  Future<void> markAutoBackupPromptShown() async {
+    final prefs = await _prefsFuture;
+    await prefs.setBool(_autoBackupPromptShown, true);
+  }
+
+  String formatNextBackupLabel(DateTime? at) {
+    if (at == null) return 'Band hai';
+    return formatDisplayTimestamp(at);
   }
 
   Future<void> setConnectedAccount(String? label) async {

@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../logging/startup_trace.dart';
 import '../reminders/reminder_list_kind.dart';
 import '../../features/home/presentation/models/dashboard_summary_kind.dart';
-import '../../features/backup/presentation/pages/backup_restore_page.dart';
+import '../../features/backup/presentation/pages/data_safety_page.dart';
 import '../../features/business/presentation/pages/business_profile_page.dart';
 import '../../features/business/presentation/providers/business_providers.dart';
 import '../../features/home/presentation/pages/dashboard_summary_detail_page.dart';
@@ -99,9 +99,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: RouteNames.dataSafety,
+        name: RouteNames.dataSafetyName,
+        builder: (context, state) => const DataSafetyPage(),
+      ),
+      GoRoute(
         path: RouteNames.backup,
         name: RouteNames.backupName,
-        builder: (context, state) => const BackupRestorePage(),
+        redirect: (context, state) => RouteNames.dataSafety,
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

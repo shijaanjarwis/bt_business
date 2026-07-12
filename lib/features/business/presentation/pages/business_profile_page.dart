@@ -4,6 +4,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/backup/backup_format.dart';
+import '../../../../core/backup/backup_providers.dart';
 import '../../../../core/di/data_revision.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/router/router_refresh_notifier.dart';
@@ -20,6 +22,7 @@ import '../../../../shared/widgets/layout/app_form_section.dart';
 import '../../../../shared/widgets/layout/responsive_form_container.dart';
 import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../../../shared/widgets/settings/language_picker.dart';
+import '../../../backup/presentation/widgets/auto_backup_setup_dialog.dart';
 import '../../domain/entities/business.dart';
 import '../../domain/entities/currency.dart';
 import '../../domain/entities/financial_year.dart';
@@ -178,6 +181,19 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
       });
 
       if (widget.mode == BusinessProfileMode.setup) {
+        final metadata = ref.read(backupMetadataStoreProvider);
+        if (!await metadata.autoBackupPromptShown()) {
+          await metadata.markAutoBackupPromptShown();
+          if (!mounted) return;
+          final enable = await AutoBackupSetupDialog.show(context);
+          if (enable == true) {
+            await metadata.setAutoBackupEnabled(true);
+            await metadata.setAutoFrequency(AutoBackupFrequency.daily);
+          } else {
+            await metadata.setAutoBackupEnabled(false);
+          }
+        }
+        if (!mounted) return;
         context.go(RouteNames.home);
       } else {
         _showMessage('Business profile saved');
@@ -393,22 +409,25 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
                             ),
                             const SizedBox(height: 20),
                             const AssistantLanguagePicker(),
-                            const SizedBox(height: 12),
-                            Material(
-                              color: Colors.transparent,
-                              child: ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: const Icon(Icons.backup_outlined),
-                                title: const Text('Hisaab Ki Copy'),
-                                subtitle: const Text(
-                                  'Copy banayein aur wapas laayein',
-                                ),
-                                trailing:
-                                    const Icon(Icons.chevron_right_rounded),
-                                onTap: () => context.push(RouteNames.backup),
-                              ),
-                            ),
                           ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      AppFormSection(
+                        english: 'Data Safety',
+                        hindi: 'Data Suraksha',
+                        child: Material(
+                          color: Colors.transparent,
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.shield_outlined),
+                            title: const Text('Backup aur Restore'),
+                            subtitle: const Text(
+                              'Copy, wapas laayein, export, import',
+                            ),
+                            trailing: const Icon(Icons.chevron_right_rounded),
+                            onTap: () => context.push(RouteNames.dataSafety),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 28),

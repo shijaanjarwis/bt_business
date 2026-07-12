@@ -14,6 +14,7 @@ import '../../data/remote/backup/cloud_backup_port.dart';
 import '../../features/business/data/datasources/business_table.dart';
 import '../constants/app_constants.dart';
 import '../logging/logger.dart';
+import 'backup_auto_conditions.dart';
 import 'backup_encryption_service.dart';
 import 'backup_format.dart';
 import 'backup_metadata_store.dart';
@@ -29,6 +30,7 @@ final class BackupService {
     BackupEncryptionService? encryption,
     BackupPackager? packager,
     Connectivity? connectivity,
+    BackupAutoConditions? autoConditions,
     Directory? backupsDirectoryOverride,
     Directory? logosDirectoryOverride,
   })  : _database = database,
@@ -37,7 +39,11 @@ final class BackupService {
         _logger = logger,
         _encryption = encryption ?? BackupEncryptionService(),
         _packager = packager ?? BackupPackager(encryption ?? BackupEncryptionService()),
-        _connectivity = connectivity ?? Connectivity(),
+        _autoConditions = autoConditions ??
+            BackupAutoConditions(
+              connectivity: connectivity,
+              metadata: metadata,
+            ),
         _backupsDirectoryOverride = backupsDirectoryOverride,
         _logosDirectoryOverride = logosDirectoryOverride;
 
@@ -47,7 +53,7 @@ final class BackupService {
   final Logger _logger;
   final BackupEncryptionService _encryption;
   final BackupPackager _packager;
-  final Connectivity _connectivity;
+  final BackupAutoConditions _autoConditions;
   final Directory? _backupsDirectoryOverride;
   final Directory? _logosDirectoryOverride;
   final Uuid _uuid = const Uuid();
@@ -60,6 +66,15 @@ final class BackupService {
     final storageUsed = entries.fold<int>(0, (sum, entry) => sum + entry.fileSizeBytes);
     final connectedLabel = await _cloud.connectedAccountLabel();
 
+    final autoEnabled = await _metadata.autoBackupEnabled();
+    final frequency = await _metadata.autoFrequency();
+    final nextAt = computeNextAutomaticBackup(
+      reference: now,
+      autoEnabled: autoEnabled,
+      frequency: frequency,
+      lastBackupAt: lastAt,
+    );
+
     return BackupStatus(
       lastBackupAt: lastAt,
       lastBackupLabel: _metadata.formatLastBackupLabel(lastAt, now),
@@ -67,10 +82,16 @@ final class BackupService {
       connectedAccountLabel: connectedLabel ?? 'Connect nahi hai',
       cloudProviderName: _cloud.providerName,
       storageUsedBytes: storageUsed,
+      latestBackupSizeBytes:
+          entries.isNotEmpty ? entries.first.fileSizeBytes : 0,
       backupCount: entries.length,
       cloudBackupCount: cloudEntries.length,
-      autoFrequency: await _metadata.autoFrequency(),
+      autoBackupEnabled: autoEnabled,
+      autoFrequency: frequency,
       wifiOnly: await _metadata.wifiOnly(),
+      requireCharging: await _metadata.requireCharging(),
+      nextAutomaticBackupLabel: _metadata.formatNextBackupLabel(nextAt),
+      encryptionLabel: 'AES-256',
       isStale: _metadata.isStale(lastAt, now),
       isCritical: _metadata.isCritical(lastAt, now),
       isRunning: await _metadata.isRunning(),
@@ -201,6 +222,14 @@ final class BackupService {
     }
   }
 
+  Future<void> exportLatestBackup() async {
+    final entries = await listBackups();
+    if (entries.isEmpty) {
+      throw StateError('Pehle ek copy banayein');
+    }
+    await exportBackup(entries.first);
+  }
+
   Future<void> exportBackup(BackupEntry entry) async {
     await Share.shareXFiles(
       [XFile(entry.filePath, name: p.basename(entry.filePath))],
@@ -250,8 +279,7 @@ final class BackupService {
     final now = reference ?? DateTime.now();
     final frequency = await _metadata.autoFrequency();
     if (frequency == AutoBackupFrequency.off) return;
-
-    if (!await _networkAllowed()) return;
+    if (!await _autoConditions.canRunAutomaticBackup()) return;
     if (!await _isAutoBackupDue(now, frequency)) return;
 
     await createBackup(type: BackupType.automatic);
@@ -280,17 +308,6 @@ final class BackupService {
       case AutoBackupFrequency.off:
         return false;
     }
-  }
-
-  Future<bool> _networkAllowed() async {
-    final results = await _connectivity.checkConnectivity();
-    if (results.contains(ConnectivityResult.none)) return false;
-
-    final wifiOnly = await _metadata.wifiOnly();
-    if (!wifiOnly) return true;
-
-    return results.contains(ConnectivityResult.wifi) ||
-        results.contains(ConnectivityResult.ethernet);
   }
 
   Future<void> _applyBackupFile(Uint8List fileBytes) async {
