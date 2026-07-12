@@ -37,12 +37,12 @@ String? reminderNavigationPathFromPayload(String? payload) {
   return reminderDetailPathFromPayload(payload);
 }
 
-/// Parses notification payload `type:transactionId` into a detail route.
+/// Parses notification payload into a detail route.
 String? reminderDetailPathFromPayload(String? payload) {
   if (payload == null || payload.isEmpty) return null;
 
   final parts = payload.split(':');
-  if (parts.length != 2) return null;
+  if (parts.length < 2) return null;
 
   final type = parts[0];
   final id = parts[1];

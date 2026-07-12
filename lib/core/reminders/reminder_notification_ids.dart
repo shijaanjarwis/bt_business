@@ -38,9 +38,16 @@ class ReminderNotificationIds {
   }
 }
 
-/// Legacy grouped notification IDs from earlier scheduler — cancelled on reconcile.
-abstract final class LegacyReminderNotificationIds {
+/// Grouped notification IDs — one alert when multiple reminders are due.
+abstract final class GroupedReminderNotificationIds {
   static const morning = 9001;
   static const afternoon = 9002;
   static const evening = 9003;
+}
+
+/// Legacy alias kept for older scheduler references.
+abstract final class LegacyReminderNotificationIds {
+  static const morning = GroupedReminderNotificationIds.morning;
+  static const afternoon = GroupedReminderNotificationIds.afternoon;
+  static const evening = GroupedReminderNotificationIds.evening;
 }

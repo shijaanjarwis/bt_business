@@ -58,6 +58,25 @@ abstract final class ReminderService {
     return totalAmount;
   }
 
+  static ReminderStatus resolveStatus(ReminderEntry entry, {DateTime? reference}) {
+    if (entry.dueAmount <= 0) return ReminderStatus.completed;
+    final days = daysFromToday(entry.reminderDate, reference: reference);
+    if (days > 0) return ReminderStatus.overdue;
+    if (entry.paidAmount > 0 && entry.dueAmount > 0) {
+      return ReminderStatus.partial;
+    }
+    return ReminderStatus.pending;
+  }
+
+  static String statusLabel(ReminderStatus status) {
+    return switch (status) {
+      ReminderStatus.pending => 'Pending',
+      ReminderStatus.partial => 'Partial',
+      ReminderStatus.completed => 'Completed',
+      ReminderStatus.overdue => 'Overdue',
+    };
+  }
+
   static int daysFromToday(DateTime reminderDate, {DateTime? reference}) {
     final ref = reference ?? DateTime.now();
     final due = DateTime(reminderDate.year, reminderDate.month, reminderDate.day);
@@ -80,6 +99,8 @@ abstract final class ReminderService {
     final due = (row['due_amount'] as num?)?.toDouble() ?? 0;
     final reminderIso = row['reminder_date']! as String;
 
+    final paid = (row['paid_amount'] as num?)?.toDouble() ?? 0;
+
     final dateIso = row['date'] as String?;
     final transactionDate =
         dateIso != null && dateIso.isNotEmpty ? DateTime.parse(dateIso) : null;
@@ -95,6 +116,8 @@ abstract final class ReminderService {
         totalAmount: total,
         dueAmount: due,
       ),
+      totalAmount: total,
+      paidAmount: paid,
       reminderDate: DateTime.parse(reminderIso),
       dueAmount: due,
       direction: ReminderDirection.fromTransactionType(type),
@@ -277,9 +300,16 @@ abstract final class ReminderService {
     final amount = CurrencyFormatter.format(entry.amount);
     final days = daysFromToday(entry.reminderDate, reference: reference);
     final isReceive = entry.direction == ReminderDirection.receive;
+    final status = resolveStatus(entry, reference: reference);
     final overdueSuffix = days > 0
         ? ' — Overdue by $days ${days == 1 ? 'day' : 'days'}'
         : '';
+
+    if (status == ReminderStatus.partial) {
+      return isReceive
+          ? 'Remaining $amount lena hai$overdueSuffix.'
+          : 'Remaining $amount dena hai$overdueSuffix.';
+    }
 
     return switch (level) {
       ReminderNotificationLevel.morning => isReceive
@@ -332,8 +362,8 @@ abstract final class ReminderService {
     ).body;
   }
 
-  /// Payload for notification tap — `list:slug` or `transactionType:transactionId`.
+  /// Payload for notification tap — `type:transactionId:partyId`.
   static String notificationPayload(ReminderEntry entry) {
-    return '${entry.transactionType}:${entry.transactionId}';
+    return '${entry.transactionType}:${entry.transactionId}:${entry.partyId}';
   }
 }

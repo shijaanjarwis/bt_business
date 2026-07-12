@@ -71,8 +71,39 @@ void main() {
 
       expect(
         ReminderService.notificationPayload(entry),
-        '${TransactionTypes.sale}:s1',
+        '${TransactionTypes.sale}:s1:p1',
       );
+    });
+
+    test('partial status uses remaining copy in notification', () {
+      final entry = ReminderEntry(
+        transactionId: 's1',
+        transactionType: TransactionTypes.sale,
+        partyId: 'p1',
+        partyName: 'Raaj',
+        amount: 30000,
+        totalAmount: 50000,
+        paidAmount: 20000,
+        reminderDate: DateTime(2026, 7, 4),
+        dueAmount: 30000,
+        direction: ReminderDirection.receive,
+      );
+
+      expect(
+        ReminderService.resolveStatus(entry, reference: DateTime(2026, 7, 4)),
+        ReminderStatus.partial,
+      );
+
+      final content = ReminderService.buildNotificationContent(
+        level: ReminderNotificationLevel.morning,
+        dueTodayAndOverdue: [entry],
+        reference: DateTime(2026, 7, 4),
+      );
+
+      expect(content.body, contains('Remaining'));
+      expect(content.body, contains('₹30,000'));
+      expect(content.body, contains('lena hai'));
+      expect(content.body, isNot(contains('₹50,000')));
     });
   });
 }

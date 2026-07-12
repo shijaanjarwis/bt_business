@@ -30,6 +30,7 @@ final class ReminderLocalDataSource {
         t.${TransactionsTable.date} AS date,
         t.${TransactionsTable.partyId} AS party_id,
         t.${TransactionsTable.totalAmount} AS total_amount,
+        t.${TransactionsTable.paidAmount} AS paid_amount,
         t.${TransactionsTable.dueAmount} AS due_amount,
         t.${TransactionsTable.reminderDate} AS reminder_date,
         t.${TransactionsTable.notes} AS notes,

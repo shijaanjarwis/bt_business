@@ -4,6 +4,7 @@ import 'package:bt_business/core/reminders/reminder_models.dart';
 import 'package:bt_business/core/reminders/reminder_notification_port.dart';
 import 'package:bt_business/core/reminders/reminder_schedule_tracker.dart';
 import 'package:bt_business/core/reminders/reminder_scheduler.dart';
+import 'package:bt_business/core/reminders/reminder_snooze_store.dart';
 import 'package:bt_business/data/local/database/tables/accounting_tables.dart';
 import 'package:bt_business/data/local/reminders/reminder_local_datasource.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,9 +30,10 @@ class _NoopLogger implements Logger {
 class _TrackingNotifications implements ReminderNotificationPort {
   final cancelled = <String>[];
   final scheduled = <String>[];
+  var groupedScheduled = 0;
 
   @override
-  Future<void> cancelLegacyGroupedReminders() async {}
+  Future<void> cancelGroupedReminders() async {}
 
   @override
   Future<void> cancelReminderNotifications(String transactionId) async {
@@ -44,6 +46,15 @@ class _TrackingNotifications implements ReminderNotificationPort {
     DateTime? reference,
   }) async {
     scheduled.add(entry.transactionId);
+  }
+
+  @override
+  Future<void> scheduleGroupedReminders({
+    required List<ReminderEntry> entries,
+    DateTime? reference,
+  }) async {
+    groupedScheduled++;
+    scheduled.addAll(entries.map((e) => e.transactionId));
   }
 }
 
@@ -69,6 +80,7 @@ void main() {
       datasource,
       notifications,
       ReminderScheduleTracker.create(),
+      ReminderSnoozeStore.create(),
       _NoopLogger(),
     );
   });
@@ -106,7 +118,6 @@ void main() {
     await scheduler.reschedule(reference: DateTime(2026, 7, 4));
 
     expect(notifications.cancelled, contains(completedId));
-    expect(notifications.cancelled, isNot(contains(activeId)));
     expect(notifications.scheduled, contains(activeId));
   });
 
@@ -184,11 +195,79 @@ void main() {
     await scheduler.reschedule(reference: DateTime(2026, 7, 4));
 
     expect(notifications.scheduled, contains('sale-partial'));
-    expect(notifications.cancelled, isNot(contains('sale-partial')));
 
     final due = await datasource.fetchDueReminders(
       asOf: DateTime(2026, 7, 4),
     );
     expect(due.single.amount, 15000);
+    expect(due.single.paidAmount, 5000);
+  });
+
+  test('multiple due reminders schedule grouped notification', () async {
+    final partyA = await insertCustomer(db: db, businessId: businessId, name: 'Raaj');
+    final partyB = await insertCustomer(db: db, businessId: businessId, name: 'Mateen');
+    final partyC = await insertCustomer(db: db, businessId: businessId, name: 'Akram');
+
+    for (final row in [
+      ('s1', partyA, 15000),
+      ('s2', partyB, 22000),
+      ('s3', partyC, 9000),
+    ]) {
+      await db.insert(TransactionsTable.tableName, {
+        TransactionsTable.id: row.$1,
+        TransactionsTable.businessId: businessId,
+        TransactionsTable.type: TransactionTypes.sale,
+        TransactionsTable.date: '2026-07-04',
+        TransactionsTable.partyId: row.$2,
+        TransactionsTable.totalAmount: row.$3,
+        TransactionsTable.paidAmount: 0,
+        TransactionsTable.dueAmount: row.$3,
+        TransactionsTable.reminderDate: '2026-07-04',
+        TransactionsTable.createdAt: DateTime.now().toIso8601String(),
+        TransactionsTable.updatedAt: DateTime.now().toIso8601String(),
+      });
+    }
+
+    notifications.scheduled.clear();
+    await scheduler.reschedule(reference: DateTime(2026, 7, 4));
+
+    expect(notifications.groupedScheduled, 1);
+    expect(notifications.scheduled, containsAll(['s1', 's2', 's3']));
+  });
+
+  test('snoozed reminder is excluded from notification schedule', () async {
+    final partyId = await insertCustomer(db: db, businessId: businessId, name: 'Raaj');
+
+    await db.insert(TransactionsTable.tableName, {
+      TransactionsTable.id: 'snoozed-sale',
+      TransactionsTable.businessId: businessId,
+      TransactionsTable.type: TransactionTypes.sale,
+      TransactionsTable.date: '2026-07-04',
+      TransactionsTable.partyId: partyId,
+      TransactionsTable.totalAmount: 10000,
+      TransactionsTable.paidAmount: 0,
+      TransactionsTable.dueAmount: 10000,
+      TransactionsTable.reminderDate: '2026-07-04',
+      TransactionsTable.createdAt: DateTime.now().toIso8601String(),
+      TransactionsTable.updatedAt: DateTime.now().toIso8601String(),
+    });
+
+    final snoozeStore = ReminderSnoozeStore.create();
+    await snoozeStore.snoozeUntil(
+      'snoozed-sale',
+      DateTime(2026, 7, 4, 12),
+    );
+
+    notifications.scheduled.clear();
+    await ReminderScheduler(
+      datasource,
+      notifications,
+      ReminderScheduleTracker.create(),
+      snoozeStore,
+      _NoopLogger(),
+    ).reschedule(reference: DateTime(2026, 7, 4, 9));
+
+    expect(notifications.scheduled, isEmpty);
+    expect(notifications.groupedScheduled, 0);
   });
 }

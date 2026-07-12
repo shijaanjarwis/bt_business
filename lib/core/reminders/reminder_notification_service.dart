@@ -5,13 +5,14 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../logging/logger.dart';
+import 'reminder_action_handler.dart';
 import 'reminder_models.dart';
 import 'reminder_navigation.dart';
 import 'reminder_notification_ids.dart';
 import 'reminder_notification_port.dart';
 import 'reminder_service.dart';
 
-/// Per-reminder 3-level notifications — cancel individually after payment.
+/// Per-reminder and grouped 3-level notifications — cancel on payment.
 final class ReminderNotificationService implements ReminderNotificationPort {
   ReminderNotificationService(this._logger);
 
@@ -31,7 +32,7 @@ final class ReminderNotificationService implements ReminderNotificationPort {
   }
 
   Future<void> initialize({
-    void Function(String? payload)? onTap,
+    void Function(NotificationResponse response)? onResponse,
   }) async {
     if (_initialized) return;
 
@@ -54,7 +55,7 @@ final class ReminderNotificationService implements ReminderNotificationPort {
         iOS: iosSettings,
       ),
       onDidReceiveNotificationResponse: (response) {
-        onTap?.call(response.payload);
+        onResponse?.call(response);
       },
     );
 
@@ -104,7 +105,6 @@ final class ReminderNotificationService implements ReminderNotificationPort {
     return granted;
   }
 
-  /// Cancels all three slots for one reminder — other parties unaffected.
   @override
   Future<void> cancelReminderNotifications(String transactionId) async {
     if (!_supportsNotifications) return;
@@ -116,16 +116,14 @@ final class ReminderNotificationService implements ReminderNotificationPort {
     _logger.info('Cancelled reminder notifications for $transactionId');
   }
 
-  /// Removes legacy grouped notification IDs from the prior scheduler.
   @override
-  Future<void> cancelLegacyGroupedReminders() async {
+  Future<void> cancelGroupedReminders() async {
     if (!_supportsNotifications) return;
-    await _plugin.cancel(LegacyReminderNotificationIds.morning);
-    await _plugin.cancel(LegacyReminderNotificationIds.afternoon);
-    await _plugin.cancel(LegacyReminderNotificationIds.evening);
+    await _plugin.cancel(GroupedReminderNotificationIds.morning);
+    await _plugin.cancel(GroupedReminderNotificationIds.afternoon);
+    await _plugin.cancel(GroupedReminderNotificationIds.evening);
   }
 
-  /// Schedules morning / afternoon / evening for a single pending reminder.
   @override
   Future<void> scheduleForReminder(
     ReminderEntry entry, {
@@ -153,6 +151,7 @@ final class ReminderNotificationService implements ReminderNotificationPort {
 
     final ids = ReminderNotificationIds.forTransaction(entry.transactionId);
     final payload = ReminderService.notificationPayload(entry);
+    final actions = reminderActionsForEntry(entry);
     final now = tz.TZDateTime.now(tz.local);
 
     if (morning.body.trim().isNotEmpty) {
@@ -164,6 +163,7 @@ final class ReminderNotificationService implements ReminderNotificationPort {
         body: morning.body,
         payload: payload,
         repeatDaily: true,
+        actions: actions,
       );
     }
 
@@ -176,6 +176,7 @@ final class ReminderNotificationService implements ReminderNotificationPort {
         body: afternoon.body,
         payload: payload,
         repeatDaily: false,
+        actions: actions,
       );
     }
 
@@ -188,6 +189,76 @@ final class ReminderNotificationService implements ReminderNotificationPort {
         body: evening.body,
         payload: payload,
         repeatDaily: false,
+        actions: actions,
+      );
+    }
+  }
+
+  @override
+  Future<void> scheduleGroupedReminders({
+    required List<ReminderEntry> entries,
+    DateTime? reference,
+  }) async {
+    if (!_supportsNotifications || entries.isEmpty) return;
+
+    await cancelGroupedReminders();
+
+    final morning = ReminderService.buildNotificationContent(
+      level: ReminderNotificationLevel.morning,
+      dueTodayAndOverdue: entries,
+      reference: reference,
+    );
+    final afternoon = ReminderService.buildNotificationContent(
+      level: ReminderNotificationLevel.afternoon,
+      dueTodayAndOverdue: entries,
+      reference: reference,
+    );
+    final evening = ReminderService.buildNotificationContent(
+      level: ReminderNotificationLevel.evening,
+      dueTodayAndOverdue: entries,
+      reference: reference,
+    );
+
+    final payload = ReminderService.notificationListPayload(entries);
+    final actions = groupedReminderActions();
+    final now = tz.TZDateTime.now(tz.local);
+
+    if (morning.body.trim().isNotEmpty) {
+      await _scheduleSlot(
+        id: GroupedReminderNotificationIds.morning,
+        hour: 8,
+        minute: 0,
+        title: morning.title,
+        body: morning.body,
+        payload: payload,
+        repeatDaily: true,
+        actions: actions,
+      );
+    }
+
+    if (_todayAt(13, 0).isAfter(now) && afternoon.body.trim().isNotEmpty) {
+      await _scheduleSlot(
+        id: GroupedReminderNotificationIds.afternoon,
+        hour: 13,
+        minute: 0,
+        title: afternoon.title,
+        body: afternoon.body,
+        payload: payload,
+        repeatDaily: false,
+        actions: actions,
+      );
+    }
+
+    if (_todayAt(18, 0).isAfter(now) && evening.body.trim().isNotEmpty) {
+      await _scheduleSlot(
+        id: GroupedReminderNotificationIds.evening,
+        hour: 18,
+        minute: 0,
+        title: evening.title,
+        body: evening.body,
+        payload: payload,
+        repeatDaily: false,
+        actions: actions,
       );
     }
   }
@@ -200,6 +271,7 @@ final class ReminderNotificationService implements ReminderNotificationPort {
     required String body,
     String? payload,
     required bool repeatDaily,
+    List<AndroidNotificationAction> actions = const [],
   }) async {
     var scheduled = _todayAt(hour, minute);
     final now = tz.TZDateTime.now(tz.local);
@@ -219,6 +291,7 @@ final class ReminderNotificationService implements ReminderNotificationPort {
           importance: Importance.high,
           priority: Priority.high,
           styleInformation: BigTextStyleInformation(body),
+          actions: actions,
         ),
         iOS: const DarwinNotificationDetails(),
       ),

@@ -1,5 +1,13 @@
 import '../accounting/transaction_types.dart';
 
+/// Lifecycle status — every active reminder is in exactly one state.
+enum ReminderStatus {
+  pending,
+  partial,
+  completed,
+  overdue,
+}
+
 /// Receive money from party (sale udhaar / jama follow-up).
 enum ReminderDirection {
   receive,
@@ -55,16 +63,21 @@ class ReminderEntry {
     required this.reminderDate,
     required this.dueAmount,
     required this.direction,
+    double? totalAmount,
+    double? paidAmount,
     this.partyPhone = '',
     this.transactionDate,
     this.notes = '',
-  });
+  })  : totalAmount = totalAmount ?? amount,
+        paidAmount = paidAmount ?? 0;
 
   final String transactionId;
   final String transactionType;
   final String partyId;
   final String partyName;
   final double amount;
+  final double totalAmount;
+  final double paidAmount;
   final DateTime reminderDate;
   final double dueAmount;
   final ReminderDirection direction;

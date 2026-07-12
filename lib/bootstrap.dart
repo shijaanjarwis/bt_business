@@ -14,7 +14,7 @@ import 'core/di/core_providers.dart';
 import 'core/di/data_revision.dart';
 import 'core/localization/localization_service.dart';
 import 'core/logging/startup_trace.dart';
-import 'core/reminders/reminder_notification_service.dart';
+import 'core/reminders/reminder_action_handler.dart';
 import 'core/reminders/reminder_providers.dart';
 import 'core/router/app_router.dart';
 import 'core/logging/logger.dart';
@@ -109,10 +109,15 @@ Future<void> _warmUpAppServices(ProviderContainer container, Logger logger) asyn
 
 Future<void> _initializeReminders(ProviderContainer container, Logger logger) async {
   final notifications = container.read(reminderNotificationServiceProvider);
+  final scheduler = container.read(reminderSchedulerProvider);
+  final snoozeStore = container.read(reminderSnoozeStoreProvider);
+
   await notifications.initialize(
-    onTap: (payload) {
-      handleReminderNotificationTap(
-        payload: payload,
+    onResponse: (response) {
+      handleReminderNotificationResponse(
+        response: response,
+        snoozeStore: snoozeStore,
+        scheduler: scheduler,
         navigate: (path) {
           final context = rootNavigatorKey.currentContext;
           if (context != null && context.mounted) {

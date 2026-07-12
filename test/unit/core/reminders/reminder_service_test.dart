@@ -56,6 +56,42 @@ void main() {
       );
     });
 
+    test('resolveStatus marks overdue when date passed', () {
+      final entry = ReminderEntry(
+        transactionId: 's1',
+        transactionType: TransactionTypes.sale,
+        partyId: 'p1',
+        partyName: 'Raaj',
+        amount: 15000,
+        reminderDate: DateTime(2026, 6, 28),
+        dueAmount: 15000,
+        direction: ReminderDirection.receive,
+      );
+
+      expect(
+        ReminderService.resolveStatus(entry, reference: DateTime(2026, 6, 30)),
+        ReminderStatus.overdue,
+      );
+    });
+
+    test('resolveStatus marks completed when due is zero', () {
+      final entry = ReminderEntry(
+        transactionId: 's1',
+        transactionType: TransactionTypes.sale,
+        partyId: 'p1',
+        partyName: 'Raaj',
+        amount: 0,
+        reminderDate: DateTime(2026, 6, 30),
+        dueAmount: 0,
+        direction: ReminderDirection.receive,
+      );
+
+      expect(
+        ReminderService.resolveStatus(entry, reference: DateTime(2026, 6, 30)),
+        ReminderStatus.completed,
+      );
+    });
+
     test('due labels for today tomorrow and overdue', () {
       final today = DateTime(2026, 6, 30);
       expect(
