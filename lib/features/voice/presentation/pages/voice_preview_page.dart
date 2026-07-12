@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/accounting/payment_breakdown.dart';
+import '../../../../core/theme/app_text_theme.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
@@ -13,6 +14,9 @@ import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../domain/voice_draft.dart';
 import '../../domain/voice_intent_type.dart';
 import '../../domain/voice_memory.dart';
+import '../../engine/preview_generator.dart';
+import '../widgets/voice_summary_card.dart';
+import '../widgets/voice_suggestions_strip.dart';
 import '../services/voice_save_executor.dart';
 
 /// Mandatory preview — user must review and edit before save.
@@ -36,6 +40,8 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
   late bool _createItem;
   late Map<VoiceConfidenceField, VoiceConfidenceLevel> _confidence;
   late bool _memoryUsed;
+  late double _overallConfidence;
+  late final ScrollController _scrollController;
 
   late final TextEditingController _partyController;
   late final TextEditingController _itemController;
@@ -62,6 +68,8 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
     _createItem = widget.resolved.createItem;
     _confidence = widget.resolved.confidence;
     _memoryUsed = widget.resolved.memoryUsed;
+    _overallConfidence = widget.resolved.overallConfidence;
+    _scrollController = ScrollController();
 
     _partyController = TextEditingController(text: _draft.partyName ?? '');
     _itemController = TextEditingController(text: _draft.itemName ?? '');
@@ -89,6 +97,7 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
     _amountController.dispose();
     _expenseController.dispose();
     _notesController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -156,9 +165,15 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
   @override
   Widget build(BuildContext context) {
     final draft = _draft;
-    final total = _buildDraftFromFields().lineTotal;
-    final credit = _buildDraftFromFields().creditAmount;
+    final built = _buildDraftFromFields();
+    final previewModel = PreviewGenerator.fromResolved(
+      widget.resolved.copyWith(draft: built, confidence: _confidence),
+    );
+    final total = built.lineTotal;
+    final credit = built.creditAmount;
     final dateFormat = DateFormat('d MMM');
+    final needsReview = _overallConfidence < 0.90 || _memoryUsed;
+    final text = context.appText;
 
     return Scaffold(
       backgroundColor: ColorPalette.background,
@@ -169,8 +184,33 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
       body: _isSaving
           ? const AppLoadingView()
           : ListView(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16),
               children: [
+                VoiceSummaryCard(model: previewModel, needsReview: needsReview),
+                const SizedBox(height: 16),
+                VoiceSuggestionsStrip(
+                  onPartyTap: (name) => setState(() => _partyController.text = name),
+                  onItemTap: (name) => setState(() => _itemController.text = name),
+                ),
+                const SizedBox(height: 16),
+                if (needsReview)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: ColorPalette.warningSurface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: ColorPalette.warningBorder),
+                    ),
+                    child: Text(
+                      'Kuch fields kam pakke hain — neeche check karke save karein.',
+                      style: text.helper.copyWith(
+                        fontSize: 14,
+                        color: ColorPalette.warningText,
+                      ),
+                    ),
+                  ),
                 if (_memoryUsed)
                   Container(
                     margin: const EdgeInsets.only(bottom: 16),
@@ -193,8 +233,8 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
                     ),
                   ),
                 AppFormSection(
-                  english: 'Transaction',
-                  hindi: 'Entry',
+                  english: 'Edit',
+                  hindi: 'Theek Karein',
                   child: Column(
                     children: [
                       _PreviewRow(
@@ -325,7 +365,10 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
                             Expanded(
                               child: _PreviewRow(
                                 label: 'Reminder',
-                                value: dateFormat.format(draft.reminderDate!),
+                                value: [
+                                  dateFormat.format(draft.reminderDate!),
+                                  if (draft.reminderTime != null) draft.reminderTime,
+                                ].join(' · '),
                               ),
                             ),
                             _ConfidenceChip(level: _confidence[VoiceConfidenceField.reminder]),
@@ -350,6 +393,30 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
                   ),
                 ],
                 const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _isSaving
+                            ? null
+                            : () => _scrollController.animateTo(
+                                  280,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOut,
+                                ),
+                        child: const Text('Edit'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _isSaving ? null : () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
                 AppPrimaryButton(
                   english: 'Save',
                   hindi: 'Save Karein',
@@ -368,7 +435,8 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
       VoiceIntentType.purchase ||
       VoiceIntentType.paymentReceived ||
       VoiceIntentType.paymentPaid ||
-      VoiceIntentType.createParty =>
+      VoiceIntentType.createParty ||
+      VoiceIntentType.reminder =>
         true,
       _ => false,
     };
@@ -381,7 +449,8 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
   bool _showAmountOnly(VoiceIntentType intent) {
     return intent == VoiceIntentType.paymentReceived ||
         intent == VoiceIntentType.paymentPaid ||
-        intent == VoiceIntentType.expense;
+        intent == VoiceIntentType.expense ||
+        intent == VoiceIntentType.reminder;
   }
 
   bool _showPaymentSplit(VoiceIntentType intent) {
@@ -479,12 +548,12 @@ class _PreviewRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(color: ColorPalette.labelSecondary),
+              style: context.appText.secondary.copyWith(fontSize: 14),
             ),
           ),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.w700),
+            style: context.appText.primaryBold.copyWith(fontSize: 15),
           ),
         ],
       ),

@@ -7,6 +7,7 @@ enum VoiceIntentType {
   expense,
   createParty,
   createItem,
+  reminder,
   unknown,
 }
 
@@ -19,6 +20,7 @@ extension VoiceIntentTypeLabels on VoiceIntentType {
         VoiceIntentType.expense => 'Kharch',
         VoiceIntentType.createParty => 'Nayi Party',
         VoiceIntentType.createItem => 'Naya Maal',
+        VoiceIntentType.reminder => 'Yaad Dilana',
         VoiceIntentType.unknown => 'Samajh nahi aaya',
       };
 }

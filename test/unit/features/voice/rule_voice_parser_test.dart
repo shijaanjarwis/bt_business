@@ -30,6 +30,75 @@ void main() {
       expect(result.draft.reminderDate, DateTime(2026, 7, 15));
     });
 
+    test('parses Mateen sunglasses cash sale', () {
+      final result = parser.parse('Mateen ko 20 piece sunglasses 650 rupaye cash beche.');
+      expect(result.draft.intent, VoiceIntentType.sale);
+      expect(result.draft.partyName, 'Mateen');
+      expect(result.draft.quantity, 20);
+      expect(result.draft.unit, 'Pcs');
+      expect(result.draft.itemName, 'Sunglasses');
+      expect(result.draft.rate, 650);
+    });
+
+    test('parses Raaj cash received', () {
+      final result = parser.parse('Raaj se 15000 cash mila.');
+      expect(result.needsClarification, isFalse);
+      expect(result.draft.intent, VoiceIntentType.paymentReceived);
+      expect(result.draft.partyName, 'Raaj');
+      expect(result.draft.amount, 15000);
+      expect(result.draft.paymentBreakdown.cash, 15000);
+    });
+
+    test('parses diesel expense with likho', () {
+      final result = parser.parse('Aaj diesel ka 500 kharcha likho.');
+      expect(result.needsClarification, isFalse);
+      expect(result.draft.intent, VoiceIntentType.expense);
+      expect(result.draft.expenseName, 'Diesel');
+      expect(result.draft.amount, 500);
+    });
+
+    test('parses Ramesh bank received', () {
+      final result = parser.parse('Ramesh se 25000 bank se mila.');
+      expect(result.needsClarification, isFalse);
+      expect(result.draft.intent, VoiceIntentType.paymentReceived);
+      expect(result.draft.partyName, 'Ramesh');
+      expect(result.draft.amount, 25000);
+      expect(result.draft.paymentBreakdown.bank, 25000);
+    });
+
+    test('parses Rafiq udhaar sale', () {
+      final result = parser.parse('Rafiq ko 30 kg sariya 72 rupaye kilo udhaar di.');
+      expect(result.needsClarification, isFalse);
+      expect(result.draft.intent, VoiceIntentType.sale);
+      expect(result.draft.partyName, 'Rafiq');
+      expect(result.draft.itemName, 'Sariya');
+      expect(result.draft.quantity, 30);
+      expect(result.draft.rate, 72);
+      expect(result.draft.creditAmount, 2160);
+    });
+
+    test('parses kal shaam reminder for Mateen', () {
+      final result = parser.parse(
+        'Kal shaam 6 baje Mateen ko payment yaad dilana.',
+        referenceDate: DateTime(2026, 7, 13),
+      );
+      expect(result.needsClarification, isFalse);
+      expect(result.draft.intent, VoiceIntentType.reminder);
+      expect(result.draft.partyName, 'Mateen');
+      expect(result.draft.reminderDate, DateTime(2026, 7, 14));
+      expect(result.draft.reminderTime, contains('Shaam'));
+    });
+
+    test('parses aaj box paint purchase', () {
+      final result = parser.parse('Aaj 15 box paint kharide.');
+      expect(result.draft.intent, VoiceIntentType.purchase);
+      expect(result.draft.quantity, 15);
+      expect(result.draft.unit, 'Box');
+      expect(result.draft.itemName, 'Paint');
+      expect(result.needsClarification, isTrue);
+      expect(result.clarification?.field.name, 'party');
+    });
+
     test('parses receive payment command', () {
       final result = parser.parse('Kaleem se 15000 rupaye mile');
       expect(result.needsClarification, isFalse);

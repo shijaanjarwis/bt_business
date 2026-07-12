@@ -1,13 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/di/core_providers.dart';
 import '../../../../core/localization/language_provider.dart';
 import '../../data/memory/voice_business_memory_store.dart';
-import '../../data/parsers/rule_voice_parser.dart';
-import '../../data/speech/device_speech_recognizer.dart';
-import '../../data/speech/speech_recognizer_port.dart';
+import '../../data/parsers/business_parser.dart';
+import '../../data/providers/local_rule_ai_provider.dart';
+import '../../data/speech/speech_recognition_service.dart';
 import '../../data/voice_history_store.dart';
-import '../../domain/voice_memory_engine.dart';
-import '../../domain/voice_parser_port.dart';
+import '../../domain/ai_provider_interface.dart';
+import '../../domain/voice_parser_interface.dart';
+import '../../engine/voice_manager.dart';
+import '../../engine/voice_memory_engine.dart';
 
 final voiceBusinessMemoryStoreProvider = Provider<VoiceBusinessMemoryStore>((ref) {
   return VoiceBusinessMemoryStore.create();
@@ -16,16 +19,36 @@ final voiceBusinessMemoryStoreProvider = Provider<VoiceBusinessMemoryStore>((ref
 final voiceMemoryEngineProvider = Provider<VoiceMemoryEngine>((ref) {
   return VoiceMemoryEngine(
     store: ref.watch(voiceBusinessMemoryStoreProvider),
-    parser: ref.watch(voiceParserProvider) as RuleVoiceParser,
+    parser: ref.watch(voiceParserProvider) as BusinessParser,
   );
 });
 
-final voiceParserProvider = Provider<VoiceParserPort>((ref) {
-  return RuleVoiceParser();
+final voiceParserProvider = Provider<VoiceParserInterface>((ref) {
+  return BusinessParser();
 });
 
-final speechRecognizerProvider = Provider<SpeechRecognizerPort>((ref) {
-  return DeviceSpeechRecognizer();
+final aiProviderProvider = Provider<AiProviderInterface>((ref) {
+  return LocalRuleAiProvider(
+    memoryEngine: ref.watch(voiceMemoryEngineProvider),
+    parser: ref.watch(voiceParserProvider) as BusinessParser,
+  );
+});
+
+final speechRecognitionServiceProvider = Provider<SpeechRecognitionService>((ref) {
+  return SpeechRecognitionService();
+});
+
+/// Backward-compatible alias.
+final speechRecognizerProvider = speechRecognitionServiceProvider;
+
+final voiceManagerProvider = Provider<VoiceManager>((ref) {
+  return VoiceManager(
+    speech: ref.watch(speechRecognitionServiceProvider),
+    aiProvider: ref.watch(aiProviderProvider),
+    history: ref.watch(voiceHistoryStoreProvider),
+    memoryEngine: ref.watch(voiceMemoryEngineProvider),
+    logger: ref.watch(loggerProvider),
+  );
 });
 
 final voiceHistoryStoreProvider = Provider<VoiceHistoryStore>((ref) {

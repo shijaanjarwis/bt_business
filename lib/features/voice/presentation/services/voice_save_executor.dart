@@ -85,6 +85,8 @@ final class VoiceSaveExecutor {
             if (created.isFailure) return Error(created.failureOrNull!);
             result = const Success(null);
           }
+        case VoiceIntentType.reminder:
+          result = await _saveReminder(draft, partyId: partyId!);
         case VoiceIntentType.unknown:
           result = const Error(ValidationFailure('Command samajh nahi aaya'));
       }
@@ -215,6 +217,21 @@ final class VoiceSaveExecutor {
     );
     if (result.isFailure) return Error(result.failureOrNull!);
     return const Success(null);
+  }
+
+  Future<Result<void>> _saveReminder(
+    VoiceDraft draft, {
+    required String partyId,
+  }) async {
+    final amount = draft.amount ?? 0;
+    if (amount <= 0) {
+      return const Error(ValidationFailure('Reminder ke liye rupaye likhiye'));
+    }
+    return _savePayment(
+      draft,
+      partyId: partyId,
+      isReceived: true,
+    );
   }
 
   Future<Result<void>> _saveExpense(VoiceDraft draft) async {

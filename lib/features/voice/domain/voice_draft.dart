@@ -39,6 +39,7 @@ class VoiceDraft {
     this.amount,
     this.paymentBreakdown = const PaymentBreakdown(),
     this.reminderDate,
+    this.reminderTime,
     this.notes,
     this.expenseName,
   });
@@ -53,6 +54,7 @@ class VoiceDraft {
   final double? amount;
   final PaymentBreakdown paymentBreakdown;
   final DateTime? reminderDate;
+  final String? reminderTime;
   final String? notes;
   final String? expenseName;
 
@@ -80,9 +82,11 @@ class VoiceDraft {
     double? amount,
     PaymentBreakdown? paymentBreakdown,
     DateTime? reminderDate,
+    String? reminderTime,
     String? notes,
     String? expenseName,
     bool clearReminderDate = false,
+    bool clearReminderTime = false,
   }) {
     return VoiceDraft(
       intent: intent ?? this.intent,
@@ -95,6 +99,7 @@ class VoiceDraft {
       amount: amount ?? this.amount,
       paymentBreakdown: paymentBreakdown ?? this.paymentBreakdown,
       reminderDate: clearReminderDate ? null : (reminderDate ?? this.reminderDate),
+      reminderTime: clearReminderTime ? null : (reminderTime ?? this.reminderTime),
       notes: notes ?? this.notes,
       expenseName: expenseName ?? this.expenseName,
     );
@@ -124,6 +129,7 @@ class VoiceResolvedDraft {
     this.createItem = false,
     this.confidence = const {},
     this.memoryUsed = false,
+    this.overallConfidence = 1,
   });
 
   final VoiceDraft draft;
@@ -133,6 +139,7 @@ class VoiceResolvedDraft {
   final bool createItem;
   final Map<VoiceConfidenceField, VoiceConfidenceLevel> confidence;
   final bool memoryUsed;
+  final double overallConfidence;
 
   VoiceResolvedDraft copyWith({
     VoiceDraft? draft,
@@ -142,6 +149,7 @@ class VoiceResolvedDraft {
     bool? createItem,
     Map<VoiceConfidenceField, VoiceConfidenceLevel>? confidence,
     bool? memoryUsed,
+    double? overallConfidence,
   }) {
     return VoiceResolvedDraft(
       draft: draft ?? this.draft,
@@ -151,6 +159,7 @@ class VoiceResolvedDraft {
       createItem: createItem ?? this.createItem,
       confidence: confidence ?? this.confidence,
       memoryUsed: memoryUsed ?? this.memoryUsed,
+      overallConfidence: overallConfidence ?? this.overallConfidence,
     );
   }
 }

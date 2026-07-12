@@ -44,7 +44,8 @@ final class VoiceEntityResolver {
       VoiceIntentType.sale ||
       VoiceIntentType.purchase ||
       VoiceIntentType.paymentReceived ||
-      VoiceIntentType.paymentPaid =>
+      VoiceIntentType.paymentPaid ||
+      VoiceIntentType.reminder =>
         true,
       _ => false,
     };

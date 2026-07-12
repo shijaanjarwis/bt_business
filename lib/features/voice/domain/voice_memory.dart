@@ -121,14 +121,17 @@ class VoiceEnrichedResult {
     required this.confidence,
     this.clarification,
     this.memoryUsed = false,
+    this.overallConfidence = 1,
   });
 
   final VoiceDraft draft;
   final Map<VoiceConfidenceField, VoiceConfidenceLevel> confidence;
   final VoiceClarification? clarification;
   final bool memoryUsed;
+  final double overallConfidence;
 
   bool get needsClarification => clarification != null;
+  bool get needsCarefulReview => overallConfidence < 0.90;
 
   VoiceConfidenceLevel? levelFor(VoiceConfidenceField field) => confidence[field];
 
@@ -137,6 +140,7 @@ class VoiceEnrichedResult {
     Map<VoiceConfidenceField, VoiceConfidenceLevel>? confidence,
     VoiceClarification? clarification,
     bool? memoryUsed,
+    double? overallConfidence,
     bool clearClarification = false,
   }) {
     return VoiceEnrichedResult(
@@ -144,6 +148,7 @@ class VoiceEnrichedResult {
       confidence: confidence ?? this.confidence,
       clarification: clearClarification ? null : (clarification ?? this.clarification),
       memoryUsed: memoryUsed ?? this.memoryUsed,
+      overallConfidence: overallConfidence ?? this.overallConfidence,
     );
   }
 }
