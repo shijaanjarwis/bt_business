@@ -2,10 +2,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
+
 import '../../../../core/backup/backup_format.dart';
 import '../../../../core/backup/backup_providers.dart';
 import '../../../../core/di/core_providers.dart';
 import '../../../../core/di/data_revision.dart';
+import '../../../../core/router/route_names.dart';
+import '../../../../core/theme/app_text_theme.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/dialogs/confirmation_dialog.dart';
@@ -162,6 +166,10 @@ class _DataSafetyPageState extends ConsumerState<DataSafetyPage> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
+                      _SetupEntryCard(
+                        onTap: () => context.push(RouteNames.backup),
+                      ),
+                      const SizedBox(height: 16),
                       _SectionHeader(
                         icon: Icons.shield_outlined,
                         title: 'Data Suraksha',
@@ -433,6 +441,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final text = context.appText;
     return Row(
       children: [
         Icon(icon, color: ColorPalette.purple, size: 28),
@@ -443,22 +452,65 @@ class _SectionHeader extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: text.primaryBold.copyWith(fontSize: 18),
               ),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: ColorPalette.labelSecondary,
-                ),
+                style: text.secondary.copyWith(fontSize: 14),
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SetupEntryCard extends StatelessWidget {
+  const _SetupEntryCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = context.appText;
+    return Material(
+      color: ColorPalette.cardSurface,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: ColorPalette.purple, width: 1.5),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.backup_outlined, color: ColorPalette.purple, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Backup & Restore Setup',
+                      style: text.primaryBold.copyWith(fontSize: 17),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Copy kahan save hogi — iCloud / manual export',
+                      style: text.secondary.copyWith(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: ColorPalette.iconPrimary),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -471,6 +523,7 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final text = context.appText;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -478,12 +531,12 @@ class _InfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(color: ColorPalette.labelSecondary),
+              style: text.secondary.copyWith(fontSize: 14),
             ),
           ),
           Text(
             value,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            style: text.primaryBold.copyWith(fontSize: 14),
           ),
         ],
       ),

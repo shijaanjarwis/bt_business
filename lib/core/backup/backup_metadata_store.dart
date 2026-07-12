@@ -15,6 +15,7 @@ final class BackupMetadataStore {
   static const _connectedAccount = 'bt_backup_connected_account';
   static const _lastError = 'bt_backup_last_error';
   static const _isRunning = 'bt_backup_is_running';
+  static const _storageChoice = 'bt_backup_storage_choice';
 
   final Future<SharedPreferences> _prefsFuture;
 
@@ -128,6 +129,18 @@ final class BackupMetadataStore {
   Future<bool> isRunning() async {
     final prefs = await _prefsFuture;
     return prefs.getBool(_isRunning) ?? false;
+  }
+
+  Future<void> setStorageChoice(BackupStorageChoice choice) async {
+    final prefs = await _prefsFuture;
+    await prefs.setString(_storageChoice, choice.name);
+  }
+
+  Future<BackupStorageChoice> storageChoice() async {
+    final prefs = await _prefsFuture;
+    final raw = prefs.getString(_storageChoice);
+    if (raw == null) return BackupStorageChoice.cloud;
+    return BackupStorageChoice.values.byName(raw);
   }
 
   Future<Map<String, Object?>> exportAllPreferences() async {

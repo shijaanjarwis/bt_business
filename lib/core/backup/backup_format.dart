@@ -23,6 +23,12 @@ enum AutoBackupFrequency {
   off,
 }
 
+/// Where the user wants backups stored — cloud automatic or manual export only.
+enum BackupStorageChoice {
+  cloud,
+  manual,
+}
+
 /// Lightweight manifest stored in plaintext at the start of each backup file.
 class BackupManifest {
   const BackupManifest({

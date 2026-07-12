@@ -28,4 +28,10 @@ abstract final class AppColors {
 
   static const Color iconPrimary = textPrimary;
   static const Color iconSecondary = textTertiary;
+
+  /// Modal scrim — ~40% black, dialog stays readable.
+  static const Color dialogBarrier = Color(0x66000000);
+
+  /// Dialog surface — always pure white in light theme.
+  static const Color dialogSurface = Colors.white;
 }

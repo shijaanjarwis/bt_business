@@ -24,8 +24,8 @@ class VoiceAnimatedMic extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 200,
-      height: 200,
+      width: 96,
+      height: 96,
       child: AnimatedBuilder(
         animation: Listenable.merge([pulse, glow]),
         builder: (context, child) {
@@ -39,8 +39,8 @@ class VoiceAnimatedMic extends StatelessWidget {
               Transform.scale(
                 scale: glowScale,
                 child: Container(
-                  width: 168,
-                  height: 168,
+                  width: 88,
+                  height: 88,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: ColorPalette.purple.withValues(alpha: glowOpacity),
@@ -59,8 +59,8 @@ class VoiceAnimatedMic extends StatelessWidget {
               Transform.scale(
                 scale: pulseScale,
                 child: Container(
-                  width: 120,
-                  height: 120,
+                  width: 64,
+                  height: 64,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isActive ? ColorPalette.purple : ColorPalette.purple.withValues(alpha: 0.15),
@@ -76,7 +76,7 @@ class VoiceAnimatedMic extends StatelessWidget {
                   ),
                   child: Icon(
                     Icons.mic_rounded,
-                    size: 52,
+                    size: 32,
                     color: isActive ? Colors.white : ColorPalette.purple,
                   ),
                 ),
@@ -128,23 +128,28 @@ class VoiceStatusLine extends StatelessWidget {
     super.key,
     required this.message,
     this.isError = false,
+    this.compact = false,
   });
 
   final String message;
   final bool isError;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final text = context.appText;
     return SizedBox(
-      height: 52,
-      child: Center(
+      height: compact ? 36 : 36,
+      child: Align(
+        alignment: compact ? Alignment.centerLeft : Alignment.center,
         child: Text(
           message,
-          textAlign: TextAlign.center,
+          textAlign: compact ? TextAlign.start : TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: text.hindi.copyWith(
-            fontSize: 16,
-            height: 1.35,
+            fontSize: compact ? 14 : 16,
+            height: 1.3,
             color: isError ? ColorPalette.destructive : AppColors.textHindi,
           ),
         ),

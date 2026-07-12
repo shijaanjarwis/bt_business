@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/color_palette.dart';
+import 'app_dialog.dart';
 
 /// Global confirmation dialog — English-only action buttons.
 class ConfirmationDialog extends StatelessWidget {
@@ -27,9 +27,9 @@ class ConfirmationDialog extends StatelessWidget {
     String cancelLabel = 'Cancel',
     bool isDestructive = true,
   }) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => ConfirmationDialog(
+    return AppDialog.show<bool>(
+      context,
+      child: ConfirmationDialog(
         title: title,
         message: message,
         confirmLabel: confirmLabel,
@@ -41,20 +41,21 @@ class ConfirmationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(title),
-      content: message == null ? null : Text(message!),
+    return AppDialog.shell(
+      context: context,
+      title: title,
+      message: message,
       actions: [
-        TextButton(
+        AppDialog.action(
+          context: context,
+          label: cancelLabel,
           onPressed: () => Navigator.of(context).pop(false),
-          child: Text(cancelLabel),
         ),
-        TextButton(
+        AppDialog.action(
+          context: context,
+          label: confirmLabel,
           onPressed: () => Navigator.of(context).pop(true),
-          style: isDestructive
-              ? TextButton.styleFrom(foregroundColor: ColorPalette.destructive)
-              : null,
-          child: Text(confirmLabel),
+          destructive: isDestructive,
         ),
       ],
     );

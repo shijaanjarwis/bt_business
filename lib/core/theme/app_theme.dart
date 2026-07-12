@@ -15,6 +15,8 @@ abstract final class AppTheme {
       primary: ColorPalette.purple,
       onSurface: AppColors.textPrimary,
       onSurfaceVariant: AppColors.textSecondary,
+      surface: Colors.white,
+      scrim: AppColors.dialogBarrier,
     );
 
     final base = ThemeData(
@@ -57,6 +59,9 @@ abstract final class AppTheme {
         ),
       ),
       dialogTheme: const DialogThemeData(
+        backgroundColor: AppColors.dialogSurface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 8,
         titleTextStyle: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w700,

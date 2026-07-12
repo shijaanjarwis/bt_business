@@ -8,6 +8,7 @@ import '../../../../core/theme/app_text_theme.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
+import '../../../../shared/widgets/dialogs/app_dialog.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../data/speech/speech_permission_status.dart';
 import '../../domain/voice_capture_ui_state.dart';
@@ -373,9 +374,11 @@ class _VoiceAssistantPageState extends ConsumerState<VoiceAssistantPage>
 
   Future<String?> _askClarification(String question) async {
     final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
+    return AppDialog.show<String>(
+      context,
+      child: AlertDialog(
+        backgroundColor: AppDialog.surface,
+        surfaceTintColor: Colors.transparent,
         title: Text('Thodi aur jaankari', style: context.appText.dialogTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -391,10 +394,15 @@ class _VoiceAssistantPageState extends ConsumerState<VoiceAssistantPage>
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          FilledButton(
+          AppDialog.action(
+            context: context,
+            label: 'Cancel',
+            onPressed: () => Navigator.pop(context),
+          ),
+          AppDialog.filledAction(
+            context: context,
+            label: 'Theek Hai',
             onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Theek Hai'),
           ),
         ],
       ),
@@ -402,14 +410,23 @@ class _VoiceAssistantPageState extends ConsumerState<VoiceAssistantPage>
   }
 
   Future<bool?> _confirm({required String title, required String message}) {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title, style: context.appText.dialogTitle),
-        content: Text(message, style: context.appText.dialogBody),
+    return AppDialog.show<bool>(
+      context,
+      child: AppDialog.shell(
+        context: context,
+        title: title,
+        message: message,
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Nahi')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Haan')),
+          AppDialog.action(
+            context: context,
+            label: 'Nahi',
+            onPressed: () => Navigator.pop(context, false),
+          ),
+          AppDialog.filledAction(
+            context: context,
+            label: 'Haan',
+            onPressed: () => Navigator.pop(context, true),
+          ),
         ],
       ),
     );
@@ -581,107 +598,130 @@ class _ActiveAssistantStep extends ConsumerWidget {
 
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 12, 20, 16 + bottomInset),
+        padding: EdgeInsets.fromLTRB(16, 8, 16, 12 + bottomInset),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Boliye — main sun raha hoon',
-              textAlign: TextAlign.center,
-              style: textTheme.primaryBold.copyWith(fontSize: 22),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                VoiceAnimatedMic(
+                  pulse: pulse,
+                  glow: glow,
+                  isActive: uiState.micPulseActive,
+                  soundLevel: soundLevel,
+                  showWave: uiState.showWaveAnimation,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Boliye',
+                        style: textTheme.primaryBold.copyWith(fontSize: 18),
+                      ),
+                      const SizedBox(height: 2),
+                      VoiceStatusLine(
+                        message: statusMessage,
+                        isError: isError,
+                        compact: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Bikri · Kharid · Paisa · Kharcha',
-              textAlign: TextAlign.center,
-              style: textTheme.secondary.copyWith(fontSize: 15),
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: VoiceAnimatedMic(
-                pulse: pulse,
-                glow: glow,
-                isActive: uiState.micPulseActive,
-                soundLevel: soundLevel,
-                showWave: uiState.showWaveAnimation,
-              ),
-            ),
-            VoiceStatusLine(message: statusMessage, isError: isError),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               'Jo suna / type karein',
-              style: textTheme.primaryBold.copyWith(fontSize: 18),
+              style: textTheme.primaryBold.copyWith(fontSize: 17),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
               'Galat ho to theek kar sakte hain',
-              style: textTheme.helper.copyWith(fontSize: 15, height: 1.4),
+              style: textTheme.helper.copyWith(fontSize: 14, height: 1.35),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    AppTextField(
-                      english: 'Recognized Text',
-                      hindi: 'Awaaz ka text',
-                      controller: controller,
-                      maxLines: 5,
-                      hintText: 'Yahan awaaz ka text dikhega...',
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Purani awaaz', style: textTheme.primaryBold.copyWith(fontSize: 16)),
-                    const SizedBox(height: 8),
-                    historyAsync.when(
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, _) => const SizedBox.shrink(),
-                      data: (entries) {
-                        if (entries.isEmpty) {
-                          return Text(
-                            'Abhi koi command nahi',
-                            style: textTheme.secondary.copyWith(fontSize: 15),
-                          );
-                        }
-                        return Column(
-                          children: entries.take(5).map((entry) {
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                entry,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: textTheme.listTitle,
-                              ),
-                              trailing: Icon(
-                                Icons.replay_rounded,
-                                size: 18,
-                                color: ColorPalette.iconPrimary,
-                              ),
-                              onTap: () => controller.text = entry,
-                            );
-                          }).toList(),
-                        );
-                      },
-                    ),
-                  ],
+              child: TextFormField(
+                controller: controller,
+                maxLines: null,
+                expands: true,
+                textAlignVertical: TextAlignVertical.top,
+                style: textTheme.primary.copyWith(fontSize: 16),
+                decoration: InputDecoration(
+                  hintText: 'Yahan awaaz ka text dikhega...',
+                  hintStyle: textTheme.secondary.copyWith(fontSize: 15),
+                  filled: true,
+                  fillColor: ColorPalette.cardSurface,
+                  contentPadding: const EdgeInsets.all(14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: ColorPalette.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: ColorPalette.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: ColorPalette.purple, width: 1.5),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: isBusy ? null : onListenAgain,
-              child: const Text('Phir Sunen'),
-            ),
+            if (historyAsync.valueOrNull?.isNotEmpty == true) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 36,
+                child: historyAsync.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
+                  data: (entries) {
+                    return ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: entries.take(3).length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final entry = entries[index];
+                        return ActionChip(
+                          label: Text(
+                            entry,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.caption.copyWith(fontSize: 12),
+                          ),
+                          onPressed: () => controller.text = entry,
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
             const SizedBox(height: 10),
-            AppPrimaryButton(
-              english: 'Preview',
-              hindi: 'Dekhein',
-              isLoading: isBusy,
-              onPressed: isBusy || !hasTranscript ? null : onPreview,
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: isBusy ? null : onListenAgain,
+                    child: const Text('Phir Sunen'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 2,
+                  child: AppPrimaryButton(
+                    english: 'Preview',
+                    hindi: 'Dekhein',
+                    compact: true,
+                    isLoading: isBusy,
+                    onPressed: isBusy || !hasTranscript ? null : onPreview,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            const DeveloperFooter(),
           ],
         ),
       ),

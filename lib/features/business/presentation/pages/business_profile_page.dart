@@ -9,6 +9,7 @@ import '../../../../core/backup/backup_providers.dart';
 import '../../../../core/di/data_revision.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../core/router/router_refresh_notifier.dart';
+import '../../../../core/theme/app_text_theme.dart';
 import '../../../../core/theme/color_palette.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/branding/developer_footer.dart';
@@ -420,13 +421,23 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
                           color: Colors.transparent,
                           child: ListTile(
                             contentPadding: EdgeInsets.zero,
-                            leading: const Icon(Icons.shield_outlined),
-                            title: const Text('Backup aur Restore'),
-                            subtitle: const Text(
-                              'Copy, wapas laayein, export, import',
+                            leading: const Icon(
+                              Icons.shield_outlined,
+                              color: ColorPalette.purple,
                             ),
-                            trailing: const Icon(Icons.chevron_right_rounded),
-                            onTap: () => context.push(RouteNames.dataSafety),
+                            title: Text(
+                              'Backup & Restore',
+                              style: context.appText.primaryBold.copyWith(fontSize: 16),
+                            ),
+                            subtitle: Text(
+                              'Copy kahan save hogi — setup karein',
+                              style: context.appText.secondary.copyWith(fontSize: 14),
+                            ),
+                            trailing: const Icon(
+                              Icons.chevron_right_rounded,
+                              color: ColorPalette.iconPrimary,
+                            ),
+                            onTap: () => context.push(RouteNames.backup),
                           ),
                         ),
                       ),
