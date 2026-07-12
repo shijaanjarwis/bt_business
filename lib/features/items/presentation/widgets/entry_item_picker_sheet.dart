@@ -81,74 +81,95 @@ class _QuickItemCreateSheetState extends ConsumerState<QuickItemCreateSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final viewInsets = MediaQuery.viewInsetsOf(context);
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.92 - viewInsets.bottom;
+
     return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
-      ),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const BilingualLabel(
-                english: 'New Item',
-                hindi: 'Naya maal jodein',
-                compact: true,
-              ),
-              const SizedBox(height: 16),
-              AppTextField(
-                english: 'Goods',
-                hindi: 'Naam',
-                controller: _nameController,
-                validator: (v) => Validators.requiredText(v, fieldName: 'Item name'),
-              ),
-              const SizedBox(height: 12),
-              const BilingualLabel(
-                english: 'Unit',
-                hindi: 'Piece, Kg, Box…',
-                compact: true,
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+      padding: EdgeInsets.only(bottom: viewInsets.bottom),
+      child: SafeArea(
+        top: false,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ...ItemUnits.presets.map((unit) {
-                    final selected = !_isOtherUnit && _selectedUnit == unit;
-                    return ChoiceChip(
-                      label: Text(unit),
-                      selected: selected,
-                      onSelected: (_) => setState(() => _selectedUnit = unit),
-                    );
-                  }),
-                  ChoiceChip(
-                    label: Text(_isOtherUnit ? _selectedUnit : 'Other · Aur'),
-                    selected: _isOtherUnit,
-                    onSelected: (_) => _pickOtherUnit(),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const BilingualLabel(
+                            english: 'New Item',
+                            hindi: 'Naya maal jodein',
+                            compact: true,
+                          ),
+                          const SizedBox(height: 16),
+                          AppTextField(
+                            english: 'Goods',
+                            hindi: 'Naam',
+                            controller: _nameController,
+                            validator: (v) =>
+                                Validators.requiredText(v, fieldName: 'Item name'),
+                          ),
+                          const SizedBox(height: 12),
+                          const BilingualLabel(
+                            english: 'Unit',
+                            hindi: 'Piece, Kg, Box…',
+                            compact: true,
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              ...ItemUnits.presets.map((unit) {
+                                final selected =
+                                    !_isOtherUnit && _selectedUnit == unit;
+                                return ChoiceChip(
+                                  label: Text(unit),
+                                  selected: selected,
+                                  onSelected: (_) =>
+                                      setState(() => _selectedUnit = unit),
+                                );
+                              }),
+                              ChoiceChip(
+                                label: Text(
+                                  _isOtherUnit ? _selectedUnit : 'Other · Aur',
+                                ),
+                                selected: _isOtherUnit,
+                                onSelected: (_) => _pickOtherUnit(),
+                              ),
+                            ],
+                          ),
+                          if (_isOtherUnit) ...[
+                            const SizedBox(height: 8),
+                            TextButton.icon(
+                              onPressed: _pickOtherUnit,
+                              icon: const Icon(Icons.search_rounded, size: 18),
+                              label: const Text('Unit library kholein'),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  AppPrimaryButton(
+                    english: 'Save',
+                    hindi: 'Save Karein',
+                    isLoading: _isSaving,
+                    onPressed: _save,
                   ),
                 ],
               ),
-              if (_isOtherUnit) ...[
-                const SizedBox(height: 8),
-                TextButton.icon(
-                  onPressed: _pickOtherUnit,
-                  icon: const Icon(Icons.search_rounded, size: 18),
-                  label: const Text('Unit library kholein'),
-                ),
-              ],
-              const SizedBox(height: 20),
-              AppPrimaryButton(
-                english: 'Save',
-                hindi: 'Save Karein',
-                isLoading: _isSaving,
-                onPressed: _save,
-              ),
-            ],
+            ),
           ),
         ),
       ),

@@ -37,6 +37,7 @@ Future<Item?> showItemPicker(
       final item = await showModalBottomSheet<Item>(
         context: context,
         isScrollControlled: true,
+        useSafeArea: true,
         backgroundColor: Colors.white,
         builder: (context) => QuickItemCreateSheet(
           initialName: name,
