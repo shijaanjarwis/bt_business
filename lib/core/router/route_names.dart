@@ -9,6 +9,7 @@ abstract final class RouteNames {
   static const String reports = '/reports';
   static const String ai = '/ai';
   static const String businessProfile = '/business-profile';
+  static const String backup = '/backup';
   static const String ledgerPartyNew = '/ledger/party/new';
   static const String ledgerPartyDetail = '/ledger/party/:id';
   static const String ledgerPartyEdit = '/ledger/party/:id/edit';
@@ -77,4 +78,5 @@ abstract final class RouteNames {
   static const String reportsName = 'reports';
   static const String aiName = 'ai';
   static const String businessProfileName = 'businessProfile';
+  static const String backupName = 'backup';
 }

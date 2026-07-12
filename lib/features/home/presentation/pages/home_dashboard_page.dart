@@ -26,6 +26,7 @@ import '../widgets/dashboard_recent_activity_section.dart';
 import '../widgets/dashboard_reminder_summary_section.dart';
 import '../widgets/dashboard_reminders_section.dart';
 import '../widgets/dashboard_summary_grid.dart';
+import '../widgets/dashboard_backup_banner.dart';
 import '../widgets/notification_permission_banner.dart';
 import '../../../../core/reminders/reminder_models.dart';
 import '../../../../core/reminders/reminder_providers.dart';
@@ -142,6 +143,8 @@ class _DashboardContent extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.md),
               const NotificationPermissionBanner(),
+              const SizedBox(height: AppSpacing.md),
+              const DashboardBackupBanner(),
               const SizedBox(height: AppSpacing.xxl),
               DashboardSummaryGrid(metrics: metrics),
               if (dueReminders.isNotEmpty || reminderSummary.hasData) ...[

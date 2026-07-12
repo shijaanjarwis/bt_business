@@ -393,6 +393,21 @@ class _BusinessProfilePageState extends ConsumerState<BusinessProfilePage> {
                             ),
                             const SizedBox(height: 20),
                             const AssistantLanguagePicker(),
+                            const SizedBox(height: 12),
+                            Material(
+                              color: Colors.transparent,
+                              child: ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                leading: const Icon(Icons.backup_outlined),
+                                title: const Text('Hisaab Ki Copy'),
+                                subtitle: const Text(
+                                  'Copy banayein aur wapas laayein',
+                                ),
+                                trailing:
+                                    const Icon(Icons.chevron_right_rounded),
+                                onTap: () => context.push(RouteNames.backup),
+                              ),
+                            ),
                           ],
                         ),
                       ),

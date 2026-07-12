@@ -14,6 +14,7 @@ import 'core/di/core_providers.dart';
 import 'core/di/data_revision.dart';
 import 'core/localization/localization_service.dart';
 import 'core/logging/startup_trace.dart';
+import 'core/backup/auto_backup_runner.dart';
 import 'core/reminders/reminder_action_handler.dart';
 import 'core/reminders/reminder_providers.dart';
 import 'core/router/app_router.dart';
@@ -144,6 +145,7 @@ Future<void> _initializeReminders(ProviderContainer container, Logger logger) as
   );
 
   await container.read(reminderSchedulerProvider).reschedule();
+  unawaited(container.read(autoBackupRunnerProvider).checkAndRun());
 
   Timer? rescheduleTimer;
   container.listen<int>(dataRevisionProvider, (previous, next) {
