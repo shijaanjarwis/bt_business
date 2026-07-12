@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../features/items/domain/entities/item.dart';
 import '../../../features/items/presentation/providers/item_providers.dart';
 import '../../../features/items/presentation/widgets/entry_item_picker_sheet.dart';
+import '../sheets/app_bottom_sheet.dart';
 import '../sheets/app_search_picker_sheet.dart';
 
 /// Opens the unified item search picker sheet.
@@ -34,11 +35,8 @@ Future<Item?> showItemPicker(
     },
     onCreate: (name) async {
       if (!context.mounted) return;
-      final item = await showModalBottomSheet<Item>(
+      final item = await showAppBottomSheet<Item>(
         context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        backgroundColor: Colors.white,
         builder: (context) => QuickItemCreateSheet(
           initialName: name,
           mode: mode,

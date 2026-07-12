@@ -6,6 +6,7 @@ import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
+import '../../../../shared/widgets/sheets/app_bottom_sheet.dart';
 import '../../../ledger/domain/entities/opening_balance_direction.dart';
 import '../../../ledger/domain/entities/party_type.dart';
 import '../../../ledger/domain/repositories/party_repository.dart';
@@ -72,53 +73,44 @@ class _QuickPartyCreateSheetState extends ConsumerState<QuickPartyCreateSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
-      ),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const BilingualLabel(
-                english: 'New Party',
-                hindi: 'Naya party jodein',
-                compact: true,
-              ),
-              const SizedBox(height: 16),
-              AppTextField(
-                english: 'Party',
-                hindi: 'Naam',
-                controller: _nameController,
-                validator: (v) => Validators.requiredText(v, fieldName: 'Naam'),
-              ),
-              const SizedBox(height: 12),
-              AppTextField(
-                english: 'Mobile',
-                hindi: 'Mobile',
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                helper: 'Optional',
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) return null;
-                  return Validators.indianPhone(value);
-                },
-              ),
-              const SizedBox(height: 20),
-              AppPrimaryButton(
-                english: 'Save',
-                hindi: 'Save Karein',
-                isLoading: _isSaving,
-                onPressed: _save,
-              ),
-            ],
-          ),
+    return Form(
+      key: _formKey,
+      child: AppBottomSheetLayout(
+        showHandle: false,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const BilingualLabel(
+              english: 'New Party',
+              hindi: 'Naya party jodein',
+              compact: true,
+            ),
+            const SizedBox(height: 16),
+            AppTextField(
+              english: 'Party',
+              hindi: 'Naam',
+              controller: _nameController,
+              validator: (v) => Validators.requiredText(v, fieldName: 'Naam'),
+            ),
+            const SizedBox(height: 12),
+            AppTextField(
+              english: 'Mobile',
+              hindi: 'Mobile',
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              helper: 'Optional',
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) return null;
+                return Validators.indianPhone(value);
+              },
+            ),
+          ],
+        ),
+        footer: AppPrimaryButton(
+          english: 'Save',
+          hindi: 'Save Karein',
+          isLoading: _isSaving,
+          onPressed: _save,
         ),
       ),
     );

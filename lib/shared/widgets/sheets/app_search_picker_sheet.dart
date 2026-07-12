@@ -6,6 +6,7 @@ import '../../../core/theme/color_palette.dart';
 import '../inputs/app_search_field.dart';
 import '../labels/bilingual_label.dart';
 import 'package:bt_business/core/errors/user_error_messages.dart';
+import 'app_bottom_sheet.dart';
 
 /// Unified searchable picker bottom sheet — same search bar, spacing, and layout everywhere.
 class AppSearchPickerSheet<T> extends ConsumerStatefulWidget {
@@ -46,13 +47,8 @@ class AppSearchPickerSheet<T> extends ConsumerStatefulWidget {
     String? createLabelHindi,
     Future<void> Function(String query)? onCreate,
   }) {
-    return showModalBottomSheet<T>(
+    return showAppBottomSheet<T>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: ColorPalette.cardSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (context) => AppSearchPickerSheet<T>(
         englishTitle: englishTitle,
         hindiTitle: hindiTitle,
@@ -92,101 +88,72 @@ class _AppSearchPickerSheetState<T> extends ConsumerState<AppSearchPickerSheet<T
     final trimmed = query.trim();
     final itemsAsync = widget.watchItems(ref, query);
 
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.78,
-      minChildSize: 0.45,
-      maxChildSize: 0.92,
-      builder: (context, scrollController) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            MediaQuery.viewInsetsOf(context).bottom + AppSpacing.lg,
+    return AppBottomSheetPickerLayout(
+      header: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          BilingualLabel(
+            english: widget.englishTitle,
+            hindi: widget.hindiTitle,
+            compact: true,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: ColorPalette.border,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              BilingualLabel(
-                english: widget.englishTitle,
-                hindi: widget.hindiTitle,
+          const SizedBox(height: AppSpacing.md),
+          AppSearchField(
+            controller: _queryController,
+            autofocus: true,
+            onChanged: (_) => setState(() {}),
+            onClear: _clearQuery,
+          ),
+          if (trimmed.isNotEmpty && widget.onCreate != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            OutlinedButton.icon(
+              onPressed: () async {
+                await widget.onCreate!(trimmed);
+              },
+              icon: const Icon(Icons.add_rounded, color: ColorPalette.purple),
+              label: BilingualLabel(
+                english: widget.createLabelEnglish ?? 'Add "$trimmed"',
+                hindi: widget.createLabelHindi ?? 'Naya jodein',
                 compact: true,
               ),
-              const SizedBox(height: AppSpacing.md),
-              AppSearchField(
-                controller: _queryController,
-                autofocus: true,
-                onChanged: (_) => setState(() {}),
-                onClear: _clearQuery,
-              ),
-              if (trimmed.isNotEmpty && widget.onCreate != null) ...[
-                const SizedBox(height: AppSpacing.md),
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    await widget.onCreate!(trimmed);
-                  },
-                  icon: const Icon(Icons.add_rounded, color: ColorPalette.purple),
-                  label: BilingualLabel(
-                    english: widget.createLabelEnglish ?? 'Add "$trimmed"',
-                    hindi: widget.createLabelHindi ?? 'Naya jodein',
-                    compact: true,
-                  ),
-                ),
-              ],
-              const SizedBox(height: AppSpacing.md),
-              Expanded(
-                child: itemsAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, _) => Center(
-                    child: Text(
-                      UserErrorMessages.from(error),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
-                  data: (items) {
-                    if (items.isEmpty) {
-                      return Center(
-                        child: BilingualLabel(
-                          english: widget.emptyEnglish,
-                          hindi: widget.emptyHindi,
-                          compact: true,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                        ),
-                      );
-                    }
-
-                    return ListView.separated(
-                      controller: scrollController,
-                      itemCount: items.length,
-                      separatorBuilder: (_, _) => const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        return widget.itemBuilder(
-                          context,
-                          item,
-                          () => Navigator.pop(context, item),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
+            ),
+          ],
+        ],
+      ),
+      child: itemsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Text(
+            UserErrorMessages.from(error),
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
-        );
-      },
+        ),
+        data: (items) {
+          if (items.isEmpty) {
+            return Center(
+              child: BilingualLabel(
+                english: widget.emptyEnglish,
+                hindi: widget.emptyHindi,
+                compact: true,
+                crossAxisAlignment: CrossAxisAlignment.center,
+              ),
+            );
+          }
+
+          return ListView.separated(
+            itemCount: items.length,
+            separatorBuilder: (_, _) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return widget.itemBuilder(
+                context,
+                item,
+                () => Navigator.pop(context, item),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

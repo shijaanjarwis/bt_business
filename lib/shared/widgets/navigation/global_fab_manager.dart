@@ -8,6 +8,7 @@ import '../../../core/theme/color_palette.dart';
 import '../../../features/payments/presentation/models/payment_register_filter.dart';
 import '../../../features/payments/presentation/providers/payment_providers.dart';
 import '../labels/bilingual_label.dart';
+import '../sheets/app_bottom_sheet.dart';
 import '../sheets/app_quick_entry_sheet.dart';
 import 'global_voice_fab.dart';
 
@@ -82,35 +83,14 @@ abstract final class GlobalFabManager {
   }
 
   static Future<void> _showPaymentReceiveChoice(BuildContext context) {
-    return showModalBottomSheet<void>(
+    return showAppBottomSheet<void>(
       context: context,
-      backgroundColor: ColorPalette.cardSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            MediaQuery.viewPaddingOf(context).bottom + AppSpacing.lg,
-          ),
-          child: Column(
+        return AppBottomSheetLayout(
+          body: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: ColorPalette.border,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
               const BilingualLabel(
                 english: 'New Entry',
                 hindi: 'Nayi Entry',

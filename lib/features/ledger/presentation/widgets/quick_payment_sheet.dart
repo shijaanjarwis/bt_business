@@ -6,6 +6,7 @@ import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/buttons/app_primary_button.dart';
 import '../../../../shared/widgets/inputs/app_text_field.dart';
 import '../../../../shared/widgets/labels/bilingual_label.dart';
+import '../../../../shared/widgets/sheets/app_bottom_sheet.dart';
 import '../../domain/repositories/party_repository.dart';
 import '../providers/party_providers.dart';
 
@@ -75,18 +76,12 @@ class _QuickPaymentSheetState extends ConsumerState<QuickPaymentSheet> {
   Widget build(BuildContext context) {
     final isReceived = widget.mode == QuickPaymentMode.received;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
+    return Form(
+      key: _formKey,
+      child: AppBottomSheetLayout(
+        showHandle: false,
+        body: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
           children: [
             BilingualLabel(
               english: isReceived ? 'Money Received' : 'Money Paid',
@@ -101,14 +96,13 @@ class _QuickPaymentSheetState extends ConsumerState<QuickPaymentSheet> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: Validators.positiveAmount,
             ),
-            const SizedBox(height: 20),
-            AppPrimaryButton(
-              english: 'Save',
-              hindi: 'Save Karein',
-              isLoading: _isSaving,
-              onPressed: _save,
-            ),
           ],
+        ),
+        footer: AppPrimaryButton(
+          english: 'Save',
+          hindi: 'Save Karein',
+          isLoading: _isSaving,
+          onPressed: _save,
         ),
       ),
     );

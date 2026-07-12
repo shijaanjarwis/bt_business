@@ -5,6 +5,7 @@ import '../../../features/ledger/domain/entities/party.dart';
 import '../../../features/payments/presentation/providers/payment_providers.dart';
 import '../../../features/sales/presentation/providers/sale_providers.dart';
 import '../../../features/sales/presentation/widgets/entry_party_picker_sheet.dart';
+import '../sheets/app_bottom_sheet.dart';
 import '../sheets/app_search_picker_sheet.dart';
 
 enum PartyPickerScope { sale, register }
@@ -42,10 +43,8 @@ Future<Party?> showPartyPicker(
     onCreate: allowCreate
         ? (name) async {
             if (!context.mounted) return;
-            final party = await showModalBottomSheet<Party>(
+            final party = await showAppBottomSheet<Party>(
               context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.white,
               builder: (context) => QuickPartyCreateSheet(initialName: name),
             );
             if (party != null && context.mounted) {

@@ -6,6 +6,7 @@ import '../../../core/utils/date_formatter.dart';
 import '../../../core/utils/register_date_period.dart';
 import '../buttons/app_primary_button.dart';
 import '../labels/bilingual_label.dart';
+import 'app_bottom_sheet.dart';
 
 /// Professional date filter bottom sheet — Today, Week, Month, Custom range.
 class RegisterDateFilterSheet {
@@ -17,13 +18,8 @@ class RegisterDateFilterSheet {
     required DateTime? customStart,
     required DateTime? customEnd,
   }) {
-    return showModalBottomSheet<RegisterDateFilterResult>(
+    return showAppBottomSheet<RegisterDateFilterResult>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: ColorPalette.cardSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (context) {
         return _RegisterDateFilterSheetBody(
           initialPeriod: currentPeriod,
@@ -114,25 +110,10 @@ class _RegisterDateFilterSheetBodyState extends State<_RegisterDateFilterSheetBo
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return AppBottomSheetLayout(
+      body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: ColorPalette.border,
-                borderRadius: BorderRadius.circular(99),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
           const BilingualLabel(
             english: 'Date Filter',
             hindi: 'Tareekh Chunein',
@@ -199,7 +180,11 @@ class _RegisterDateFilterSheetBodyState extends State<_RegisterDateFilterSheetBo
               ],
             ),
           ],
-          const SizedBox(height: 20),
+        ],
+      ),
+      footer: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
           AppPrimaryButton(
             english: 'Apply',
             hindi: 'Lagu Karein',
