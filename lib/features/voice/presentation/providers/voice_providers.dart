@@ -1,11 +1,24 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/localization/language_provider.dart';
+import '../../data/memory/voice_business_memory_store.dart';
 import '../../data/parsers/rule_voice_parser.dart';
 import '../../data/speech/device_speech_recognizer.dart';
 import '../../data/speech/speech_recognizer_port.dart';
 import '../../data/voice_history_store.dart';
+import '../../domain/voice_memory_engine.dart';
 import '../../domain/voice_parser_port.dart';
+
+final voiceBusinessMemoryStoreProvider = Provider<VoiceBusinessMemoryStore>((ref) {
+  return VoiceBusinessMemoryStore.create();
+});
+
+final voiceMemoryEngineProvider = Provider<VoiceMemoryEngine>((ref) {
+  return VoiceMemoryEngine(
+    store: ref.watch(voiceBusinessMemoryStoreProvider),
+    parser: ref.watch(voiceParserProvider) as RuleVoiceParser,
+  );
+});
 
 final voiceParserProvider = Provider<VoiceParserPort>((ref) {
   return RuleVoiceParser();

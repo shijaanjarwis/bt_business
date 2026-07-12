@@ -23,6 +23,7 @@ import '../../../sales/domain/repositories/sale_repository.dart';
 import '../../../sales/presentation/providers/sale_providers.dart';
 import '../../domain/voice_draft.dart';
 import '../../domain/voice_intent_type.dart';
+import '../providers/voice_providers.dart';
 
 /// Persists a confirmed voice preview using existing save use cases.
 final class VoiceSaveExecutor {
@@ -37,6 +38,7 @@ final class VoiceSaveExecutor {
     bool createParty = false,
     bool createItem = false,
   }) async {
+    Result<void> result = const Success(null);
     try {
       if (createParty && draft.partyName != null) {
         final created = await _createParty(draft.partyName!);
@@ -55,31 +57,42 @@ final class VoiceSaveExecutor {
 
       switch (draft.intent) {
         case VoiceIntentType.sale:
-          return _saveSale(draft, partyId: partyId!, itemId: itemId!);
+          result = await _saveSale(draft, partyId: partyId!, itemId: itemId!);
         case VoiceIntentType.purchase:
-          return _savePurchase(draft, partyId: partyId!, itemId: itemId!);
+          result = await _savePurchase(draft, partyId: partyId!, itemId: itemId!);
         case VoiceIntentType.paymentReceived:
-          return _savePayment(draft, partyId: partyId!, isReceived: true);
+          result = await _savePayment(draft, partyId: partyId!, isReceived: true);
         case VoiceIntentType.paymentPaid:
-          return _savePayment(draft, partyId: partyId!, isReceived: false);
+          result = await _savePayment(draft, partyId: partyId!, isReceived: false);
         case VoiceIntentType.expense:
-          return _saveExpense(draft);
+          result = await _saveExpense(draft);
         case VoiceIntentType.createParty:
-          if (partyId != null) return const Success(null);
-          final created = await _createParty(draft.partyName!);
-          if (created.isFailure) return Error(created.failureOrNull!);
-          return const Success(null);
+          if (partyId != null) {
+            result = const Success(null);
+          } else {
+            final created = await _createParty(draft.partyName!);
+            if (created.isFailure) return Error(created.failureOrNull!);
+            result = const Success(null);
+          }
         case VoiceIntentType.createItem:
-          if (itemId != null) return const Success(null);
-          final created = await _createItem(
-            name: draft.itemName!,
-            unit: draft.unit ?? ItemUnits.defaultUnit,
-          );
-          if (created.isFailure) return Error(created.failureOrNull!);
-          return const Success(null);
+          if (itemId != null) {
+            result = const Success(null);
+          } else {
+            final created = await _createItem(
+              name: draft.itemName!,
+              unit: draft.unit ?? ItemUnits.defaultUnit,
+            );
+            if (created.isFailure) return Error(created.failureOrNull!);
+            result = const Success(null);
+          }
         case VoiceIntentType.unknown:
-          return const Error(ValidationFailure('Command samajh nahi aaya'));
+          result = const Error(ValidationFailure('Command samajh nahi aaya'));
       }
+
+      if (result.isSuccess) {
+        await _ref.read(voiceMemoryEngineProvider).learnFromSave(draft);
+      }
+      return result;
     } finally {
       notifyDataChanged(_ref);
     }

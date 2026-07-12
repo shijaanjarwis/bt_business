@@ -94,7 +94,7 @@ final class RuleVoiceParser implements VoiceParserPort {
             field: VoiceClarificationField.rate,
           );
         }
-        return null;
+        return _reminderClarificationIfNeeded(draft, null);
       case VoiceIntentType.paymentReceived:
       case VoiceIntentType.paymentPaid:
         if (draft.partyName == null || draft.partyName!.trim().isEmpty) {
@@ -155,6 +155,21 @@ final class RuleVoiceParser implements VoiceParserPort {
     }
   }
 
+  VoiceClarification? _reminderClarificationIfNeeded(
+    VoiceDraft draft,
+    String? normalized,
+  ) {
+    final text = normalized ?? draft.rawText.toLowerCase();
+    if (_hasAny(text, ['reminder', 'yaad dilana', 'yaad dilao', 'yaad rakh']) &&
+        draft.reminderDate == null) {
+      return const VoiceClarification(
+        question: 'Kaunsi date par reminder lagaayein?',
+        field: VoiceClarificationField.reminderDate,
+      );
+    }
+    return null;
+  }
+
   VoiceParseResult revalidate(VoiceDraft draft) {
     return VoiceParseResult(
       draft: draft,
@@ -195,7 +210,10 @@ final class RuleVoiceParser implements VoiceParserPort {
     if (_hasAny(text, ['bechi', 'beche', 'becha', 'bikri', 'sale', 'sold', 'bech di', 'bech diya'])) {
       return VoiceIntentType.sale;
     }
-    if (text.contains(' ko ') && _hasAny(text, ['kilo', 'kg', 'piece', 'pcs'])) {
+    if (_hasAny(text, ['bhej do', 'bhejo', 'aur bhej', 'aur bhejo'])) {
+      return VoiceIntentType.sale;
+    }
+    if (text.contains(' ko ') && _hasAny(text, ['kilo', 'kg', 'piece', 'pcs', 'aur'])) {
       return VoiceIntentType.sale;
     }
     return VoiceIntentType.unknown;
@@ -223,10 +241,18 @@ final class RuleVoiceParser implements VoiceParserPort {
     String? itemName;
     double? rate;
 
+    final qtyOnly = RegExp(r'(\d+(?:\.\d+)?)\s+aur\b').firstMatch(text);
+    if (qtyItem == null && qtyOnly != null) {
+      quantity = double.tryParse(qtyOnly.group(1)!);
+    }
+
     if (qtyItem != null) {
       quantity = double.tryParse(qtyItem.group(1)!);
       unit = _normalizeUnit(qtyItem.group(2));
-      itemName = _titleCase(qtyItem.group(3)!);
+      final rawItem = qtyItem.group(3)!;
+      if (!_isNoiseToken(rawItem)) {
+        itemName = _titleCase(rawItem);
+      }
     }
 
     final perKilo = RegExp(
@@ -368,6 +394,11 @@ final class RuleVoiceParser implements VoiceParserPort {
     return _titleCase(raw);
   }
 
+  bool _isNoiseToken(String value) {
+    const noise = {'aur', 'bhej', 'bhejo', 'do', 'mil', 'gaye', 'mila', 'mile', 'reminder'};
+    return noise.contains(value.toLowerCase());
+  }
+
   String _titleCase(String value) {
     if (value.isEmpty) return value;
     return value.split(' ').map((part) {
@@ -464,6 +495,20 @@ VoiceDraft applyClarificationAnswer(
       return draft.copyWith(amount: double.tryParse(trimmed.replaceAll(RegExp(r'[^0-9.]'), '')));
     case VoiceClarificationField.expenseName:
       return draft.copyWith(expenseName: trimmed);
+    case VoiceClarificationField.reminderDate:
+      final day = int.tryParse(trimmed.replaceAll(RegExp(r'[^0-9]'), ''));
+      if (day == null) return draft;
+      final now = DateTime.now();
+      var month = now.month;
+      var year = now.year;
+      if (day < now.day) {
+        month += 1;
+        if (month > 12) {
+          month = 1;
+          year += 1;
+        }
+      }
+      return draft.copyWith(reminderDate: DateTime(year, month, day));
   }
 }
 

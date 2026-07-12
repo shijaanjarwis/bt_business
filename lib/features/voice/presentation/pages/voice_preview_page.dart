@@ -12,6 +12,7 @@ import '../../../../shared/widgets/layout/app_form_section.dart';
 import '../../../../shared/widgets/scaffold/app_register_app_bar.dart';
 import '../../domain/voice_draft.dart';
 import '../../domain/voice_intent_type.dart';
+import '../../domain/voice_memory.dart';
 import '../services/voice_save_executor.dart';
 
 /// Mandatory preview — user must review and edit before save.
@@ -33,6 +34,8 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
   late String? _itemId;
   late bool _createParty;
   late bool _createItem;
+  late Map<VoiceConfidenceField, VoiceConfidenceLevel> _confidence;
+  late bool _memoryUsed;
 
   late final TextEditingController _partyController;
   late final TextEditingController _itemController;
@@ -57,6 +60,8 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
     _itemId = widget.resolved.itemId;
     _createParty = widget.resolved.createParty;
     _createItem = widget.resolved.createItem;
+    _confidence = widget.resolved.confidence;
+    _memoryUsed = widget.resolved.memoryUsed;
 
     _partyController = TextEditingController(text: _draft.partyName ?? '');
     _itemController = TextEditingController(text: _draft.itemName ?? '');
@@ -166,6 +171,27 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                if (_memoryUsed)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: ColorPalette.purple.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.psychology_outlined, color: ColorPalette.purple, size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Yaad se bhara — please check karein, phir save karein',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 AppFormSection(
                   english: 'Transaction',
                   hindi: 'Entry',
@@ -176,17 +202,25 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
                         value: draft.intent.hindiLabel,
                       ),
                       if (_showParty(draft.intent))
-                        AppTextField(
-                          english: 'Party',
-                          hindi: 'Party',
-                          controller: _partyController,
+                        _ConfidenceField(
+                          field: VoiceConfidenceField.party,
+                          confidence: _confidence,
+                          child: AppTextField(
+                            english: 'Party',
+                            hindi: 'Party',
+                            controller: _partyController,
+                          ),
                         ),
                       if (_showItem(draft.intent) || draft.intent == VoiceIntentType.createItem) ...[
                         const SizedBox(height: 12),
-                        AppTextField(
-                          english: 'Item',
-                          hindi: 'Maal',
-                          controller: _itemController,
+                        _ConfidenceField(
+                          field: VoiceConfidenceField.item,
+                          confidence: _confidence,
+                          child: AppTextField(
+                            english: 'Item',
+                            hindi: 'Maal',
+                            controller: _itemController,
+                          ),
                         ),
                         if (draft.intent == VoiceIntentType.createItem ||
                             _showItem(draft.intent)) ...[
@@ -195,20 +229,28 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
                             children: [
                               if (draft.intent != VoiceIntentType.createItem)
                                 Expanded(
-                                  child: AppTextField(
-                                    english: 'Qty',
-                                    hindi: 'Matra',
-                                    controller: _qtyController,
-                                    keyboardType: TextInputType.number,
+                                  child: _ConfidenceField(
+                                    field: VoiceConfidenceField.quantity,
+                                    confidence: _confidence,
+                                    child: AppTextField(
+                                      english: 'Qty',
+                                      hindi: 'Matra',
+                                      controller: _qtyController,
+                                      keyboardType: TextInputType.number,
+                                    ),
                                   ),
                                 ),
                               if (draft.intent != VoiceIntentType.createItem)
                                 const SizedBox(width: 10),
                               Expanded(
-                                child: AppTextField(
-                                  english: 'Unit',
-                                  hindi: 'Unit',
-                                  controller: _unitController,
+                                child: _ConfidenceField(
+                                  field: VoiceConfidenceField.unit,
+                                  confidence: _confidence,
+                                  child: AppTextField(
+                                    english: 'Unit',
+                                    hindi: 'Unit',
+                                    controller: _unitController,
+                                  ),
                                 ),
                               ),
                             ],
@@ -216,11 +258,15 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
                         ],
                         if (_showItem(draft.intent)) ...[
                           const SizedBox(height: 12),
-                          AppTextField(
-                            english: 'Rate',
-                            hindi: 'Rate',
-                            controller: _rateController,
-                            keyboardType: TextInputType.number,
+                          _ConfidenceField(
+                            field: VoiceConfidenceField.rate,
+                            confidence: _confidence,
+                            child: AppTextField(
+                              english: 'Rate',
+                              hindi: 'Rate',
+                              controller: _rateController,
+                              keyboardType: TextInputType.number,
+                            ),
                           ),
                         ],
                       ],
@@ -274,9 +320,16 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
                       ],
                       if (draft.reminderDate != null) ...[
                         const SizedBox(height: 12),
-                        _PreviewRow(
-                          label: 'Reminder',
-                          value: dateFormat.format(draft.reminderDate!),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _PreviewRow(
+                                label: 'Reminder',
+                                value: dateFormat.format(draft.reminderDate!),
+                              ),
+                            ),
+                            _ConfidenceChip(level: _confidence[VoiceConfidenceField.reminder]),
+                          ],
                         ),
                       ],
                       const SizedBox(height: 12),
@@ -336,6 +389,78 @@ class _VoicePreviewPageState extends ConsumerState<VoicePreviewPage> {
         intent == VoiceIntentType.purchase ||
         intent == VoiceIntentType.paymentReceived ||
         intent == VoiceIntentType.paymentPaid;
+  }
+}
+
+class _ConfidenceField extends StatelessWidget {
+  const _ConfidenceField({
+    required this.field,
+    required this.confidence,
+    required this.child,
+  });
+
+  final VoiceConfidenceField field;
+  final Map<VoiceConfidenceField, VoiceConfidenceLevel> confidence;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final level = confidence[field];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (level != null) ...[
+          Align(
+            alignment: Alignment.centerRight,
+            child: _ConfidenceChip(level: level),
+          ),
+          const SizedBox(height: 4),
+        ],
+        DecoratedBox(
+          decoration: level == VoiceConfidenceLevel.low
+              ? BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: ColorPalette.warningText.withValues(alpha: 0.7)),
+                )
+              : const BoxDecoration(),
+          child: Padding(
+            padding: level == VoiceConfidenceLevel.low
+                ? const EdgeInsets.all(4)
+                : EdgeInsets.zero,
+            child: child,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ConfidenceChip extends StatelessWidget {
+  const _ConfidenceChip({required this.level});
+
+  final VoiceConfidenceLevel? level;
+
+  @override
+  Widget build(BuildContext context) {
+    if (level == null) return const SizedBox.shrink();
+
+    final color = switch (level!) {
+      VoiceConfidenceLevel.high => ColorPalette.accentGreen,
+      VoiceConfidenceLevel.medium => ColorPalette.purple,
+      VoiceConfidenceLevel.low => ColorPalette.warningText,
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        'Yaad · ${level!.hindiLabel}',
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+      ),
+    );
   }
 }
 

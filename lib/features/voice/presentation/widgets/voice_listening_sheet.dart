@@ -113,11 +113,13 @@ class _VoiceListeningSheetState extends ConsumerState<VoiceListeningSheet>
       ref.invalidate(voiceHistoryProvider);
 
       final parser = ref.read(voiceParserProvider) as RuleVoiceParser;
+      final memoryEngine = ref.read(voiceMemoryEngineProvider);
       var result = parser.parse(text);
-      var draft = result.draft;
+      var enriched = await memoryEngine.enrich(parseResult: result, rawText: text);
+      var draft = enriched.draft;
 
-      while (result.needsClarification && mounted) {
-        final clarification = result.clarification!;
+      while (enriched.needsClarification && mounted) {
+        final clarification = enriched.clarification!;
         final answer = await _askClarification(clarification.question);
         if (!mounted) return;
         if (answer == null || answer.trim().isEmpty) {
@@ -126,12 +128,18 @@ class _VoiceListeningSheetState extends ConsumerState<VoiceListeningSheet>
         }
         draft = applyClarificationAnswer(draft, clarification, answer);
         result = revalidateVoiceDraft(draft, parser);
+        enriched = await memoryEngine.enrich(parseResult: result, rawText: text);
+        draft = enriched.draft;
       }
 
       if (!mounted) return;
 
       final resolver = VoiceEntityResolver(ref: ref);
       var resolved = await resolver.resolve(draft);
+      resolved = resolved.copyWith(
+        confidence: enriched.confidence,
+        memoryUsed: enriched.memoryUsed,
+      );
 
       if (resolved.createParty && mounted) {
         final yes = await _confirm(

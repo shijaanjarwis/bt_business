@@ -1,5 +1,6 @@
 import '../../../core/accounting/payment_breakdown.dart';
 import 'voice_intent_type.dart';
+import 'voice_memory.dart';
 
 /// Field that needs user clarification before preview.
 enum VoiceClarificationField {
@@ -11,6 +12,7 @@ enum VoiceClarificationField {
   rate,
   amount,
   expenseName,
+  reminderDate,
 }
 
 /// One clarifying question from the parser — never guess missing data.
@@ -120,6 +122,8 @@ class VoiceResolvedDraft {
     this.itemId,
     this.createParty = false,
     this.createItem = false,
+    this.confidence = const {},
+    this.memoryUsed = false,
   });
 
   final VoiceDraft draft;
@@ -127,6 +131,8 @@ class VoiceResolvedDraft {
   final String? itemId;
   final bool createParty;
   final bool createItem;
+  final Map<VoiceConfidenceField, VoiceConfidenceLevel> confidence;
+  final bool memoryUsed;
 
   VoiceResolvedDraft copyWith({
     VoiceDraft? draft,
@@ -134,6 +140,8 @@ class VoiceResolvedDraft {
     String? itemId,
     bool? createParty,
     bool? createItem,
+    Map<VoiceConfidenceField, VoiceConfidenceLevel>? confidence,
+    bool? memoryUsed,
   }) {
     return VoiceResolvedDraft(
       draft: draft ?? this.draft,
@@ -141,6 +149,8 @@ class VoiceResolvedDraft {
       itemId: itemId ?? this.itemId,
       createParty: createParty ?? this.createParty,
       createItem: createItem ?? this.createItem,
+      confidence: confidence ?? this.confidence,
+      memoryUsed: memoryUsed ?? this.memoryUsed,
     );
   }
 }
